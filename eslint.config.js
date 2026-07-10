@@ -33,19 +33,28 @@ export default defineConfig([
       'import-x/resolver': {
         typescript: true,
       },
+      // eslint-plugin-boundaries resolves modules via eslint-module-utils,
+      // which reads the legacy 'import/resolver' key (not 'import-x/resolver').
+      'import/resolver': {
+        typescript: true,
+      },
       'boundaries/elements': fsdLayers.map((type) => ({
         type,
         pattern: `src/${type}/*`,
       })),
     },
     rules: {
-      'boundaries/element-types': [
+      'boundaries/dependencies': [
         'error',
         {
           default: 'disallow',
-          rules: fsdLayers.map((type, index) => ({
-            from: type,
-            allow: fsdLayers.slice(index + 1),
+          policies: fsdLayers.map((type, index) => ({
+            from: { element: { types: type } },
+            allow: {
+              to: {
+                element: { types: { anyOf: [type, ...fsdLayers.slice(index + 1)] } },
+              },
+            },
           })),
         },
       ],
