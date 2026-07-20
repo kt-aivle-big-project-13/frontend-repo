@@ -27,7 +27,7 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
-// 비밀번호 찾기
+/* 비밀번호 찾기 */
 export async function findPassword({
   name,
   email,
@@ -83,7 +83,7 @@ export async function findPassword({
   }
 }
 
-// 새 비밀번호 설정
+/* 새 비밀번호 설정 */
 export async function resetPassword({
   token,
   newPassword,
