@@ -27,16 +27,56 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
-/* 비밀번호 찾기 */
+async function parseResponseBody(
+  response: Response,
+): Promise<ErrorResponse | null> {
+  return response
+    .json()
+    .catch(() => null) as Promise<ErrorResponse | null>;
+}
+
+function createTimeoutController() {
+  const controller =
+    new AbortController();
+
+  const timeoutId = window.setTimeout(
+    () => {
+      controller.abort();
+    },
+    REQUEST_TIMEOUT_MS,
+  );
+
+  return {
+    controller,
+    timeoutId,
+  };
+}
+
+function handleRequestError(
+  error: unknown,
+): never {
+  if (
+    error instanceof DOMException &&
+    error.name === 'AbortError'
+  ) {
+    throw new Error(
+      '요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.',
+      { cause: error },
+    );
+  }
+
+  throw error;
+}
+
+// 비밀번호 찾기
 export async function findPassword({
   name,
   email,
 }: FindPasswordRequest): Promise<FindPasswordResponse> {
-  const controller = new AbortController();
-
-  const timeoutId = window.setTimeout(() => {
-    controller.abort();
-  }, REQUEST_TIMEOUT_MS);
+  const {
+    controller,
+    timeoutId,
+  } = createTimeoutController();
 
   try {
     const response = await fetch(
@@ -44,7 +84,8 @@ export async function findPassword({
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':
+            'application/json',
         },
         body: JSON.stringify({
           name,
@@ -55,9 +96,7 @@ export async function findPassword({
     );
 
     const responseBody =
-      (await response
-        .json()
-        .catch(() => null)) as ErrorResponse | null;
+      await parseResponseBody(response);
 
     if (!response.ok) {
       throw new Error(
@@ -66,33 +105,29 @@ export async function findPassword({
       );
     }
 
-    return responseBody as FindPasswordResponse;
-  } catch (error: unknown) {
-    if (
-      error instanceof DOMException &&
-      error.name === 'AbortError'
-    ) {
+    if (!responseBody) {
       throw new Error(
-        '요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.',
+        '서버 응답을 확인할 수 없습니다. 잠시 후 다시 시도해주세요.',
       );
     }
 
-    throw error;
+    return responseBody as FindPasswordResponse;
+  } catch (error: unknown) {
+    return handleRequestError(error);
   } finally {
     window.clearTimeout(timeoutId);
   }
 }
 
-/* 새 비밀번호 설정 */
+// 새 비밀번호 설정
 export async function resetPassword({
   token,
   newPassword,
 }: ResetPasswordRequest): Promise<ResetPasswordResponse> {
-  const controller = new AbortController();
-
-  const timeoutId = window.setTimeout(() => {
-    controller.abort();
-  }, REQUEST_TIMEOUT_MS);
+  const {
+    controller,
+    timeoutId,
+  } = createTimeoutController();
 
   try {
     const response = await fetch(
@@ -100,7 +135,8 @@ export async function resetPassword({
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':
+            'application/json',
         },
         body: JSON.stringify({
           token,
@@ -111,9 +147,7 @@ export async function resetPassword({
     );
 
     const responseBody =
-      (await response
-        .json()
-        .catch(() => null)) as ErrorResponse | null;
+      await parseResponseBody(response);
 
     if (!response.ok) {
       throw new Error(
@@ -122,18 +156,15 @@ export async function resetPassword({
       );
     }
 
-    return responseBody as ResetPasswordResponse;
-  } catch (error: unknown) {
-    if (
-      error instanceof DOMException &&
-      error.name === 'AbortError'
-    ) {
+    if (!responseBody) {
       throw new Error(
-        '요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.',
+        '서버 응답을 확인할 수 없습니다. 잠시 후 다시 시도해주세요.',
       );
     }
 
-    throw error;
+    return responseBody as ResetPasswordResponse;
+  } catch (error: unknown) {
+    return handleRequestError(error);
   } finally {
     window.clearTimeout(timeoutId);
   }

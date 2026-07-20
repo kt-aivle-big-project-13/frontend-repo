@@ -7,7 +7,7 @@ import {
 
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import ResetPasswordPage from '../pages/reset-password/ui/ResetPasswordPage';
-
+import LoginPage from '../pages/login/ui/LoginPage';
 import { QueryProvider } from './providers/QueryProvider';
 
 function App() {
@@ -15,14 +15,22 @@ function App() {
     <QueryProvider>
       <BrowserRouter>
         <Routes>
+          {/* 비밀번호 찾기 */}
           <Route
             path="/find-password"
             element={<FindPasswordPage />}
           />
 
+          {/* 새 비밀번호 설정 */}
           <Route
             path="/reset-password"
             element={<ResetPasswordPage />}
+          />
+
+          {/* 로그인 */}
+          <Route
+            path="/login"
+            element={<LoginPage />}
           />
 
           <Route

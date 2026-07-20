@@ -1,12 +1,13 @@
+import { useSearchParams } from 'react-router-dom';
+
 import ResetPasswordForm from '../../../features/auth/ui/ResetPasswordForm';
 import AuthLayout from '../../../widgets/auth-layout/ui/AuthLayout';
 
 function ResetPasswordPage() {
-  const searchParams = new URLSearchParams(
-    window.location.search,
-  );
+  const [searchParams] = useSearchParams();
 
-  const token = searchParams.get('token') ?? '';
+  const token =
+    searchParams.get('token') ?? '';
 
   return (
     <AuthLayout>
