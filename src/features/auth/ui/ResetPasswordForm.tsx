@@ -1,0 +1,253 @@
+import { useState } from 'react';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  useForm,
+  type SubmitHandler,
+} from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+
+import { resetPassword } from '../api/passwordApi';
+
+import './ResetPasswordForm.css';
+
+interface ResetPasswordFormProps {
+  token: string;
+}
+
+const PASSWORD_PATTERN =
+  /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,16}$/;
+
+const resetPasswordSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(1, '새 비밀번호를 입력해주세요.')
+      .regex(
+        PASSWORD_PATTERN,
+        '영문, 숫자, 특수문자를 조합하여 10~16자로 입력해주세요.',
+      ),
+
+    newPasswordConfirm: z
+      .string()
+      .min(
+        1,
+        '새 비밀번호를 다시 입력해주세요.',
+      ),
+  })
+  .refine(
+    (data) =>
+      data.newPassword ===
+      data.newPasswordConfirm,
+    {
+      message: '비밀번호가 일치하지 않습니다.',
+      path: ['newPasswordConfirm'],
+    },
+  );
+
+type ResetPasswordFormValues = z.infer<
+  typeof resetPasswordSchema
+>;
+
+function ResetPasswordForm({
+  token,
+}: ResetPasswordFormProps) {
+  const navigate = useNavigate();
+
+  const [submitError, setSubmitError] =
+    useState('');
+
+  const [successMessage, setSuccessMessage] =
+    useState('');
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: {
+      errors,
+      isSubmitting,
+    },
+  } = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(
+      resetPasswordSchema,
+    ),
+    defaultValues: {
+      newPassword: '',
+      newPasswordConfirm: '',
+    },
+    mode: 'onBlur',
+  });
+
+  const onSubmit: SubmitHandler<
+    ResetPasswordFormValues
+  > = async (data) => {
+    setSubmitError('');
+    setSuccessMessage('');
+
+    if (!token) {
+      setSubmitError(
+        '유효하지 않은 비밀번호 재설정 링크입니다.',
+      );
+
+      return;
+    }
+
+    try {
+      const response = await resetPassword({
+        token,
+        newPassword: data.newPassword,
+      });
+
+      setSuccessMessage(
+        response.message ??
+          '비밀번호가 성공적으로 변경되었습니다.',
+      );
+
+      reset();
+
+      window.setTimeout(() => {
+        navigate('/login', {
+          replace: true,
+        });
+      }, 1000);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : '비밀번호 변경에 실패했습니다.';
+
+      setSubmitError(errorMessage);
+    }
+  };
+
+  return (
+    <div className="reset-password-form">
+      <header className="reset-password-form__header">
+        <h2>새 비밀번호 설정하기</h2>
+      </header>
+
+      <form
+        className="reset-password-form__body"
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+      >
+        <div className="reset-password-form__field">
+          <label htmlFor="reset-password">
+            새 비밀번호
+          </label>
+
+          <input
+            id="reset-password"
+            type="password"
+            autoComplete="new-password"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(
+              errors.newPassword,
+            )}
+            aria-describedby={
+              errors.newPassword
+                ? 'reset-password-error'
+                : 'reset-password-guide'
+            }
+            {...register('newPassword', {
+              onChange: () => {
+                setSubmitError('');
+                setSuccessMessage('');
+              },
+            })}
+          />
+
+          {errors.newPassword?.message && (
+            <p
+              id="reset-password-error"
+              className="reset-password-form__field-error"
+              role="alert"
+            >
+              {errors.newPassword.message}
+            </p>
+          )}
+        </div>
+
+        <div className="reset-password-form__field">
+          <label htmlFor="reset-password-confirm">
+            새 비밀번호 확인
+          </label>
+
+          <input
+            id="reset-password-confirm"
+            type="password"
+            autoComplete="new-password"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(
+              errors.newPasswordConfirm,
+            )}
+            aria-describedby={
+              errors.newPasswordConfirm
+                ? 'reset-password-confirm-error'
+                : undefined
+            }
+            {...register(
+              'newPasswordConfirm',
+              {
+                onChange: () => {
+                  setSubmitError('');
+                  setSuccessMessage('');
+                },
+              },
+            )}
+          />
+
+          {errors
+            .newPasswordConfirm
+            ?.message && (
+            <p
+              id="reset-password-confirm-error"
+              className="reset-password-form__field-error"
+              role="alert"
+            >
+              {
+                errors.newPasswordConfirm
+                  .message
+              }
+            </p>
+          )}
+        </div>
+
+        {submitError && (
+          <div
+            className="reset-password-form__message reset-password-form__message--error"
+            role="alert"
+          >
+            {submitError}
+          </div>
+        )}
+
+        {successMessage && (
+          <div
+            className="reset-password-form__message reset-password-form__message--success"
+            role="status"
+          >
+            {successMessage}
+          </div>
+        )}
+
+        <button
+          className="reset-password-form__submit"
+          type="submit"
+          disabled={
+            isSubmitting ||
+            Boolean(successMessage)
+          }
+        >
+          {isSubmitting
+            ? '변경 중...'
+            : '완료'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default ResetPasswordForm;

@@ -1,42 +1,49 @@
-import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom';
 
+import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
+import ResetPasswordPage from '../pages/reset-password/ui/ResetPasswordPage';
+import LoginPage from '../pages/login/ui/LoginPage';
 import { QueryProvider } from './providers/QueryProvider';
 
-// 백엔드 연동 확인용 컴포넌트
-/*
-import { useQuery } from '@tanstack/react-query';
-import { getHealth } from '@shared/api/health';
-
-function HealthStatus() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['health'],
-    queryFn: getHealth,
-  });
-
-  if (isLoading) return <div>백엔드 연동 확인 중...</div>;
-  if (isError) return <div>백엔드 연동 실패</div>;
-
-  return (
-    <div>
-      백엔드 연동 성공
-      (id: {data?.id}, checkedAt: {data?.checkedAt})
-    </div>
-  );
-}
-
 function App() {
   return (
     <QueryProvider>
-      <HealthStatus />
-    </QueryProvider>
-  );
-}
-*/
+      <BrowserRouter>
+        <Routes>
+          {/* 비밀번호 찾기 */}
+          <Route
+            path="/find-password"
+            element={<FindPasswordPage />}
+          />
 
-function App() {
-  return (
-    <QueryProvider>
-      <FindPasswordPage />
+          {/* 새 비밀번호 설정 */}
+          <Route
+            path="/reset-password"
+            element={<ResetPasswordPage />}
+          />
+
+          {/* 로그인 */}
+          <Route
+            path="/login"
+            element={<LoginPage />}
+          />
+
+          <Route
+            path="*"
+            element={
+              <Navigate
+                to="/find-password"
+                replace
+              />
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     </QueryProvider>
   );
 }
