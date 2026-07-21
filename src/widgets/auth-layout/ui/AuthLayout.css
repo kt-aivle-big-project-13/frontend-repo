@@ -27,13 +27,9 @@
 
 .auth-layout__brand {
   display: flex;
-  position: sticky;
-  top: 0;
-  align-self: start;
-  height: 100vh;
   flex-direction: column;
   justify-content: space-between;
-  padding: 100px 20%;
+  padding: 105px 58px 95px;
   background: linear-gradient(
     145deg,
     #e7f1ff 0%,

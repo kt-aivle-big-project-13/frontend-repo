@@ -5,7 +5,6 @@ import {
 } from 'react';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
-import '../../../shared/ui/authForm.css';
 import { login } from '../api/loginApi';
 
 import './LoginForm.css';
@@ -167,17 +166,17 @@ function LoginForm() {
   };
 
   return (
-    <div className="auth-form">
-      <header className="auth-form__header">
+    <div className="login-form">
+      <header className="login-form__header">
         <h2>로그인</h2>
       </header>
 
       <form
-        className="auth-form__body"
+        className="login-form__body"
         onSubmit={handleSubmit}
         noValidate
       >
-        <div className="auth-form__field">
+        <div className="login-form__field">
           <label htmlFor="login-email">
             이메일
           </label>
@@ -201,14 +200,14 @@ function LoginForm() {
           {errors.email && (
             <p
               id="login-email-error"
-              className="auth-form__field-error"
+              className="login-form__field-error"
             >
               {errors.email}
             </p>
           )}
         </div>
 
-        <div className="auth-form__field">
+        <div className="login-form__field">
           <label htmlFor="login-password">
             비밀번호
           </label>
@@ -219,9 +218,9 @@ function LoginForm() {
             type="password"
             value={form.password}
             onChange={handleChange}
-            autoComplete="off"
+            autoComplete="current-password"
             disabled={isLoading}
-            aria-invalid={Boolean(errors.password || errors.submit)}
+            aria-invalid={Boolean(errors.password)}
             aria-describedby={
               errors.password
                 ? 'login-password-error'
@@ -232,17 +231,15 @@ function LoginForm() {
           {errors.password && (
             <p
               id="login-password-error"
-              className="auth-form__field-error"
+              className="login-form__field-error"
             >
               {errors.password}
             </p>
           )}
 
-          {errors.submit && (
-            <p className="auth-form__field-error" role="alert">
-              {errors.submit}
-            </p>
-          )}
+          <p className="login-form__hint">
+            ※ 로그인 실패 시 구체적인 실패 사유는 노출되지 않습니다.
+          </p>
         </div>
 
         <div className="login-form__recaptcha">
@@ -265,14 +262,29 @@ function LoginForm() {
         </div>
 
         {errors.recaptcha && (
-          <p className="auth-form__field-error">
+          <p className="login-form__field-error">
             {errors.recaptcha}
           </p>
         )}
 
+        {errors.submit && (
+          <div
+            className="
+              login-form__message
+              login-form__message--error
+            "
+            role="alert"
+          >
+            {errors.submit}
+          </div>
+        )}
+
         {successMessage && (
           <div
-            className="auth-form__message auth-form__message--success"
+            className="
+              login-form__message
+              login-form__message--success
+            "
             role="status"
           >
             {successMessage}
@@ -280,7 +292,7 @@ function LoginForm() {
         )}
 
         <button
-          className="auth-form__submit"
+          className="login-form__submit"
           type="submit"
           disabled={isLoading}
         >
@@ -310,7 +322,7 @@ function LoginForm() {
           </a>
         </div>
 
-        <p className="auth-form__hint login-form__hint--center">
+        <p className="login-form__hint login-form__hint--center">
           ※ 비밀번호 유효기간(반기 1회 변경) 만료 시 재설정이 안내됩니다.
         </p>
       </form>

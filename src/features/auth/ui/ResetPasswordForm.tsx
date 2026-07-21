@@ -8,8 +8,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
-import '../../../shared/ui/authForm.css';
 import { resetPassword } from '../api/passwordApi';
+
+import './ResetPasswordForm.css';
 
 interface ResetPasswordFormProps {
   token: string;
@@ -122,17 +123,17 @@ function ResetPasswordForm({
   };
 
   return (
-    <div className="auth-form">
-      <header className="auth-form__header">
+    <div className="reset-password-form">
+      <header className="reset-password-form__header">
         <h2>새 비밀번호 설정하기</h2>
       </header>
 
       <form
-        className="auth-form__body"
+        className="reset-password-form__body"
         onSubmit={handleSubmit(onSubmit)}
         noValidate
       >
-        <div className="auth-form__field">
+        <div className="reset-password-form__field">
           <label htmlFor="reset-password">
             새 비밀번호
           </label>
@@ -161,7 +162,7 @@ function ResetPasswordForm({
           {errors.newPassword?.message && (
             <p
               id="reset-password-error"
-              className="auth-form__field-error"
+              className="reset-password-form__field-error"
               role="alert"
             >
               {errors.newPassword.message}
@@ -169,7 +170,7 @@ function ResetPasswordForm({
           )}
         </div>
 
-        <div className="auth-form__field">
+        <div className="reset-password-form__field">
           <label htmlFor="reset-password-confirm">
             새 비밀번호 확인
           </label>
@@ -203,7 +204,7 @@ function ResetPasswordForm({
             ?.message && (
             <p
               id="reset-password-confirm-error"
-              className="auth-form__field-error"
+              className="reset-password-form__field-error"
               role="alert"
             >
               {
@@ -216,7 +217,7 @@ function ResetPasswordForm({
 
         {submitError && (
           <div
-            className="auth-form__message auth-form__message--error"
+            className="reset-password-form__message reset-password-form__message--error"
             role="alert"
           >
             {submitError}
@@ -225,7 +226,7 @@ function ResetPasswordForm({
 
         {successMessage && (
           <div
-            className="auth-form__message auth-form__message--success"
+            className="reset-password-form__message reset-password-form__message--success"
             role="status"
           >
             {successMessage}
@@ -233,7 +234,7 @@ function ResetPasswordForm({
         )}
 
         <button
-          className="auth-form__submit"
+          className="reset-password-form__submit"
           type="submit"
           disabled={
             isSubmitting ||

@@ -8,7 +8,6 @@ import {
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import ResetPasswordPage from '../pages/reset-password/ui/ResetPasswordPage';
 import LoginPage from '../pages/login/ui/LoginPage';
-import SignupPage from '../pages/signup/ui/SignupPage';
 import { QueryProvider } from './providers/QueryProvider';
 
 function App() {
@@ -32,12 +31,6 @@ function App() {
           <Route
             path="/login"
             element={<LoginPage />}
-          />
-
-          {/* 회원가입 */}
-          <Route
-            path="/signup"
-            element={<SignupPage />}
           />
 
           <Route
