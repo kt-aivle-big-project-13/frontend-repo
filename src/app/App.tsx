@@ -44,7 +44,7 @@ function App() {
             path="*"
             element={
               <Navigate
-                to="/find-password"
+                to="/login"
                 replace
               />
             }
