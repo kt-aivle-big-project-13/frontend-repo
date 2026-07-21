@@ -1,5 +1,12 @@
+import LoginForm from '../../../features/auth/ui/LoginForm';
+import AuthLayout from '../../../widgets/auth-layout/ui/AuthLayout';
+
 function LoginPage() {
-  return <div>로그인 페이지입니다.</div>;
+  return (
+    <AuthLayout>
+      <LoginForm />
+    </AuthLayout>
+  );
 }
 
 export default LoginPage;
