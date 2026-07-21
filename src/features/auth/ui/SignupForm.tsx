@@ -1,0 +1,496 @@
+import { useState } from 'react';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, useWatch, type SubmitHandler } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+
+import '../../../shared/ui/authForm.css';
+import {
+  confirmVerificationCode,
+  sendVerificationCode,
+  signup,
+} from '../api/signupApi';
+
+import './SignupForm.css';
+
+const PASSWORD_MAX_LENGTH = 16;
+
+const HAS_LETTER = /[A-Za-z]/;
+const HAS_DIGIT = /\d/;
+const HAS_SPECIAL = /[!@#$%^&*(),.?":{}|<>_\-+=~`[\]/;']/;
+
+function countPasswordTypes(password: string): number {
+  return [HAS_LETTER, HAS_DIGIT, HAS_SPECIAL].filter((pattern) =>
+    pattern.test(password),
+  ).length;
+}
+
+function isPasswordComplexEnough(password: string): boolean {
+  const typeCount = countPasswordTypes(password);
+  const { length } = password;
+
+  if (typeCount >= 3) {
+    return length >= 8 && length <= PASSWORD_MAX_LENGTH;
+  }
+
+  if (typeCount === 2) {
+    return length >= 10 && length <= PASSWORD_MAX_LENGTH;
+  }
+
+  return false;
+}
+
+const signupSchema = z
+  .object({
+    name: z.string().min(1, '이름을 입력해주세요.'),
+    email: z
+      .string()
+      .min(1, '이메일을 입력해주세요.')
+      .email('올바른 이메일 형식을 입력해주세요.'),
+    password: z
+      .string()
+      .min(1, '비밀번호를 입력해주세요.')
+      .refine(isPasswordComplexEnough, {
+        message:
+          '영문, 숫자, 특수문자 중 2종류 이상을 조합하여 10~16자리(3종류 이상 조합 시 8~16자리)로 구성할 수 있습니다.',
+      }),
+    passwordConfirm: z.string().min(1, '비밀번호를 다시 입력해주세요.'),
+    agreeTerms: z.boolean().refine((value) => value, {
+      message: '이용약관에 동의해주세요.',
+    }),
+    agreePrivacy: z.boolean().refine((value) => value, {
+      message: '개인정보 수집 및 이용에 동의해주세요.',
+    }),
+  })
+  .refine((data) => data.password === data.passwordConfirm, {
+    message: '비밀번호가 일치하지 않습니다.',
+    path: ['passwordConfirm'],
+  });
+
+type SignupFormValues = z.infer<typeof signupSchema>;
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="8"
+      viewBox="0 0 12 8"
+      fill="none"
+      style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}
+    >
+      <path
+        d="M1 1.5L6 6.5L11 1.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SignupForm() {
+  const navigate = useNavigate();
+
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [sendCodeMessage, setSendCodeMessage] = useState('');
+
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isConfirmingCode, setIsConfirmingCode] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [confirmCodeMessage, setConfirmCodeMessage] = useState('');
+
+  const [isTermsExpanded, setIsTermsExpanded] = useState(false);
+  const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
+
+  const [submitError, setSubmitError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      passwordConfirm: '',
+      agreeTerms: false,
+      agreePrivacy: false,
+    },
+    mode: 'onBlur',
+  });
+
+  const email = useWatch({ control, name: 'email' });
+  const agreeTerms = useWatch({ control, name: 'agreeTerms' });
+  const agreePrivacy = useWatch({ control, name: 'agreePrivacy' });
+  const isAllAgreed = agreeTerms && agreePrivacy;
+
+  const resetEmailVerification = () => {
+    setIsCodeSent(false);
+    setIsEmailVerified(false);
+    setVerificationCode('');
+    setSendCodeMessage('');
+    setConfirmCodeMessage('');
+  };
+
+  const handleSendCode = async () => {
+    const emailResult = z.string().email().safeParse(email);
+
+    if (!emailResult.success) {
+      setSendCodeMessage('올바른 이메일 형식을 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsSendingCode(true);
+      setSendCodeMessage('');
+
+      const response = await sendVerificationCode({ email });
+
+      setIsCodeSent(true);
+      setSendCodeMessage(
+        response.message ?? '인증번호가 발송되었습니다.',
+      );
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : '인증번호 발송에 실패했습니다.';
+
+      setSendCodeMessage(errorMessage);
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const handleConfirmCode = async () => {
+    if (!verificationCode) {
+      setConfirmCodeMessage('인증번호를 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsConfirmingCode(true);
+      setConfirmCodeMessage('');
+
+      const response = await confirmVerificationCode({
+        email,
+        code: verificationCode,
+      });
+
+      setIsEmailVerified(true);
+      setConfirmCodeMessage(response.message ?? '인증이 완료되었습니다.');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : '인증번호가 올바르지 않습니다.';
+
+      setConfirmCodeMessage(errorMessage);
+    } finally {
+      setIsConfirmingCode(false);
+    }
+  };
+
+  const handleToggleAll = (checked: boolean) => {
+    setValue('agreeTerms', checked, { shouldValidate: true });
+    setValue('agreePrivacy', checked, { shouldValidate: true });
+  };
+
+  const onSubmit: SubmitHandler<SignupFormValues> = async (data) => {
+    setSubmitError('');
+    setSuccessMessage('');
+
+    if (!isEmailVerified) {
+      setSubmitError('이메일 인증을 완료해주세요.');
+      return;
+    }
+
+    try {
+      const response = await signup({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
+
+      setSuccessMessage(response.message ?? '회원가입이 완료되었습니다.');
+
+      window.setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 1000);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : '회원가입에 실패했습니다.';
+
+      setSubmitError(errorMessage);
+    }
+  };
+
+  return (
+    <div className="auth-form">
+      <header className="auth-form__header">
+        <h2>회원가입</h2>
+      </header>
+
+      <form
+        className="auth-form__body"
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+      >
+        <div className="auth-form__field">
+          <label htmlFor="signup-name">이름</label>
+
+          <input
+            id="signup-name"
+            type="text"
+            placeholder="이름을 입력해주세요"
+            autoComplete="name"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(errors.name)}
+            {...register('name')}
+          />
+
+          {errors.name?.message && (
+            <p className="auth-form__field-error" role="alert">
+              {errors.name.message}
+            </p>
+          )}
+        </div>
+
+        <div className="auth-form__field">
+          <label htmlFor="signup-email">이메일 (사내 이메일 인증)</label>
+
+          <div className="signup-form__inline">
+            <input
+              id="signup-email"
+              type="email"
+              placeholder="name@bank.co.kr"
+              autoComplete="email"
+              disabled={isSubmitting || isEmailVerified}
+              aria-invalid={Boolean(errors.email)}
+              {...register('email', { onChange: resetEmailVerification })}
+            />
+
+            <button
+              type="button"
+              className="signup-form__inline-button"
+              onClick={handleSendCode}
+              disabled={isSubmitting || isSendingCode || isEmailVerified}
+            >
+              {isSendingCode ? '발송 중' : '인증'}
+            </button>
+          </div>
+
+          {errors.email?.message && (
+            <p className="auth-form__field-error" role="alert">
+              {errors.email.message}
+            </p>
+          )}
+
+          {!errors.email && sendCodeMessage && (
+            <p className="auth-form__hint">{sendCodeMessage}</p>
+          )}
+        </div>
+
+        {isCodeSent && !isEmailVerified && (
+          <div className="auth-form__field">
+            <label htmlFor="signup-verification-code">인증번호</label>
+
+            <div className="signup-form__inline">
+              <input
+                id="signup-verification-code"
+                type="text"
+                placeholder="인증번호 6자리"
+                disabled={isSubmitting}
+                value={verificationCode}
+                onChange={(event) => setVerificationCode(event.target.value)}
+              />
+
+              <button
+                type="button"
+                className="signup-form__inline-button"
+                onClick={handleConfirmCode}
+                disabled={isSubmitting || isConfirmingCode}
+              >
+                {isConfirmingCode ? '확인 중' : '확인'}
+              </button>
+            </div>
+
+            {confirmCodeMessage && (
+              <p className="auth-form__hint">{confirmCodeMessage}</p>
+            )}
+          </div>
+        )}
+
+        {isEmailVerified && (
+          <p className="auth-form__message auth-form__message--success">
+            이메일 인증이 완료되었습니다.
+          </p>
+        )}
+
+        <div className="auth-form__field">
+          <label htmlFor="signup-password">비밀번호</label>
+
+          <input
+            id="signup-password"
+            type="password"
+            autoComplete="new-password"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(errors.password)}
+            {...register('password')}
+          />
+
+          {errors.password?.message && (
+            <p className="auth-form__field-error" role="alert">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+
+        <div className="auth-form__field">
+          <label htmlFor="signup-password-confirm">비밀번호 확인</label>
+
+          <input
+            id="signup-password-confirm"
+            type="password"
+            autoComplete="new-password"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(errors.passwordConfirm)}
+            {...register('passwordConfirm')}
+          />
+
+          {errors.passwordConfirm?.message && (
+            <p className="auth-form__field-error" role="alert">
+              {errors.passwordConfirm.message}
+            </p>
+          )}
+        </div>
+
+        <label className="signup-form__agree-all">
+          <input
+            type="checkbox"
+            checked={isAllAgreed}
+            onChange={(event) => handleToggleAll(event.target.checked)}
+          />
+          <span>약관에 모두 동의합니다.</span>
+        </label>
+
+        <div className="signup-form__terms">
+          <div className="signup-form__term">
+            <label className="signup-form__term-row">
+              <input type="checkbox" {...register('agreeTerms')} />
+              <span>[필수] 이용약관 동의</span>
+            </label>
+
+            <button
+              type="button"
+              className="signup-form__term-toggle"
+              onClick={() => setIsTermsExpanded((prev) => !prev)}
+              aria-label="이용약관 상세 보기"
+            >
+              <ChevronIcon expanded={isTermsExpanded} />
+            </button>
+          </div>
+
+          {isTermsExpanded && (
+            <div className="signup-form__term-detail">
+              <p>이용약관 상세 내용은 추후 반영 예정입니다.</p>
+            </div>
+          )}
+
+          <div className="signup-form__term">
+            <label className="signup-form__term-row">
+              <input type="checkbox" {...register('agreePrivacy')} />
+              <span>[필수] 개인정보 수집 및 이용 동의</span>
+            </label>
+
+            <button
+              type="button"
+              className="signup-form__term-toggle"
+              onClick={() => setIsPrivacyExpanded((prev) => !prev)}
+              aria-label="개인정보 수집 및 이용 동의 상세 보기"
+            >
+              <ChevronIcon expanded={isPrivacyExpanded} />
+            </button>
+          </div>
+
+          {isPrivacyExpanded && (
+            <div className="signup-form__term-detail">
+              <table className="signup-form__table">
+                <thead>
+                  <tr>
+                    <th>목적</th>
+                    <th>항목</th>
+                    <th>보유기간</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>회원가입 및 서비스 제공</td>
+                    <td>이름, 이메일, 비밀번호, 소속기관</td>
+                    <td>회원 탈퇴 시까지</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <p className="signup-form__table-note">
+                ※ 동의를 거부할 권리가 있으며, 거부 시 서비스 이용이 제한될 수
+                있습니다.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {(errors.agreeTerms?.message || errors.agreePrivacy?.message) && (
+          <p className="auth-form__field-error" role="alert">
+            {errors.agreeTerms?.message ?? errors.agreePrivacy?.message}
+          </p>
+        )}
+
+        <p className="signup-form__security-note">
+          🔒 입력하신 비밀번호는 SHA-256 일방향 암호화되어 안전하게
+          저장됩니다.
+        </p>
+
+        {submitError && (
+          <div
+            className="auth-form__message auth-form__message--error"
+            role="alert"
+          >
+            {submitError}
+          </div>
+        )}
+
+        {successMessage && (
+          <div
+            className="auth-form__message auth-form__message--success"
+            role="status"
+          >
+            {successMessage}
+          </div>
+        )}
+
+        <button
+          className="auth-form__submit"
+          type="submit"
+          disabled={isSubmitting || Boolean(successMessage)}
+        >
+          {isSubmitting ? '가입 중...' : '가입하기'}
+        </button>
+
+        <a className="auth-form__link" href="/login">
+          이미 계정이 있으신가요? 로그인
+        </a>
+      </form>
+    </div>
+  );
+}
+
+export default SignupForm;
