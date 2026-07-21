@@ -1,8 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
-
-import { getHealth } from '@shared/api/health';
+import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 
 import { QueryProvider } from './providers/QueryProvider';
+
+// 백엔드 연동 확인용 컴포넌트
+/*
+import { useQuery } from '@tanstack/react-query';
+import { getHealth } from '@shared/api/health';
 
 function HealthStatus() {
   const { data, isLoading, isError } = useQuery({
@@ -15,7 +18,8 @@ function HealthStatus() {
 
   return (
     <div>
-      백엔드 연동 성공 (id: {data?.id}, checkedAt: {data?.checkedAt})
+      백엔드 연동 성공
+      (id: {data?.id}, checkedAt: {data?.checkedAt})
     </div>
   );
 }
@@ -24,6 +28,15 @@ function App() {
   return (
     <QueryProvider>
       <HealthStatus />
+    </QueryProvider>
+  );
+}
+*/
+
+function App() {
+  return (
+    <QueryProvider>
+      <FindPasswordPage />
     </QueryProvider>
   );
 }
