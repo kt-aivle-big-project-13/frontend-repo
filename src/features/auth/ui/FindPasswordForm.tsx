@@ -4,9 +4,8 @@ import {
   useState,
 } from 'react';
 
+import '../../../shared/ui/authForm.css';
 import { findPassword } from '../api/passwordApi';
-
-import './FindPasswordForm.css';
 
 interface FindPasswordFormState {
   name: string;
@@ -142,8 +141,8 @@ function FindPasswordForm() {
   };
 
   return (
-    <div className="find-password-form">
-      <header className="find-password-form__header">
+    <div className="auth-form">
+      <header className="auth-form__header">
         <h2>비밀번호 찾기</h2>
 
         <p>
@@ -153,11 +152,11 @@ function FindPasswordForm() {
       </header>
 
       <form
-        className="find-password-form__body"
+        className="auth-form__body"
         onSubmit={handleSubmit}
         noValidate
       >
-        <div className="find-password-form__field">
+        <div className="auth-form__field">
           <label htmlFor="find-password-name">
             이름
           </label>
@@ -181,14 +180,14 @@ function FindPasswordForm() {
           {errors.name && (
             <p
               id="find-password-name-error"
-              className="find-password-form__field-error"
+              className="auth-form__field-error"
             >
               {errors.name}
             </p>
           )}
         </div>
 
-        <div className="find-password-form__field">
+        <div className="auth-form__field">
           <label htmlFor="find-password-email">
             이메일
           </label>
@@ -212,7 +211,7 @@ function FindPasswordForm() {
           {errors.email && (
             <p
               id="find-password-email-error"
-              className="find-password-form__field-error"
+              className="auth-form__field-error"
             >
               {errors.email}
             </p>
@@ -221,10 +220,7 @@ function FindPasswordForm() {
 
         {errors.submit && (
           <div
-            className="
-              find-password-form__message
-              find-password-form__message--error
-            "
+            className="auth-form__message auth-form__message--error"
             role="alert"
           >
             {errors.submit}
@@ -233,10 +229,7 @@ function FindPasswordForm() {
 
         {successMessage && (
           <div
-            className="
-              find-password-form__message
-              find-password-form__message--success
-            "
+            className="auth-form__message auth-form__message--success"
             role="status"
           >
             {successMessage}
@@ -244,7 +237,7 @@ function FindPasswordForm() {
         )}
 
         <button
-          className="find-password-form__submit"
+          className="auth-form__submit"
           type="submit"
           disabled={isLoading}
         >
@@ -254,7 +247,7 @@ function FindPasswordForm() {
         </button>
 
         <a
-          className="find-password-form__login-link"
+          className="auth-form__link"
           href="/login"
         >
           로그인
