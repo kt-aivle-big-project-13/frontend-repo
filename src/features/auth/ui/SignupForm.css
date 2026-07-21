@@ -1,0 +1,158 @@
+/* =========================
+   이메일 인증 인라인 버튼
+========================= */
+
+.signup-form__inline {
+  position: relative;
+  width: 100%;
+}
+
+.signup-form__inline input {
+  width: 100%;
+  padding-right: 84px;
+}
+
+.signup-form__inline-button {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 10px;
+  background-color: #eceff3;
+  color: #6b7684;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.signup-form__inline-button:hover:not(:disabled) {
+  background-color: #dfe3e9;
+}
+
+.signup-form__inline-button:disabled {
+  cursor: not-allowed;
+  color: #b0b8c4;
+}
+
+/* =========================
+   약관 동의
+========================= */
+
+.signup-form__agree-all {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e7eaef;
+  margin-bottom: 14px;
+  color: #202938;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signup-form__agree-all input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #2d67e8;
+}
+
+.signup-form__terms {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.signup-form__term {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.signup-form__term-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #4d5765;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signup-form__term-row input {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: #2d67e8;
+}
+
+.signup-form__term-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: #9099a8;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.signup-form__term-toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.signup-form__term-detail {
+  margin-bottom: 8px;
+  padding: 14px 16px;
+  border: 1px solid #e7eaef;
+  border-radius: 10px;
+  background-color: #f9fafb;
+  color: #6b7684;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.signup-form__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.signup-form__table th,
+.signup-form__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e7eaef;
+  text-align: left;
+  color: #4d5765;
+}
+
+.signup-form__table th {
+  color: #202938;
+  font-weight: 700;
+}
+
+.signup-form__table-note {
+  margin: 10px 0 0;
+  color: #9099a8;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* =========================
+   보안 안내
+========================= */
+
+.signup-form__security-note {
+  margin: 12px 0 20px;
+  color: #6b7684;
+  font-size: 11px;
+  line-height: 1.5;
+}
