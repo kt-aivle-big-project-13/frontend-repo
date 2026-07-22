@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import AuthGatedLink from '../../../../entities/user/ui/AuthGatedLink';
 
 import './HeroSection.css';
@@ -19,9 +21,9 @@ function HeroSection() {
             감사 시작
           </AuthGatedLink>
 
-          <a href="#features" className="hero-section__secondary-cta">
+          <Link to="/features" className="hero-section__secondary-cta">
             기능 살펴보기
-          </a>
+          </Link>
         </div>
       </div>
 
