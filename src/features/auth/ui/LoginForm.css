@@ -39,6 +39,28 @@
 }
 
 /* =========================
+   자동 로그인
+========================= */
+
+.login-form__remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: #4d5765;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.login-form__remember-me input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #2d67e8;
+}
+
+/* =========================
    하단 링크 (두 개 + 구분선)
 ========================= */
 

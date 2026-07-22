@@ -46,6 +46,9 @@ function LoginForm() {
   const [isRecaptchaChecked, setIsRecaptchaChecked] =
     useState(false);
 
+  const [isRememberMeChecked, setIsRememberMeChecked] =
+    useState(false);
+
   const [successMessage, setSuccessMessage] =
     useState('');
 
@@ -146,6 +149,7 @@ function LoginForm() {
       const response = await login({
         email: form.email.trim(),
         password: form.password,
+        rememberMe: isRememberMeChecked,
       });
 
       setAuth(response.accessToken, response.user);
@@ -269,6 +273,18 @@ function LoginForm() {
             {errors.recaptcha}
           </p>
         )}
+
+        <label className="login-form__remember-me">
+          <input
+            type="checkbox"
+            checked={isRememberMeChecked}
+            onChange={(event) =>
+              setIsRememberMeChecked(event.target.checked)
+            }
+            disabled={isLoading}
+          />
+          <span>자동 로그인</span>
+        </label>
 
         {successMessage && (
           <div
