@@ -19,8 +19,9 @@ export interface FindPasswordResponse {
 }
 
 export interface ResetPasswordRequest {
-  token: string;
+  resetToken: string;
   newPassword: string;
+  newPasswordConfirm: string;
 }
 
 export interface ResetPasswordResponse {
@@ -121,8 +122,9 @@ export async function findPassword({
 
 // 새 비밀번호 설정
 export async function resetPassword({
-  token,
+  resetToken,
   newPassword,
+  newPasswordConfirm,
 }: ResetPasswordRequest): Promise<ResetPasswordResponse> {
   const {
     controller,
@@ -135,12 +137,12 @@ export async function resetPassword({
       {
         method: 'POST',
         headers: {
-          'Content-Type':
-            'application/json',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          token,
+          resetToken,
           newPassword,
+          newPasswordConfirm,
         }),
         signal: controller.signal,
       },
