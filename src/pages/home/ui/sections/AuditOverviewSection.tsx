@@ -1,3 +1,4 @@
+import AuthGatedLink from '../../../../entities/user/ui/AuthGatedLink';
 import { useAuthStore } from '../../../../entities/user/model/authStore';
 
 import './AuditOverviewSection.css';
@@ -56,21 +57,23 @@ function AuditOverviewSection() {
           ) : (
             <ul className="audit-overview-section__list">
               {RECENT_AUDITS.map((audit) => (
-                <li
-                  key={audit.name}
-                  className="audit-overview-section__list-item"
-                >
-                  <span className="audit-overview-section__list-name">
-                    {audit.name}
-                  </span>
-                  <span className="audit-overview-section__list-date">
-                    {audit.date}
-                  </span>
-                  <span
-                    className={`audit-overview-section__status ${STATUS_CLASS_NAME[audit.status]}`}
+                <li key={audit.name}>
+                  <AuthGatedLink
+                    to="/audit"
+                    className="audit-overview-section__list-item"
                   >
-                    {audit.status}
-                  </span>
+                    <span className="audit-overview-section__list-name">
+                      {audit.name}
+                    </span>
+                    <span className="audit-overview-section__list-date">
+                      {audit.date}
+                    </span>
+                    <span
+                      className={`audit-overview-section__status ${STATUS_CLASS_NAME[audit.status]}`}
+                    >
+                      {audit.status}
+                    </span>
+                  </AuthGatedLink>
                 </li>
               ))}
             </ul>
@@ -85,7 +88,10 @@ function AuditOverviewSection() {
               진행중인 감사가 없습니다.
             </p>
           ) : (
-            <>
+            <AuthGatedLink
+              to="/audit"
+              className="audit-overview-section__progress"
+            >
               <div className="audit-overview-section__progress-track">
                 <div
                   className="audit-overview-section__progress-bar"
@@ -99,7 +105,7 @@ function AuditOverviewSection() {
                 STEP {IN_PROGRESS_AUDIT.step} / {IN_PROGRESS_AUDIT.totalSteps}{' '}
                 — {IN_PROGRESS_AUDIT.label}
               </p>
-            </>
+            </AuthGatedLink>
           )}
         </div>
       </div>

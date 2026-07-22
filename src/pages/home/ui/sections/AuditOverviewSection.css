@@ -42,26 +42,55 @@
 .audit-overview-section__list-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   padding: 14px 16px;
+  border: 1px solid transparent;
   border-radius: 8px;
   background-color: #f7f8fa;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.audit-overview-section__list-item:hover {
+  border-color: #2d67e8;
+  background-color: #eef4ff;
+}
+
+.audit-overview-section__list-item:focus-visible {
+  outline: 3px solid rgb(45 103 232 / 25%);
+  outline-offset: 2px;
 }
 
 .audit-overview-section__list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   color: #202938;
   font-size: 13px;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .audit-overview-section__list-date {
+  flex-shrink: 0;
+  width: 80px;
   color: #9099a8;
   font-size: 12px;
+  text-align: right;
 }
 
 .audit-overview-section__status {
+  flex-shrink: 0;
+  width: 40px;
+  margin-left: 40px;
   font-size: 12px;
   font-weight: 700;
+  text-align: right;
 }
 
 .audit-overview-section__status--pass {
@@ -74,6 +103,30 @@
 
 .audit-overview-section__status--fail {
   color: #E04040;
+}
+
+.audit-overview-section__progress {
+  display: block;
+  margin: -4px;
+  padding: 4px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.audit-overview-section__progress:hover {
+  background-color: #f7f8fa;
+}
+
+.audit-overview-section__progress:hover .audit-overview-section__progress-bar {
+  background-color: #2458cb;
+}
+
+.audit-overview-section__progress:focus-visible {
+  outline: 3px solid rgb(45 103 232 / 25%);
+  outline-offset: 2px;
 }
 
 .audit-overview-section__progress-track {
