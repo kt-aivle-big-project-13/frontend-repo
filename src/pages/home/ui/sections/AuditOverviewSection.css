@@ -96,6 +96,16 @@
   font-weight: 600;
 }
 
+.audit-overview-section__empty {
+  margin: 0;
+  padding: 24px 16px;
+  border-radius: 8px;
+  background-color: #f7f8fa;
+  color: #9099a8;
+  font-size: 13px;
+  text-align: center;
+}
+
 @media (max-width: 900px) {
   .audit-overview-section__grid {
     grid-template-columns: 1fr;
