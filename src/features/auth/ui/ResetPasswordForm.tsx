@@ -15,17 +15,70 @@ interface ResetPasswordFormProps {
   token: string;
 }
 
-const PASSWORD_PATTERN =
-  /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,16}$/;
+const PASSWORD_POLICY_MESSAGE =
+  `영문, 숫자, 특수문자( ( ) < > " ' ; 제외 ) 중 2종류를 조합하여 10~16자리, 3종류는 8~16자리로 입력해주세요.`;
+
+function isValidPassword(
+  password: string,
+): boolean {
+  const hasLetter =
+    /[A-Za-z]/.test(password);
+
+  const hasNumber =
+    /[0-9]/.test(password);
+
+  const hasSpecial =
+    /[^A-Za-z0-9]/.test(password);
+
+  const hasExcludedCharacter =
+    /[()<>"';]/.test(password);
+
+  const hasWhitespace =
+    /\s/.test(password);
+
+  if (
+    hasExcludedCharacter ||
+    hasWhitespace
+  ) {
+    return false;
+  }
+
+  const typeCount = [
+    hasLetter,
+    hasNumber,
+    hasSpecial,
+  ].filter(Boolean).length;
+
+  const length = password.length;
+
+  if (typeCount === 2) {
+    return (
+      length >= 10 &&
+      length <= 16
+    );
+  }
+
+  if (typeCount === 3) {
+    return (
+      length >= 8 &&
+      length <= 16
+    );
+  }
+
+  return false;
+}
 
 const resetPasswordSchema = z
   .object({
     newPassword: z
       .string()
-      .min(1, '새 비밀번호를 입력해주세요.')
-      .regex(
-        PASSWORD_PATTERN,
-        '영문, 숫자, 특수문자를 조합하여 10~16자로 입력해주세요.',
+      .min(
+        1,
+        '새 비밀번호를 입력해주세요.',
+      )
+      .refine(
+        isValidPassword,
+        PASSWORD_POLICY_MESSAGE,
       ),
 
     newPasswordConfirm: z
@@ -40,14 +93,14 @@ const resetPasswordSchema = z
       data.newPassword ===
       data.newPasswordConfirm,
     {
-      message: '비밀번호가 일치하지 않습니다.',
+      message:
+        '비밀번호가 일치하지 않습니다.',
       path: ['newPasswordConfirm'],
     },
   );
 
-type ResetPasswordFormValues = z.infer<
-  typeof resetPasswordSchema
->;
+type ResetPasswordFormValues =
+  z.infer<typeof resetPasswordSchema>;
 
 function ResetPasswordForm({
   token,
@@ -57,8 +110,10 @@ function ResetPasswordForm({
   const [submitError, setSubmitError] =
     useState('');
 
-  const [successMessage, setSuccessMessage] =
-    useState('');
+  const [
+    successMessage,
+    setSuccessMessage,
+  ] = useState('');
 
   const {
     register,
@@ -76,7 +131,8 @@ function ResetPasswordForm({
       newPassword: '',
       newPasswordConfirm: '',
     },
-    mode: 'onBlur',
+    mode: 'onChange',
+    reValidateMode: 'onChange',
   });
 
   const onSubmit: SubmitHandler<
@@ -94,10 +150,14 @@ function ResetPasswordForm({
     }
 
     try {
-      const response = await resetPassword({
-        token,
-        newPassword: data.newPassword,
-      });
+      const response =
+        await resetPassword({
+          resetToken: token,
+          newPassword:
+            data.newPassword,
+          newPasswordConfirm:
+            data.newPasswordConfirm,
+        });
 
       setSuccessMessage(
         response.message ??
@@ -124,12 +184,16 @@ function ResetPasswordForm({
   return (
     <div className="auth-form">
       <header className="auth-form__header">
-        <h2>새 비밀번호 설정하기</h2>
+        <h2>
+          새 비밀번호 설정하기
+        </h2>
       </header>
 
       <form
         className="auth-form__body"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(
+          onSubmit,
+        )}
         noValidate
       >
         <div className="auth-form__field">
@@ -150,21 +214,28 @@ function ResetPasswordForm({
                 ? 'reset-password-error'
                 : 'reset-password-guide'
             }
-            {...register('newPassword', {
-              onChange: () => {
-                setSubmitError('');
-                setSuccessMessage('');
+            {...register(
+              'newPassword',
+              {
+                onChange: () => {
+                  setSubmitError('');
+                  setSuccessMessage('');
+                },
               },
-            })}
+            )}
           />
 
-          {errors.newPassword?.message && (
+          {errors.newPassword
+            ?.message && (
             <p
               id="reset-password-error"
               className="auth-form__field-error"
               role="alert"
             >
-              {errors.newPassword.message}
+              {
+                errors.newPassword
+                  .message
+              }
             </p>
           )}
         </div>
@@ -207,7 +278,8 @@ function ResetPasswordForm({
               role="alert"
             >
               {
-                errors.newPasswordConfirm
+                errors
+                  .newPasswordConfirm
                   .message
               }
             </p>
