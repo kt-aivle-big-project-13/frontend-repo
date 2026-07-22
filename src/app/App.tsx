@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom';
 
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
+import HomePage from '../pages/home/ui/HomePage';
 import ResetPasswordPage from '../pages/reset-password/ui/ResetPasswordPage';
 import LoginPage from '../pages/login/ui/LoginPage';
 import SignupPage from '../pages/signup/ui/SignupPage';
@@ -16,6 +17,12 @@ function App() {
     <QueryProvider>
       <BrowserRouter>
         <Routes>
+          {/* 메인 */}
+          <Route
+            path="/"
+            element={<HomePage />}
+          />
+
           {/* 비밀번호 찾기 */}
           <Route
             path="/find-password"
@@ -44,7 +51,7 @@ function App() {
             path="*"
             element={
               <Navigate
-                to="/login"
+                to="/"
                 replace
               />
             }
