@@ -55,7 +55,7 @@ export async function signup({
   email,
   password,
 }: SignupRequest): Promise<SignupResponse> {
-  const { data } = await apiClient.post<SignupResponse>('/auth/register', {
+  const { data } = await apiClient.post<SignupResponse>('/auth/signup', {
     name,
     email,
     password,
