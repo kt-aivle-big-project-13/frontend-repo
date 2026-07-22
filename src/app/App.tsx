@@ -5,6 +5,7 @@ import {
   Routes,
 } from 'react-router-dom';
 
+import AdminPage from '../pages/admin/ui/AdminPage';
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import HomePage from '../pages/home/ui/HomePage';
@@ -52,6 +53,12 @@ function App() {
           <Route
             path="/signup"
             element={<SignupPage />}
+          />
+
+          {/* 관리자 권한 */}
+          <Route
+            path="/admin"
+            element={<AdminPage />}
           />
 
           <Route
