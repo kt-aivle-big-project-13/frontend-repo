@@ -44,6 +44,7 @@ function isPasswordComplexEnough(password: string): boolean {
 const signupSchema = z
   .object({
     name: z.string().min(1, '이름을 입력해주세요.'),
+    companyName: z.string().min(1, '기업명을 입력해주세요.'),
     email: z
       .string()
       .min(1, '이메일을 입력해주세요.')
@@ -118,6 +119,7 @@ function SignupForm() {
     resolver: zodResolver(signupSchema),
     defaultValues: {
       name: '',
+      companyName: '',
       email: '',
       password: '',
       passwordConfirm: '',
@@ -216,6 +218,7 @@ function SignupForm() {
     try {
       const response = await signup({
         name: data.name,
+        companyName: data.companyName,
         email: data.email,
         password: data.password,
       });
@@ -260,6 +263,26 @@ function SignupForm() {
           {errors.name?.message && (
             <p className="auth-form__field-error" role="alert">
               {errors.name.message}
+            </p>
+          )}
+        </div>
+
+        <div className="auth-form__field">
+          <label htmlFor="signup-company-name">기업명</label>
+
+          <input
+            id="signup-company-name"
+            type="text"
+            placeholder="소속 기업명을 입력해주세요"
+            autoComplete="organization"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(errors.companyName)}
+            {...register('companyName')}
+          />
+
+          {errors.companyName?.message && (
+            <p className="auth-form__field-error" role="alert">
+              {errors.companyName.message}
             </p>
           )}
         </div>
