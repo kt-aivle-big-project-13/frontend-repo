@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
 
+import { useAuthStore } from '../../../../entities/user/model/authStore';
 import AuthGatedLink from '../../../../entities/user/ui/AuthGatedLink';
 
 import './HeroSection.css';
 
 function HeroSection() {
+  const isAuthenticated = useAuthStore((state) => Boolean(state.user));
+
   return (
     <section className="hero-section">
       <div className="hero-section__main">
@@ -34,7 +37,7 @@ function HeroSection() {
         </p>
 
         <AuthGatedLink to="/dashboard" className="hero-section__card-button">
-          이동 →
+          {isAuthenticated ? '이동 →' : '로그인 →'}
         </AuthGatedLink>
 
         <img
