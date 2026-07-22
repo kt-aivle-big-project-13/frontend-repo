@@ -1,0 +1,39 @@
+.start-audit-cta-section {
+  padding: 56px 10% 96px;
+  text-align: center;
+}
+
+.start-audit-cta-section__title {
+  margin: 0;
+  color: #202938;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.start-audit-cta-section__subtitle {
+  margin: 12px 0 28px;
+  color: #6b7684;
+  font-size: 14px;
+}
+
+.start-audit-cta-section__button {
+  display: inline-block;
+  padding: 14px 32px;
+  border-radius: 8px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.start-audit-cta-section__button:hover {
+  background-color: #2458cb;
+}
+
+@media (max-width: 700px) {
+  .start-audit-cta-section {
+    padding: 40px 24px 64px;
+  }
+}

@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom';
 
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
+import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import HomePage from '../pages/home/ui/HomePage';
 import ResetPasswordPage from '../pages/reset-password/ui/ResetPasswordPage';
 import LoginPage from '../pages/login/ui/LoginPage';
@@ -21,6 +22,12 @@ function App() {
           <Route
             path="/"
             element={<HomePage />}
+          />
+
+          {/* 메인 기능 살펴보기 */}
+          <Route
+            path="/features"
+            element={<FeaturesPage />}
           />
 
           {/* 비밀번호 찾기 */}
