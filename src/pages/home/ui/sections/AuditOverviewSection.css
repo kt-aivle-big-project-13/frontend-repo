@@ -1,0 +1,109 @@
+.audit-overview-section {
+  padding: 0 10% 72px;
+}
+
+.audit-overview-section__title {
+  margin: 0 0 24px;
+  color: #202938;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.audit-overview-section__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  padding: 0px 5%;
+}
+
+.audit-overview-section__card {
+  padding: 24px;
+  border: 1.5px solid #eef0f3;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.audit-overview-section__card-title {
+  margin: 0 0 16px;
+  color: #202938;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.audit-overview-section__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.audit-overview-section__list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background-color: #f7f8fa;
+}
+
+.audit-overview-section__list-name {
+  color: #202938;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.audit-overview-section__list-date {
+  color: #9099a8;
+  font-size: 12px;
+}
+
+.audit-overview-section__status {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.audit-overview-section__status--pass {
+  color: #21A666;
+}
+
+.audit-overview-section__status--warn {
+  color: #F2B21A;
+}
+
+.audit-overview-section__status--fail {
+  color: #E04040;
+}
+
+.audit-overview-section__progress-track {
+  height: 8px;
+  border-radius: 4px;
+  background-color: #eef0f3;
+  overflow: hidden;
+}
+
+.audit-overview-section__progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  background-color: #2d67e8;
+}
+
+.audit-overview-section__progress-label {
+  margin: 14px 0 0;
+  color: #6b7684;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .audit-overview-section__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .audit-overview-section {
+    padding: 0 24px 48px;
+  }
+}
