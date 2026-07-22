@@ -21,6 +21,7 @@ export interface SignupRequest {
   name: string;
   email: string;
   password: string;
+  companyName: string;
 }
 
 export interface SignupResponse {
@@ -54,11 +55,13 @@ export async function signup({
   name,
   email,
   password,
+  companyName,
 }: SignupRequest): Promise<SignupResponse> {
   const { data } = await apiClient.post<SignupResponse>('/auth/signup', {
     name,
     email,
     password,
+    companyName,
   });
 
   return data;
