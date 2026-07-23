@@ -1,12 +1,9 @@
 import { create } from 'zustand';
 
-export type UserRole = 'user' | 'editor' | 'admin';
-
-export interface User {
+interface User {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
 }
 
 interface AuthState {
