@@ -8,6 +8,7 @@ import { z } from 'zod';
 import '../../../shared/ui/authForm.css';
 import {
   confirmVerificationCode,
+  getApiErrorMessage,
   sendVerificationCode,
   signup,
 } from '../api/signupApi';
@@ -26,6 +27,7 @@ function countPasswordTypes(password: string): number {
   ).length;
 }
 
+// 비밀번호 복잡도 검사
 function isPasswordComplexEnough(password: string): boolean {
   const typeCount = countPasswordTypes(password);
   const { length } = password;
@@ -41,14 +43,28 @@ function isPasswordComplexEnough(password: string): boolean {
   return false;
 }
 
+// 회원가입 폼 유효성 검사
 const signupSchema = z
   .object({
-    name: z.string().min(1, '이름을 입력해주세요.'),
-    companyName: z.string().min(1, '기업명을 입력해주세요.'),
+    name: z
+      .string()
+      .trim() // 공백 제거
+      .min(1, '이름을 입력해주세요.')
+      .max(50, '이름은 50자 이하로 입력해주세요.'),
+    
+    institution: z
+      .string()
+      .trim()
+      .min(1, '기업명을 입력해주세요.')
+      .max(100, '기업명은 100자 이하로 입력해주세요.'),
+
     email: z
       .string()
+      .trim()
       .min(1, '이메일을 입력해주세요.')
-      .email('올바른 이메일 형식을 입력해주세요.'),
+      .email('올바른 이메일 형식을 입력해주세요.')
+      .max(100, '이메일은 100자 이하로 입력해주세요.'),
+    
     password: z
       .string()
       .min(1, '비밀번호를 입력해주세요.')
@@ -56,10 +72,13 @@ const signupSchema = z
         message:
           '영문, 숫자, 특수문자 중 2종류 이상을 조합하여 10~16자리(3종류 이상 조합 시 8~16자리)로 구성할 수 있습니다.',
       }),
+    
     passwordConfirm: z.string().min(1, '비밀번호를 다시 입력해주세요.'),
+    
     agreeTerms: z.boolean().refine((value) => value, {
       message: '이용약관에 동의해주세요.',
     }),
+
     agreePrivacy: z.boolean().refine((value) => value, {
       message: '개인정보 수집 및 이용에 동의해주세요.',
     }),
@@ -69,6 +88,7 @@ const signupSchema = z
     path: ['passwordConfirm'],
   });
 
+// zod 스키마 기반 회원가입 폼 타입 생성
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
@@ -97,11 +117,13 @@ function SignupForm() {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [sendCodeMessage, setSendCodeMessage] = useState('');
+  const [sendCodeError, setSendCodeError] = useState('');
 
   const [verificationCode, setVerificationCode] = useState('');
   const [isConfirmingCode, setIsConfirmingCode] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [confirmCodeMessage, setConfirmCodeMessage] = useState('');
+  const [confirmCodeError, setConfirmCodeError] = useState('');
 
   const [isTermsExpanded, setIsTermsExpanded] = useState(false);
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
@@ -119,7 +141,7 @@ function SignupForm() {
     resolver: zodResolver(signupSchema),
     defaultValues: {
       name: '',
-      companyName: '',
+      institution: '',
       email: '',
       password: '',
       passwordConfirm: '',
@@ -139,7 +161,9 @@ function SignupForm() {
     setIsEmailVerified(false);
     setVerificationCode('');
     setSendCodeMessage('');
+    setSendCodeError('');
     setConfirmCodeMessage('');
+    setConfirmCodeError('');
   };
 
   const handleSendCode = async () => {
@@ -154,6 +178,8 @@ function SignupForm() {
       setIsSendingCode(true);
       setSendCodeMessage('');
 
+      setSendCodeError(''); // 이전 오류 메시지 초기화
+
       const response = await sendVerificationCode({ email });
 
       setIsCodeSent(true);
@@ -161,12 +187,12 @@ function SignupForm() {
         response.message ?? '인증번호가 발송되었습니다.',
       );
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : '인증번호 발송에 실패했습니다.';
+      const errorMessage = getApiErrorMessage(
+        error,
+        '인증번호 발송에 실패했습니다.',
+      );
 
-      setSendCodeMessage(errorMessage);
+      setSendCodeError(errorMessage);
     } finally {
       setIsSendingCode(false);
     }
@@ -174,13 +200,14 @@ function SignupForm() {
 
   const handleConfirmCode = async () => {
     if (!verificationCode) {
-      setConfirmCodeMessage('인증번호를 입력해주세요.');
+      setConfirmCodeError('인증번호를 입력해주세요.');
       return;
     }
 
     try {
       setIsConfirmingCode(true);
       setConfirmCodeMessage('');
+      setConfirmCodeError('');
 
       const response = await confirmVerificationCode({
         email,
@@ -188,14 +215,16 @@ function SignupForm() {
       });
 
       setIsEmailVerified(true);
-      setConfirmCodeMessage(response.message ?? '인증이 완료되었습니다.');
+      setConfirmCodeMessage(
+        response.message ?? '인증이 완료되었습니다.',
+      );
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : '인증번호가 올바르지 않습니다.';
+      const errorMessage = getApiErrorMessage(
+        error,
+        '인증번호가 일치하지 않거나 만료되었습니다.',
+      );
 
-      setConfirmCodeMessage(errorMessage);
+      setConfirmCodeError(errorMessage);
     } finally {
       setIsConfirmingCode(false);
     }
@@ -218,9 +247,12 @@ function SignupForm() {
     try {
       const response = await signup({
         name: data.name,
-        companyName: data.companyName,
+        institution: data.institution,
         email: data.email,
         password: data.password,
+        passwordConfirm: data.passwordConfirm,
+        serviceTermsAgreed: data.agreeTerms,
+        privacyTermsAgreed: data.agreePrivacy,
       });
 
       setSuccessMessage(response.message ?? '회원가입이 완료되었습니다.');
@@ -268,21 +300,21 @@ function SignupForm() {
         </div>
 
         <div className="auth-form__field">
-          <label htmlFor="signup-company-name">기업명</label>
+          <label htmlFor="signup-institution-name">기업명</label>
 
           <input
-            id="signup-company-name"
+            id="signup-institution-name"
             type="text"
             placeholder="소속 기업명을 입력해주세요"
             autoComplete="organization"
             disabled={isSubmitting}
-            aria-invalid={Boolean(errors.companyName)}
-            {...register('companyName')}
+            aria-invalid={Boolean(errors.institution)}
+            {...register('institution')}
           />
 
-          {errors.companyName?.message && (
+          {errors.institution?.message && (
             <p className="auth-form__field-error" role="alert">
-              {errors.companyName.message}
+              {errors.institution.message}
             </p>
           )}
         </div>
@@ -320,6 +352,12 @@ function SignupForm() {
           {!errors.email && sendCodeMessage && (
             <p className="auth-form__hint">{sendCodeMessage}</p>
           )}
+
+          {!errors.email && sendCodeError && (
+            <p className="auth-form__field-error" role="alert">
+              {sendCodeError}
+            </p>
+          )}
         </div>
 
         {isCodeSent && !isEmailVerified && (
@@ -348,6 +386,12 @@ function SignupForm() {
 
             {confirmCodeMessage && (
               <p className="auth-form__hint">{confirmCodeMessage}</p>
+            )}
+
+            {confirmCodeError && (
+              <p className="auth-form__field-error" role="alert">
+                {confirmCodeError}
+              </p>
             )}
           </div>
         )}
