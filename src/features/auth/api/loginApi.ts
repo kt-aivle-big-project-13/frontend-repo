@@ -1,4 +1,3 @@
-import type { User } from '../../../entities/user/model/authStore';
 import { apiClient } from '../../../shared/api/client';
 
 export interface LoginRequest {
@@ -10,7 +9,12 @@ export interface LoginRequest {
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  user: User;
+  tokenType: string;
+  expiresIn: number;
+  userId: number;
+  email: string;
+  name: string;
+  role: string;
 }
 
 export async function login({
@@ -23,6 +27,23 @@ export async function login({
     password,
     rememberMe,
   });
+
+  return data;
+}
+
+export interface ReissueRequest {
+  refreshToken: string;
+}
+
+export async function reissue(
+  refreshToken: string,
+): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>(
+    '/auth/reissue',
+    {
+      refreshToken,
+    },
+  );
 
   return data;
 }

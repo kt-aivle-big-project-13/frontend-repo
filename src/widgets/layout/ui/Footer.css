@@ -19,9 +19,15 @@
 
 .layout-footer__privacy-link {
   margin-left: 12px;
+  padding: 0;
+  border: none;
+  background: none;
   color: #202938;
+  font-size: inherit;
+  font-family: inherit;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .layout-footer__privacy-link:hover {
