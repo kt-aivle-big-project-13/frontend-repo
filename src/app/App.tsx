@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom';
 
 import AdminPage from '../pages/admin/ui/AdminPage';
+import AuditPage from '../pages/audit/ui/AuditPage';
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import HomePage from '../pages/home/ui/HomePage';
@@ -59,6 +60,12 @@ function App() {
           <Route
             path="/admin"
             element={<AdminPage />}
+          />
+
+          {/* 감사 */}
+          <Route
+            path="/audit"
+            element={<AuditPage />}
           />
 
           <Route

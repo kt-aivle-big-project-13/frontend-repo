@@ -1,0 +1,20 @@
+.audit-page {
+  padding: 48px 10% 80px;
+}
+
+.audit-page__header {
+  margin-bottom: 28px;
+}
+
+.audit-page__title {
+  margin: 0;
+  color: #202938;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .audit-page {
+    padding: 32px 24px 60px;
+  }
+}
