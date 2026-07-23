@@ -7,6 +7,7 @@ import {
 import { useAuthStore } from '../../../entities/user/model/authStore';
 import '../../../shared/ui/authForm.css';
 import { login } from '../api/loginApi';
+import { useNavigate } from 'react-router-dom';
 
 import './LoginForm.css';
 
@@ -35,6 +36,7 @@ const INITIAL_ERRORS: LoginErrors = {
 };
 
 function LoginForm() {
+  const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const [form, setForm] =
@@ -152,8 +154,32 @@ function LoginForm() {
         rememberMe: isRememberMeChecked,
       });
 
-      setAuth(response.accessToken, response.user);
+      const user = {
+        id: response.userId,
+        email: response.email,
+        name: response.name,
+      };
+
+      setAuth(response.accessToken, user);
+
+      if (isRememberMeChecked) {
+        localStorage.setItem(
+          'refreshToken',
+          response.refreshToken,
+        );
+
+        sessionStorage.removeItem('refreshToken');
+      } else {
+        sessionStorage.setItem(
+          'refreshToken',
+          response.refreshToken,
+        );
+
+        localStorage.removeItem('refreshToken');
+      }
+
       setSuccessMessage('로그인되었습니다.');
+      navigate('/', { replace: true });
     } catch (error: unknown) {
       // 로그인 실패 시 구체적인 사유는 노출하지 않음
       const errorMessage =
@@ -225,7 +251,9 @@ function LoginForm() {
             onChange={handleChange}
             autoComplete="off"
             disabled={isLoading}
-            aria-invalid={Boolean(errors.password || errors.submit)}
+            aria-invalid={Boolean(
+              errors.password || errors.submit,
+            )}
             aria-describedby={
               errors.password
                 ? 'login-password-error'
@@ -243,7 +271,10 @@ function LoginForm() {
           )}
 
           {errors.submit && (
-            <p className="auth-form__field-error" role="alert">
+            <p
+              className="auth-form__field-error"
+              role="alert"
+            >
               {errors.submit}
             </p>
           )}
@@ -279,7 +310,9 @@ function LoginForm() {
             type="checkbox"
             checked={isRememberMeChecked}
             onChange={(event) =>
-              setIsRememberMeChecked(event.target.checked)
+              setIsRememberMeChecked(
+                event.target.checked,
+              )
             }
             disabled={isLoading}
           />
