@@ -180,16 +180,12 @@ function LoginForm() {
 
       setSuccessMessage('로그인되었습니다.');
       navigate('/', { replace: true });
-    } catch (error: unknown) {
-      // 로그인 실패 시 구체적인 사유는 노출하지 않음
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : '이메일 또는 비밀번호를 확인해주세요.';
+    } catch (error: unknown) {  // 로그인 실패 시 구체적인 사유는 노출하지 않음
+      console.error('로그인 실패:', error);
 
       setErrors((previousErrors) => ({
         ...previousErrors,
-        submit: errorMessage,
+        submit: '이메일 또는 비밀번호를 확인해주세요.',
       }));
     } finally {
       setIsLoading(false);
