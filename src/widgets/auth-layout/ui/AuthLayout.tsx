@@ -1,4 +1,8 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+
+import PolicyModal, {
+  type PolicyType,
+} from '../../../shared/ui/policy-modal/PolicyModal';
 
 import './AuthLayout.css';
 
@@ -7,6 +11,8 @@ interface AuthLayoutProps {
 }
 
 function AuthLayout({ children }: AuthLayoutProps) {
+  const [openPolicy, setOpenPolicy] = useState<PolicyType | null>(null);
+
   return (
     <div className="auth-layout">
       <main className="auth-layout__main">
@@ -53,17 +59,33 @@ function AuthLayout({ children }: AuthLayoutProps) {
           className="auth-layout__footer-links"
           aria-label="인증 페이지 하단 메뉴"
         >
-          <a href="/privacy">개인정보처리방침</a>
+          <button
+            type="button"
+            className="auth-layout__footer-link"
+            onClick={() => setOpenPolicy('privacy')}
+          >
+            개인정보처리방침
+          </button>
 
           <span aria-hidden="true">|</span>
 
-          <a href="/terms">이용약관</a>
+          <button
+            type="button"
+            className="auth-layout__footer-link"
+            onClick={() => setOpenPolicy('terms')}
+          >
+            이용약관
+          </button>
 
           <span aria-hidden="true">|</span>
 
           <span>Contact: finauditai@aivle13.com</span>
         </nav>
       </footer>
+
+      {openPolicy && (
+        <PolicyModal type={openPolicy} onClose={() => setOpenPolicy(null)} />
+      )}
     </div>
   );
 }
