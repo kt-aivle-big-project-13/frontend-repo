@@ -61,6 +61,21 @@
   text-underline-offset: 6px;
 }
 
+.layout-header__nav-link--admin {
+  color: #e04040;
+  font-weight: 700;
+}
+
+.layout-header__nav-link--admin:hover {
+  color: #c62828;
+}
+
+.layout-header__nav-link--admin.layout-header__nav-link--active {
+  color: #e04040;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
 @media (max-width: 768px) {
   .layout-header {
     padding: 0 20px;

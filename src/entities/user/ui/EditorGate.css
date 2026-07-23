@@ -1,0 +1,10 @@
+.editor-gate__notice {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+  background-color: #fef3f2;
+  color: #d92d20;
+  font-size: 13px;
+  font-weight: 600;
+}

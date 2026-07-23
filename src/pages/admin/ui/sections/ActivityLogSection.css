@@ -1,0 +1,120 @@
+.activity-log-section {
+  padding: 24px;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.activity-log-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.activity-log-section__title {
+  margin: 0;
+  color: #202938;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.activity-log-section__back {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background-color: #eceff3;
+  color: #4d5765;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.activity-log-section__back:hover {
+  background-color: #dfe3e9;
+}
+
+.activity-log-section__table-wrap {
+  overflow-x: auto;
+}
+
+.activity-log-section__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.activity-log-section__table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef0f3;
+  color: #9099a8;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.activity-log-section__table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f7f8fa;
+  color: #202938;
+  white-space: nowrap;
+}
+
+.activity-log-section__table tbody tr:nth-child(odd) {
+  background-color: #f7f8fa;
+}
+
+.activity-log-section__badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.activity-log-section__badge--promote {
+  background-color: #eef4ff;
+  color: #2d67e8;
+}
+
+.activity-log-section__badge--block {
+  background-color: #fef3f2;
+  color: #d92d20;
+}
+
+.activity-log-section__badge--create {
+  background-color: #f2f4f7;
+  color: #4d5765;
+}
+
+.activity-log-section__empty {
+  margin: 0;
+  padding: 32px 16px;
+  border: 1px dashed #d9dee6;
+  border-radius: 8px;
+  background-color: #f7f8fa;
+  color: #9099a8;
+  font-size: 13px;
+  text-align: center;
+}
+
+.activity-log-section__load-more {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border: 1px solid #eef0f3;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #6b7684;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.activity-log-section__load-more:hover {
+  background-color: #f7f8fa;
+}

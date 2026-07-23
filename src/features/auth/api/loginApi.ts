@@ -1,3 +1,4 @@
+import type { User } from '../../../entities/user/model/authStore';
 import { apiClient } from '../../../shared/api/client';
 
 export interface LoginRequest {
@@ -9,11 +10,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
+  user: User;
 }
 
 export async function login({
