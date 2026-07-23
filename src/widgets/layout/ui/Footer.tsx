@@ -1,14 +1,24 @@
+import { useState } from 'react';
+
+import PolicyModal from '../../../shared/ui/policy-modal/PolicyModal';
+
 import './Footer.css';
 
 function Footer() {
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+
   return (
     <footer className="layout-footer">
       <div className="layout-footer__inner">
         <p className="layout-footer__brand-line">
           FinAuditAI
-          <a href="/privacy" className="layout-footer__privacy-link">
+          <button
+            type="button"
+            className="layout-footer__privacy-link"
+            onClick={() => setIsPrivacyOpen(true)}
+          >
             개인정보 처리방침
-          </a>
+          </button>
         </p>
 
         <p className="layout-footer__info">
@@ -31,6 +41,10 @@ function Footer() {
           Copyright© 2026 FinAuditAI Corp. All rights reserved.
         </p>
       </div>
+
+      {isPrivacyOpen && (
+        <PolicyModal type="privacy" onClose={() => setIsPrivacyOpen(false)} />
+      )}
     </footer>
   );
 }
