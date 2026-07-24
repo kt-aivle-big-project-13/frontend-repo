@@ -1,4 +1,5 @@
-import AuthGatedLink from '../../../../entities/user/ui/AuthGatedLink';
+import { Link } from 'react-router-dom';
+
 import { CORE_FEATURES } from '../../../../shared/config/coreFeatures';
 
 import './FeaturesSection.css';
@@ -10,7 +11,7 @@ function FeaturesSection() {
 
       <div className="features-section__grid">
         {CORE_FEATURES.map((feature) => (
-          <AuthGatedLink
+          <Link
             key={feature.title}
             to={feature.to}
             className="features-section__card"
@@ -30,7 +31,7 @@ function FeaturesSection() {
             <p className="features-section__card-description">
               {feature.description}
             </p>
-          </AuthGatedLink>
+          </Link>
         ))}
       </div>
     </section>
