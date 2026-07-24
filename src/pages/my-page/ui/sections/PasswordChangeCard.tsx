@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import axios from 'axios';
+
+import { changeMyPassword } from '../../../../features/my-page/api/myPageApi';
 
 const HAS_LETTER = /[A-Za-z]/;
 const HAS_DIGIT = /\d/;
@@ -91,6 +94,8 @@ function PasswordChangeCard() {
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [isChanged, setIsChanged] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleVerify = () => {
     if (!currentPassword) return;
@@ -106,14 +111,38 @@ function PasswordChangeCard() {
     isPasswordValid(newPassword) &&
     newPassword === newPasswordConfirm;
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!canChangePassword) return;
 
-    setIsChanged(true);
-    setCurrentPassword('');
-    setIsVerified(false);
-    setNewPassword('');
-    setNewPasswordConfirm('');
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await changeMyPassword({
+        currentPassword,
+        newPassword,
+        newPasswordConfirm,
+      });
+
+      setIsChanged(true);
+      setCurrentPassword('');
+      setIsVerified(false);
+      setNewPassword('');
+      setNewPasswordConfirm('');
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+
+      setError(message ?? '비밀번호 변경에 실패했습니다.');
+
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        setIsVerified(false);
+        setCurrentPassword('');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -123,7 +152,7 @@ function PasswordChangeCard() {
         <button
           type="button"
           className="my-page__save-button"
-          disabled={!canChangePassword}
+          disabled={!canChangePassword || isSubmitting}
           onClick={handleChangePassword}
         >
           비밀번호 변경하기
@@ -140,6 +169,7 @@ function PasswordChangeCard() {
             onChange={(value) => {
               setCurrentPassword(value);
               setIsChanged(false);
+              setError(null);
             }}
           />
           <button
@@ -192,9 +222,10 @@ function PasswordChangeCard() {
       </div>
 
       <p className="my-page__hint">
-        영문·숫자·특수문자 2종류 이상 조합 10~16자 · SHA-256으로 암호화되어
-        저장됩니다
+        영문·숫자·특수문자 2종류 이상 조합 10~16자 · 안전하게 암호화되어 저장됩니다
       </p>
+
+      {error && <p className="my-page__field-error">{error}</p>}
 
       {isChanged && (
         <p className="my-page__save-message">

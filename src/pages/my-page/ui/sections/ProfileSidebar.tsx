@@ -1,16 +1,29 @@
 import type { User } from '../../../../entities/user/model/authStore';
+import type { MyProfileResponse } from '../../../../features/my-page/api/myPageApi';
 import { maskEmail } from '../../../../shared/lib/maskEmail';
 import { maskName } from '../../../../shared/lib/maskName';
 import Avatar from '../../../../shared/ui/Avatar';
 
-// TODO: 실제 "내 정보 조회" API 연동 필요 — 그 전까지는 값 없음으로 표시
 const PROFILE_META_PLACEHOLDER = '—';
 
 interface ProfileSidebarProps {
   user: User;
+  profile: MyProfileResponse | null;
 }
 
-function ProfileSidebar({ user }: ProfileSidebarProps) {
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return PROFILE_META_PLACEHOLDER;
+
+  return new Date(value).toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function ProfileSidebar({ user, profile }: ProfileSidebarProps) {
   return (
     <aside className="my-page__sidebar">
       <div className="my-page__sidebar-profile">
@@ -23,19 +36,19 @@ function ProfileSidebar({ user }: ProfileSidebarProps) {
         <div className="my-page__sidebar-meta-row">
           <span className="my-page__sidebar-meta-label">소속기관</span>
           <span className="my-page__sidebar-meta-value">
-            {PROFILE_META_PLACEHOLDER}
+            {profile?.institution ?? PROFILE_META_PLACEHOLDER}
           </span>
         </div>
         <div className="my-page__sidebar-meta-row">
           <span className="my-page__sidebar-meta-label">가입일</span>
           <span className="my-page__sidebar-meta-value">
-            {PROFILE_META_PLACEHOLDER}
+            {formatDateTime(profile?.createdAt)}
           </span>
         </div>
         <div className="my-page__sidebar-meta-row">
           <span className="my-page__sidebar-meta-label">최근 로그인</span>
           <span className="my-page__sidebar-meta-value">
-            {PROFILE_META_PLACEHOLDER}
+            {formatDateTime(profile?.lastLoginAt)}
           </span>
         </div>
       </div>

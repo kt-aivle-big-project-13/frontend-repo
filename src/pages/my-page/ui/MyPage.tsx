@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
+
 import { useAuthStore } from '../../../entities/user/model/authStore';
+import { fetchMyProfile, type MyProfileResponse } from '../../../features/my-page/api/myPageApi';
 import MainLayout from '../../../widgets/layout/ui/MainLayout';
 
 import AccountInfoCard from './sections/AccountInfoCard';
@@ -9,6 +12,15 @@ import './MyPage.css';
 
 function MyPage() {
   const user = useAuthStore((state) => state.user);
+  const [profile, setProfile] = useState<MyProfileResponse | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetchMyProfile()
+      .then(setProfile)
+      .catch(() => setProfile(null));
+  }, [user]);
 
   return (
     <MainLayout>
@@ -25,7 +37,7 @@ function MyPage() {
             </header>
 
             <div className="my-page__layout">
-              <ProfileSidebar user={user} />
+              <ProfileSidebar user={user} profile={profile} />
 
               <div className="my-page__main">
                 <AccountInfoCard user={user} />
