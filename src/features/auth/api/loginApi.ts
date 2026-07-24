@@ -53,3 +53,7 @@ export async function reissue(
 
   return data;
 }
+
+export async function logout(): Promise<void> {
+  await apiClient.post('/auth/logout');
+}
