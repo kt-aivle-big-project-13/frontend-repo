@@ -1,6 +1,8 @@
 import { useState } from 'react';
 
+import { useAuthStore } from '../../../../entities/user/model/authStore';
 import type { User } from '../../../../entities/user/model/authStore';
+import { updateMyProfile } from '../../../../features/my-page/api/myPageApi';
 import { maskEmail } from '../../../../shared/lib/maskEmail';
 
 interface AccountInfoCardProps {
@@ -8,11 +10,27 @@ interface AccountInfoCardProps {
 }
 
 function AccountInfoCard({ user }: AccountInfoCardProps) {
+  const updateUserName = useAuthStore((state) => state.updateUserName);
   const [name, setName] = useState(user.name);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    setIsSaved(true);
+  const handleSave = async () => {
+    if (!name.trim()) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const response = await updateMyProfile({ name: name.trim() });
+      updateUserName(response.name);
+      setIsSaved(true);
+    } catch {
+      setError('저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -29,6 +47,7 @@ function AccountInfoCard({ user }: AccountInfoCardProps) {
             onChange={(event) => {
               setName(event.target.value);
               setIsSaved(false);
+              setError(null);
             }}
           />
         </div>
@@ -45,12 +64,14 @@ function AccountInfoCard({ user }: AccountInfoCardProps) {
       </div>
 
       <div className="my-page__card-footer">
-        {isSaved && (
+        {error && <span className="my-page__field-error">{error}</span>}
+        {isSaved && !error && (
           <span className="my-page__save-message">저장되었습니다.</span>
         )}
         <button
           type="button"
           className="my-page__save-button"
+          disabled={isSaving || !name.trim()}
           onClick={handleSave}
         >
           저장
