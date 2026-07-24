@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
 import AuthGatedLink from '../../../entities/user/ui/AuthGatedLink';
+import Avatar from '../../../shared/ui/Avatar';
 import { maskName } from '../../../shared/lib/maskName';
 
 import './Header.css';
@@ -27,9 +28,12 @@ function Header() {
         </Link>
 
         {user && (
-          <span className="layout-header__greeting">
-            {maskName(user.name)} 고객님
-          </span>
+          <div className="layout-header__user">
+            <Avatar size={28} />
+            <span className="layout-header__greeting">
+              {maskName(user.name)} 고객님
+            </span>
+          </div>
         )}
       </div>
 
