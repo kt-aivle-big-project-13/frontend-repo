@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
+import { setApiAccessToken } from '../../../shared/api/client';
 import { reissue } from '../api/loginApi';
 
 interface AuthInitializerProps {
@@ -37,6 +38,7 @@ function AuthInitializer({
         };
 
         setAuth(response.accessToken, user);
+        setApiAccessToken(response.accessToken);
 
         if (localStorage.getItem('refreshToken')) {
           localStorage.setItem(
@@ -52,6 +54,7 @@ function AuthInitializer({
       } catch {
         localStorage.removeItem('refreshToken');
         sessionStorage.removeItem('refreshToken');
+        setApiAccessToken(null);
         clearAuth();
       } finally {
         setIsInitialized(true);

@@ -20,7 +20,7 @@ function HeroSection() {
         </p>
 
         <div className="hero-section__actions">
-          <AuthGatedLink to="/audit" className="hero-section__cta">
+          <AuthGatedLink to="/pre-diagnosis" className="hero-section__cta">
             감사 시작
           </AuthGatedLink>
 

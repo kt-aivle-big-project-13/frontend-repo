@@ -9,7 +9,7 @@ import './Header.css';
 
 const NAV_ITEMS = [
   { label: '메인', to: '/', gated: false },
-  { label: '감사', to: '/audit', gated: true },
+  { label: '감사', to: '/pre-diagnosis', gated: true },
   { label: '대시보드', to: '/dashboard', gated: true },
   { label: '이의제기', to: '/objections', gated: true },
   { label: '마이페이지', to: '/my-page', gated: true },

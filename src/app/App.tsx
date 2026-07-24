@@ -10,6 +10,7 @@ import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import HomePage from '../pages/home/ui/HomePage';
 import LoginPage from '../pages/login/ui/LoginPage';
+
 import MyPage from '../pages/my-page/ui/MyPage';
 import ResetPasswordPage from '../pages/reset-password/ui/ResetPasswordPage';
 import SignupPage from '../pages/signup/ui/SignupPage';
@@ -31,6 +32,12 @@ function App() {
             <Route
               path="/features"
               element={<FeaturesPage />}
+            />
+
+            {/* 고영향 AI 사전진단 */}
+            <Route
+              path="/pre-diagnosis"
+              element={<PreDiagnosisPage />}
             />
 
             {/* 비밀번호 찾기 */}

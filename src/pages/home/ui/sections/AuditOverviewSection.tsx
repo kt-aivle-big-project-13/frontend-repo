@@ -67,7 +67,7 @@ function AuditOverviewSection() {
               {recentAudits.map((audit) => (
                 <li key={audit.name}>
                   <AuthGatedLink
-                    to="/audit"
+                    to="/pre-diagnosis"
                     className="audit-overview-section__list-item"
                   >
                     <span className="audit-overview-section__list-name">
@@ -97,7 +97,7 @@ function AuditOverviewSection() {
             </p>
           ) : (
             <AuthGatedLink
-              to="/audit"
+              to="/pre-diagnosis"
               className="audit-overview-section__progress"
             >
               <div className="audit-overview-section__progress-track">

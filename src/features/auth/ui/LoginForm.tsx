@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
+import { setApiAccessToken } from '../../../shared/api/client';
 import '../../../shared/ui/authForm.css';
 import { login } from '../api/loginApi';
 
@@ -170,6 +171,7 @@ function LoginForm() {
       };
 
       setAuth(response.accessToken, user);
+      setApiAccessToken(response.accessToken);
 
       if (isRememberMeChecked) {
         localStorage.setItem(
