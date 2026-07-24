@@ -1,5 +1,6 @@
 import AuthGatedLink from '../../../../entities/user/ui/AuthGatedLink';
 import { useAuthStore } from '../../../../entities/user/model/authStore';
+import { useLoginPromptStore } from '../../../../entities/user/model/loginPromptStore';
 
 import './AuditOverviewSection.css';
 
@@ -38,13 +39,45 @@ const STATUS_CLASS_NAME: Record<AuditStatus, string> = {
   미충족: 'audit-overview-section__status--fail',
 };
 
+const LOCKED_MESSAGE = '로그인 후 이용 가능합니다';
+
+function LockIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect
+        x="4.5"
+        y="9"
+        width="11"
+        height="8"
+        rx="1.5"
+        stroke="#2d67e8"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M6.5 9V6.5C6.5 4.567 8.067 3 10 3C11.933 3 13.5 4.567 13.5 6.5V9"
+        stroke="#2d67e8"
+        strokeWidth="1.4"
+      />
+      <circle cx="10" cy="12.8" r="1.1" fill="#2d67e8" />
+    </svg>
+  );
+}
+
 function AuditOverviewSection() {
   const isAuthenticated = useAuthStore((state) => Boolean(state.user));
+  const showLoginPrompt = useLoginPromptStore((state) => state.show);
 
-  // 로그인 계정의 실제 감사 이력 API가 아직 없어서, 로그인 시에는
-  // 빈 상태로 두고 비로그인일 때만 데모 데이터를 보여줌.
   const recentAudits = isAuthenticated ? [] : DEMO_RECENT_AUDITS;
   const inProgressAudit = isAuthenticated ? null : DEMO_IN_PROGRESS_AUDIT;
+
+  const bodyClassName = (extra?: string) =>
+    [
+      'audit-overview-section__card-body',
+      !isAuthenticated ? 'audit-overview-section__card-body--locked' : '',
+      extra,
+    ]
+      .filter(Boolean)
+      .join(' ');
 
   return (
     <section className="audit-overview-section">
@@ -58,67 +91,134 @@ function AuditOverviewSection() {
             최근 감사 이력
           </h3>
 
-          {recentAudits.length === 0 ? (
-            <p className="audit-overview-section__empty">
-              최근 감사 이력이 없습니다.
-            </p>
-          ) : (
-            <ul className="audit-overview-section__list">
-              {recentAudits.map((audit) => (
-                <li key={audit.name}>
-                  <AuthGatedLink
-                    to="/pre-diagnosis"
-                    className="audit-overview-section__list-item"
-                  >
-                    <span className="audit-overview-section__list-name">
-                      {audit.name}
-                    </span>
-                    <span className="audit-overview-section__list-date">
-                      {audit.date}
-                    </span>
-                    <span
-                      className={`audit-overview-section__status ${STATUS_CLASS_NAME[audit.status]}`}
-                    >
-                      {audit.status}
-                    </span>
-                  </AuthGatedLink>
-                </li>
-              ))}
-            </ul>
+          <div className={bodyClassName()}>
+            {recentAudits.length === 0 ? (
+              <p className="audit-overview-section__empty">
+                최근 감사 이력이 없습니다.
+              </p>
+            ) : (
+              <ul className="audit-overview-section__list">
+                {recentAudits.map((audit) => {
+                  const itemContent = (
+                    <>
+                      <span className="audit-overview-section__list-name">
+                        {audit.name}
+                      </span>
+                      <span className="audit-overview-section__list-date">
+                        {audit.date}
+                      </span>
+                      <span
+                        className={`audit-overview-section__status ${STATUS_CLASS_NAME[audit.status]}`}
+                      >
+                        {audit.status}
+                      </span>
+                    </>
+                  );
+
+                  return (
+                    <li key={audit.name}>
+                      {isAuthenticated ? (
+                        <AuthGatedLink
+                          to="/pre-diagnosis"
+                          className="audit-overview-section__list-item"
+                        >
+                          {itemContent}
+                        </AuthGatedLink>
+                      ) : (
+                        <span className="audit-overview-section__list-item">
+                          {itemContent}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {!isAuthenticated && (
+            <button
+              type="button"
+              className="audit-overview-section__lock"
+              onClick={showLoginPrompt}
+              aria-label={LOCKED_MESSAGE}
+            >
+              <LockIcon />
+            </button>
           )}
         </div>
 
         <div className="audit-overview-section__card">
           <h3 className="audit-overview-section__card-title">진행중 감사</h3>
 
-          {inProgressAudit === null ? (
-            <p className="audit-overview-section__empty">
-              진행중인 감사가 없습니다.
-            </p>
-          ) : (
-            <AuthGatedLink
-              to="/pre-diagnosis"
-              className="audit-overview-section__progress"
-            >
-              <div className="audit-overview-section__progress-track">
-                <div
-                  className="audit-overview-section__progress-bar"
-                  style={{
-                    width: `${(inProgressAudit.step / inProgressAudit.totalSteps) * 100}%`,
-                  }}
-                />
-              </div>
-
-              <p className="audit-overview-section__progress-label">
-                STEP {inProgressAudit.step} / {inProgressAudit.totalSteps}{' '}
-                — {inProgressAudit.label}
+          <div className={bodyClassName()}>
+            {inProgressAudit === null ? (
+              <p className="audit-overview-section__empty">
+                진행중인 감사가 없습니다.
               </p>
-            </AuthGatedLink>
+            ) : (
+              <ProgressContent
+                inProgressAudit={inProgressAudit}
+                isAuthenticated={isAuthenticated}
+              />
+            )}
+          </div>
+
+          {!isAuthenticated && (
+            <button
+              type="button"
+              className="audit-overview-section__lock"
+              onClick={showLoginPrompt}
+              aria-label={LOCKED_MESSAGE}
+            >
+              <LockIcon />
+            </button>
           )}
         </div>
       </div>
     </section>
   );
+}
+
+interface ProgressContentProps {
+  inProgressAudit: InProgressAudit;
+  isAuthenticated: boolean;
+}
+
+function ProgressContent({
+  inProgressAudit,
+  isAuthenticated,
+}: ProgressContentProps) {
+  const inner = (
+    <>
+      <div className="audit-overview-section__progress-track">
+        <div
+          className="audit-overview-section__progress-bar"
+          style={{
+            width: `${(inProgressAudit.step / inProgressAudit.totalSteps) * 100}%`,
+          }}
+        />
+      </div>
+
+      <p className="audit-overview-section__progress-label">
+        STEP {inProgressAudit.step} / {inProgressAudit.totalSteps} —{' '}
+        {inProgressAudit.label}
+      </p>
+    </>
+  );
+
+  if (isAuthenticated) {
+    return (
+      <AuthGatedLink
+        to="/pre-diagnosis"
+        className="audit-overview-section__progress"
+      >
+        {inner}
+      </AuthGatedLink>
+    );
+  }
+
+  return <div className="audit-overview-section__progress">{inner}</div>;
 }
 
 export default AuditOverviewSection;

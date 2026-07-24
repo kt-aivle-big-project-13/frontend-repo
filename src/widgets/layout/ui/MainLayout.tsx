@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import LoginPromptToast from '../../../entities/user/ui/LoginPromptToast';
+
 import Footer from './Footer';
 import Header from './Header';
 
@@ -15,6 +17,7 @@ function MainLayout({ children }: MainLayoutProps) {
       <Header />
       <main className="main-layout__content">{children}</main>
       <Footer />
+      <LoginPromptToast />
     </div>
   );
 }

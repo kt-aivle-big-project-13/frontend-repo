@@ -36,9 +36,15 @@ function HeroSection() {
           지금 선제대응이 필요합니다
         </p>
 
-        <AuthGatedLink to="/dashboard" className="hero-section__card-button">
-          {isAuthenticated ? '이동 →' : '로그인 →'}
-        </AuthGatedLink>
+        {isAuthenticated ? (
+          <Link to="/dashboard" className="hero-section__card-button">
+            이동 →
+          </Link>
+        ) : (
+          <Link to="/login" className="hero-section__card-button">
+            로그인 →
+          </Link>
+        )}
 
         <img
           className="hero-section__card-mascot"

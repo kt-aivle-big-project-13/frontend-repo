@@ -1,0 +1,34 @@
+.login-prompt-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 1000;
+  padding: 12px 22px;
+  border-radius: 8px;
+  background-color: #202938;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  animation: login-prompt-toast-fade 2s ease forwards;
+}
+
+@keyframes login-prompt-toast-fade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+}
