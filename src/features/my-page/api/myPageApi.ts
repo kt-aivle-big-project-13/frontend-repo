@@ -46,3 +46,21 @@ export async function changeMyPassword(
   );
   return data;
 }
+
+export interface VerifyPasswordRequest {
+  currentPassword: string;
+}
+
+export interface VerifyPasswordResponse {
+  message: string;
+}
+
+export async function verifyCurrentPassword(
+  request: VerifyPasswordRequest,
+): Promise<VerifyPasswordResponse> {
+  const { data } = await apiClient.post<VerifyPasswordResponse>(
+    '/users/me/password/verify',
+    request,
+  );
+  return data;
+}

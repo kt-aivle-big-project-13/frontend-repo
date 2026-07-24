@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 
-import { changeMyPassword } from '../../../../features/my-page/api/myPageApi';
-
+import { changeMyPassword, verifyCurrentPassword } from '../../../../features/my-page/api/myPageApi';
 const HAS_LETTER = /[A-Za-z]/;
 const HAS_DIGIT = /\d/;
 const HAS_SPECIAL = /[!@#$%^&*(),.?":{}|<>_\-+=~`[\]/;']/;
@@ -96,10 +95,27 @@ function PasswordChangeCard() {
   const [isChanged, setIsChanged] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!currentPassword) return;
-    setIsVerified(true);
+
+    setIsVerifying(true);
+    setVerifyError(null);
+
+    try {
+      await verifyCurrentPassword({ currentPassword });
+      setIsVerified(true);
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+
+      setVerifyError(message ?? '현재 비밀번호가 일치하지 않습니다.');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const isNewPasswordInvalid = newPassword.length > 0 && !isPasswordValid(newPassword);
@@ -170,17 +186,19 @@ function PasswordChangeCard() {
               setCurrentPassword(value);
               setIsChanged(false);
               setError(null);
+              setVerifyError(null);
             }}
           />
           <button
             type="button"
             className="my-page__verify-button"
-            disabled={!currentPassword || isVerified}
+            disabled={!currentPassword || isVerified || isVerifying}
             onClick={handleVerify}
           >
             확인
           </button>
         </div>
+        {verifyError && <p className="my-page__field-error">{verifyError}</p>}
       </div>
 
       <div className="my-page__field-grid">
