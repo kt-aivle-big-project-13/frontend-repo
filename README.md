@@ -82,6 +82,7 @@ import { AppLayout } from '@widgets/layout';
 cp .env.example .env   # VITE_API_BASE_URL 등 환경변수 설정
 npm install
 npm run dev
+npm install react-google-recaptcha
 ```
 
 ## 스크립트
