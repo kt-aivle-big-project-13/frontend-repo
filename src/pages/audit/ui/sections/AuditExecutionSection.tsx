@@ -54,15 +54,8 @@ interface MatchedArticle {
   title: string;
 }
 
-const MATCHED_ARTICLES: MatchedArticle[] = [
-  { id: 'art-31-1', title: '제31조① AI 사용 사실 사전 고지' },
-  { id: 'art-33-1', title: '제33조① 고영향 AI 해당 여부 사전 검토' },
-  { id: 'art-34-1-1', title: '제34조①1호 위험 관리 방안' },
-  { id: 'art-34-1-2', title: '제34조①2호 설명가능성' },
-  { id: 'art-34-1-3', title: '제34조①3호 이용자 보호' },
-  { id: 'art-34-1-4', title: '제34조①4호 사람의 관리 및 감독' },
-  { id: 'art-34-1-5', title: '제34조①5호 문서 작성 및 보관' },
-];
+// TODO: 실제 RAG 법조문 매칭 API 연동 필요 — 원문 인용은 검색된 조항만 표시(임의 생성 금지)
+const MATCHED_ARTICLES: MatchedArticle[] = [];
 
 interface Deliverable {
   id: string;
@@ -78,49 +71,87 @@ const DELIVERABLES: Deliverable[] = [
   { id: 'improvement-guide', label: '개선 권고 가이드', fileType: 'Word' },
 ];
 
-const DEFAULT_SELECTED_DELIVERABLES = new Set([
-  'shap-report',
-  'fairness-report',
-  'compliance-verdict',
-  'impact-assessment',
-]);
+const DEFAULT_SELECTED_DELIVERABLES = new Set<string>();
 
-// TODO: 실제 SHAP/Fairlearn 분석 API 연동 전까지는 목업 결과값
-const EXPLAINABILITY_RESULT = {
-  sensitiveFeatureShare: 14.2,
-  explanationConsistency: 0.63,
-  explanationFidelity: 0.55,
+type ShapMetricCode = 'SENSITIVE_CONTRIB' | 'GLOBAL_STABILITY' | 'FIDELITY';
+type ShapStatus = 'PASS' | 'REVIEW';
+
+interface ShapMetricItem {
+  metricCode: ShapMetricCode;
+  value: number;
+  threshold: number;
+  status: ShapStatus;
+}
+
+// TODO: 실제 SHAP 분석 API 연동 필요. 응답 스펙: { auditId, method: "SHAP", metrics: [...] }
+// — attribute 구분 없이 모델 전체 기준 3개 값 (metricCode/value/threshold/status)
+const SHAP_METRICS: ShapMetricItem[] = [];
+
+const SHAP_METRIC_LABEL: Record<ShapMetricCode, string> = {
+  SENSITIVE_CONTRIB: '민감변수 기여비율 (SENSITIVE_CONTRIB)',
+  GLOBAL_STABILITY: '설명 일관성 (GLOBAL_STABILITY)',
+  FIDELITY: '설명 충실성 (FIDELITY)',
 };
 
-const FAIRNESS_RESULT = {
-  demographicParity: 0.08,
-  equalOpportunity: 0.12,
-  equalizedOdds: 0.07,
+const SHAP_STATUS_LABEL: Record<ShapStatus, string> = {
+  PASS: '충족',
+  REVIEW: '추가검토',
 };
 
-function evaluateSensitiveFeatureShare(value: number) {
-  if (value <= 20) return { label: '충족 (≤20%)', variant: 'good' as const };
-  if (value <= 22) return { label: '주의 (20~22%)', variant: 'warn' as const };
-  return { label: '초과 (>22%)', variant: 'bad' as const };
+const SHAP_STATUS_VARIANT: Record<ShapStatus, 'good' | 'warn'> = {
+  PASS: 'good',
+  REVIEW: 'warn',
+};
+
+type FairlearnMetricCode =
+  | 'DEMOGRAPHIC_PARITY'
+  | 'EQUAL_OPPORTUNITY'
+  | 'EQUALIZED_ODDS';
+type FairlearnStatus = 'PASS' | 'REVIEW' | 'FAIL';
+
+interface FairlearnResultItem {
+  attribute: string;
+  metricCode: FairlearnMetricCode;
+  value: number;
+  threshold: number;
+  status: FairlearnStatus;
 }
 
-function evaluateConsistency(value: number) {
-  if (value >= 0.7) return { label: '충족 (≥0.7)', variant: 'good' as const };
-  if (value >= 0.5) return { label: '주의 (0.5~0.7)', variant: 'warn' as const };
-  return { label: '미충족 (<0.5)', variant: 'bad' as const };
-}
+// TODO: 실제 Fairlearn 감사 실행 API 연동 필요. 응답 스펙: { auditId, method: "FAIRLEARN",
+// results: [{ attribute, metricCode, value, threshold, status }] } — 지정한 민감변수별로 3개 지표
+const FAIRNESS_RESULTS: FairlearnResultItem[] = [];
 
-function evaluateFidelity(value: number) {
-  if (value >= 0.5) return { label: '충족 (≥0.5)', variant: 'good' as const };
-  if (value >= 0.4) return { label: '주의 (0.4~0.5)', variant: 'warn' as const };
-  return { label: '미충족 (<0.4)', variant: 'bad' as const };
-}
+const FAIRNESS_GROUPS: [string, FairlearnResultItem[]][] = Array.from(
+  FAIRNESS_RESULTS.reduce((groups, item) => {
+    const list = groups.get(item.attribute) ?? [];
+    list.push(item);
+    groups.set(item.attribute, list);
+    return groups;
+  }, new Map<string, FairlearnResultItem[]>()),
+);
 
-function evaluateFairnessMetric(value: number) {
-  return Math.abs(value) <= 0.1
-    ? { label: '정상', variant: 'good' as const }
-    : { label: '추가검토', variant: 'bad' as const };
-}
+const FAIRNESS_ATTRIBUTE_LABEL: Record<string, string> = {
+  CODE_GENDER: '성별 (CODE_GENDER)',
+  AGE_GROUP: '연령대 (AGE_GROUP)',
+};
+
+const FAIRNESS_METRIC_LABEL: Record<FairlearnMetricCode, string> = {
+  DEMOGRAPHIC_PARITY: 'Demographic Parity',
+  EQUAL_OPPORTUNITY: 'Equal Opportunity',
+  EQUALIZED_ODDS: 'Equalized Odds',
+};
+
+const FAIRNESS_STATUS_LABEL: Record<FairlearnStatus, string> = {
+  PASS: '정상',
+  REVIEW: '추가검토',
+  FAIL: '기준초과',
+};
+
+const FAIRNESS_STATUS_VARIANT: Record<FairlearnStatus, 'good' | 'warn' | 'bad'> = {
+  PASS: 'good',
+  REVIEW: 'warn',
+  FAIL: 'bad',
+};
 
 function AuditExecutionSection() {
   const [modelMode, setModelMode] = useState<ModelMode>('new');
@@ -223,27 +254,16 @@ function AuditExecutionSection() {
     });
   };
 
-  const sensitiveShareResult = evaluateSensitiveFeatureShare(
-    EXPLAINABILITY_RESULT.sensitiveFeatureShare,
-  );
-  const consistencyResult = evaluateConsistency(
-    EXPLAINABILITY_RESULT.explanationConsistency,
-  );
-  const fidelityResult = evaluateFidelity(EXPLAINABILITY_RESULT.explanationFidelity);
-
-  const demographicParityResult = evaluateFairnessMetric(
-    FAIRNESS_RESULT.demographicParity,
-  );
-  const equalOpportunityResult = evaluateFairnessMetric(
-    FAIRNESS_RESULT.equalOpportunity,
-  );
-  const equalizedOddsResult = evaluateFairnessMetric(FAIRNESS_RESULT.equalizedOdds);
 
   return (
     <div className="audit-execution-section">
       <StepIndicator
-        doneSteps={isAnalyzed ? [1, 2, 3, 4] : [1]}
-        activeSteps={isAnalyzed ? [5] : [2, 3, 4]}
+        doneSteps={
+          isSelfCheckSubmitted ? [1, 2, 3, 4] : isAnalyzed ? [1, 2, 3] : [1]
+        }
+        activeSteps={
+          isSelfCheckSubmitted ? [5] : isAnalyzed ? [4] : [2, 3, 4]
+        }
       />
 
       <div className="audit-execution-section__upload-grid">
@@ -414,41 +434,30 @@ function AuditExecutionSection() {
             <h2 className="audit-execution-section__result-title">
               STEP 2 결과 — 설명가능성 3지표
             </h2>
-            <div className="audit-execution-section__stat-grid">
-              <div className="audit-execution-section__stat">
-                <p className="audit-execution-section__stat-label">민감변수 기여비율</p>
-                <p className="audit-execution-section__stat-value">
-                  {EXPLAINABILITY_RESULT.sensitiveFeatureShare}%
-                </p>
-                <span
-                  className={`audit-execution-section__badge audit-execution-section__badge--${sensitiveShareResult.variant}`}
-                >
-                  {sensitiveShareResult.label}
-                </span>
+
+            {SHAP_METRICS.length === 0 ? (
+              <p className="audit-execution-section__empty">
+                SHAP 분석 API 연동 전이라 결과가 없습니다.
+              </p>
+            ) : (
+              <div className="audit-execution-section__stat-grid">
+                {SHAP_METRICS.map((metric) => (
+                  <div key={metric.metricCode} className="audit-execution-section__stat">
+                    <p className="audit-execution-section__stat-label">
+                      {SHAP_METRIC_LABEL[metric.metricCode]}
+                    </p>
+                    <div className="audit-execution-section__fairness-row">
+                      <p className="audit-execution-section__stat-value">{metric.value}</p>
+                      <span
+                        className={`audit-execution-section__fairness-status audit-execution-section__fairness-status--${SHAP_STATUS_VARIANT[metric.status]}`}
+                      >
+                        {SHAP_STATUS_LABEL[metric.status]}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="audit-execution-section__stat">
-                <p className="audit-execution-section__stat-label">설명 일관성</p>
-                <p className="audit-execution-section__stat-value">
-                  {EXPLAINABILITY_RESULT.explanationConsistency}
-                </p>
-                <span
-                  className={`audit-execution-section__badge audit-execution-section__badge--${consistencyResult.variant}`}
-                >
-                  {consistencyResult.label}
-                </span>
-              </div>
-              <div className="audit-execution-section__stat">
-                <p className="audit-execution-section__stat-label">설명 충실성</p>
-                <p className="audit-execution-section__stat-value">
-                  {EXPLAINABILITY_RESULT.explanationFidelity}
-                </p>
-                <span
-                  className={`audit-execution-section__badge audit-execution-section__badge--${fidelityResult.variant}`}
-                >
-                  {fidelityResult.label}
-                </span>
-              </div>
-            </div>
+            )}
           </section>
 
           <section className="audit-execution-section__result-card">
@@ -458,47 +467,41 @@ function AuditExecutionSection() {
                 (편향은 확정이 아닌 추가검토 신호)
               </span>
             </h2>
-            <div className="audit-execution-section__stat-grid">
-              <div className="audit-execution-section__stat">
-                <p className="audit-execution-section__stat-label">Demographic Parity</p>
-                <div className="audit-execution-section__fairness-row">
-                  <p className="audit-execution-section__stat-value">
-                    {FAIRNESS_RESULT.demographicParity}
+            {FAIRNESS_GROUPS.length === 0 ? (
+              <p className="audit-execution-section__empty">
+                Fairlearn 감사 API 연동 전이라 결과가 없습니다.
+              </p>
+            ) : (
+              FAIRNESS_GROUPS.map(([attribute, metrics]) => (
+                <div key={attribute} className="audit-execution-section__fairness-group">
+                  <p className="audit-execution-section__fairness-group-title">
+                    {FAIRNESS_ATTRIBUTE_LABEL[attribute] ?? attribute}
                   </p>
-                  <span
-                    className={`audit-execution-section__fairness-status audit-execution-section__fairness-status--${demographicParityResult.variant}`}
-                  >
-                    {demographicParityResult.label}
-                  </span>
+                  <div className="audit-execution-section__stat-grid">
+                    {metrics.map((metric) => (
+                      <div
+                        key={metric.metricCode}
+                        className="audit-execution-section__stat"
+                      >
+                        <p className="audit-execution-section__stat-label">
+                          {FAIRNESS_METRIC_LABEL[metric.metricCode]}
+                        </p>
+                        <div className="audit-execution-section__fairness-row">
+                          <p className="audit-execution-section__stat-value">
+                            {metric.value}
+                          </p>
+                          <span
+                            className={`audit-execution-section__fairness-status-text audit-execution-section__fairness-status-text--${FAIRNESS_STATUS_VARIANT[metric.status]}`}
+                          >
+                            {FAIRNESS_STATUS_LABEL[metric.status]}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="audit-execution-section__stat">
-                <p className="audit-execution-section__stat-label">Equal Opportunity</p>
-                <div className="audit-execution-section__fairness-row">
-                  <p className="audit-execution-section__stat-value">
-                    {FAIRNESS_RESULT.equalOpportunity}
-                  </p>
-                  <span
-                    className={`audit-execution-section__fairness-status audit-execution-section__fairness-status--${equalOpportunityResult.variant}`}
-                  >
-                    {equalOpportunityResult.label}
-                  </span>
-                </div>
-              </div>
-              <div className="audit-execution-section__stat">
-                <p className="audit-execution-section__stat-label">Equalized Odds</p>
-                <div className="audit-execution-section__fairness-row">
-                  <p className="audit-execution-section__stat-value">
-                    {FAIRNESS_RESULT.equalizedOdds}
-                  </p>
-                  <span
-                    className={`audit-execution-section__fairness-status audit-execution-section__fairness-status--${equalizedOddsResult.variant}`}
-                  >
-                    {equalizedOddsResult.label}
-                  </span>
-                </div>
-              </div>
-            </div>
+              ))
+            )}
           </section>
 
           <section className="audit-execution-section__result-card">
@@ -580,18 +583,24 @@ function AuditExecutionSection() {
                 <h3 className="audit-execution-section__self-check-title">
                   STEP 4 — 매칭 조항 (실제 조항명·원문 인용)
                 </h3>
-                <ul className="audit-execution-section__matched-list">
-                  {MATCHED_ARTICLES.map((article) => (
-                    <li key={article.id} className="audit-execution-section__matched-item">
-                      <p className="audit-execution-section__matched-title">
-                        {article.title}
-                      </p>
-                      <p className="audit-execution-section__matched-quote">
-                        「...원문 인용 표시 영역...」
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+                {MATCHED_ARTICLES.length === 0 ? (
+                  <p className="audit-execution-section__empty">
+                    RAG 법조문 매칭 API 연동 전이라 결과가 없습니다.
+                  </p>
+                ) : (
+                  <ul className="audit-execution-section__matched-list">
+                    {MATCHED_ARTICLES.map((article) => (
+                      <li key={article.id} className="audit-execution-section__matched-item">
+                        <p className="audit-execution-section__matched-title">
+                          {article.title}
+                        </p>
+                        <p className="audit-execution-section__matched-quote">
+                          「...원문 인용 표시 영역...」
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </section>

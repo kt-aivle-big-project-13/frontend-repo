@@ -283,6 +283,21 @@
   font-weight: 800;
 }
 
+.audit-execution-section__fairness-group {
+  margin-bottom: 20px;
+}
+
+.audit-execution-section__fairness-group:last-child {
+  margin-bottom: 0;
+}
+
+.audit-execution-section__fairness-group-title {
+  margin: 0 0 10px;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .audit-execution-section__fairness-row {
   display: flex;
   align-items: baseline;
@@ -295,42 +310,42 @@
 }
 
 .audit-execution-section__fairness-status {
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: #ffffff;
   font-size: 13px;
   font-weight: 800;
 }
 
 .audit-execution-section__fairness-status--good {
-  color: #12875a;
+  background-color: #12875a;
 }
 
-.audit-execution-section__fairness-status--bad {
-  color: #d92d20;
+.audit-execution-section__fairness-status--warn {
+  background-color: #f2b21a;
 }
 
-.audit-execution-section__badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.audit-execution-section__badge--good {
-  background-color: #eafaf1;
-  color: #12875a;
-}
-
-.audit-execution-section__badge--warn {
-  border: 1.5px solid #f59e0b;
-  background-color: #fff1cc;
-  color: #b45309;
+.audit-execution-section__fairness-status-text {
+  font-size: 20px;
   font-weight: 800;
 }
 
-.audit-execution-section__badge--bad {
-  background-color: #fef3f2;
+.audit-execution-section__fairness-status-text--good {
+  color: #12875a;
+}
+
+.audit-execution-section__fairness-status-text--warn {
+  color: #f2b21a;
+}
+
+.audit-execution-section__fairness-status-text--bad {
   color: #d92d20;
 }
+
+.audit-execution-section__fairness-status--bad {
+  background-color: #d92d20;
+}
+
 
 .audit-execution-section__step4-grid {
   display: grid;
