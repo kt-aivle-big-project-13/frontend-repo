@@ -1,6 +1,12 @@
 import { useMemo, useRef, useState, type DragEvent } from 'react';
 
 import StepIndicator from '../StepIndicator';
+import {
+  getFairnessResult,
+  type FairlearnMetricCode,
+  type FairlearnResultItem,
+  type FairlearnStatus,
+} from '../../api/fairnessApi';
 
 import './AuditExecutionSection.css';
 
@@ -103,32 +109,19 @@ const SHAP_STATUS_VARIANT: Record<ShapStatus, 'good' | 'warn'> = {
   REVIEW: 'warn',
 };
 
-type FairlearnMetricCode =
-  | 'DEMOGRAPHIC_PARITY'
-  | 'EQUAL_OPPORTUNITY'
-  | 'EQUALIZED_ODDS';
-type FairlearnStatus = 'PASS' | 'REVIEW' | 'FAIL';
-
-interface FairlearnResultItem {
-  attribute: string;
-  metricCode: FairlearnMetricCode;
-  value: number;
-  threshold: number;
-  status: FairlearnStatus;
+// 공정성 결과를 보호속성(성별/연령대)별로 묶는다.
+function groupFairnessResults(
+  results: FairlearnResultItem[],
+): [string, FairlearnResultItem[]][] {
+  return Array.from(
+    results.reduce((groups, item) => {
+      const list = groups.get(item.attribute) ?? [];
+      list.push(item);
+      groups.set(item.attribute, list);
+      return groups;
+    }, new Map<string, FairlearnResultItem[]>()),
+  );
 }
-
-// TODO: 실제 Fairlearn 감사 실행 API 연동 필요. 응답 스펙: { auditId, method: "FAIRLEARN",
-// results: [{ attribute, metricCode, value, threshold, status }] } — 지정한 민감변수별로 3개 지표
-const FAIRNESS_RESULTS: FairlearnResultItem[] = [];
-
-const FAIRNESS_GROUPS: [string, FairlearnResultItem[]][] = Array.from(
-  FAIRNESS_RESULTS.reduce((groups, item) => {
-    const list = groups.get(item.attribute) ?? [];
-    list.push(item);
-    groups.set(item.attribute, list);
-    return groups;
-  }, new Map<string, FairlearnResultItem[]>()),
-);
 
 const FAIRNESS_ATTRIBUTE_LABEL: Record<string, string> = {
   CODE_GENDER: '성별 (CODE_GENDER)',
@@ -166,6 +159,14 @@ function AuditExecutionSection() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzed, setIsAnalyzed] = useState(false);
 
+  // STEP3 공정성 결과 (감사 실행 연동 전까지는 auditId 를 직접 입력해 조회)
+  const [auditIdInput, setAuditIdInput] = useState('');
+  const [fairnessResults, setFairnessResults] = useState<FairlearnResultItem[]>(
+    [],
+  );
+  const [isFairnessLoading, setIsFairnessLoading] = useState(false);
+  const [fairnessError, setFairnessError] = useState<string | null>(null);
+
   const [selfCheckAnswers, setSelfCheckAnswers] =
     useState<Record<string, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
   const [isSelfCheckSubmitted, setIsSelfCheckSubmitted] = useState(false);
@@ -185,6 +186,28 @@ function AuditExecutionSection() {
   const isSelfCheckComplete = unansweredCount === 0;
 
   const selectedDeliverableCount = selectedDeliverables.size;
+
+  const fairnessGroups = useMemo(
+    () => groupFairnessResults(fairnessResults),
+    [fairnessResults],
+  );
+
+  const handleFetchFairness = async () => {
+    const auditId = Number(auditIdInput.trim());
+    if (!Number.isInteger(auditId) || auditId <= 0 || isFairnessLoading) return;
+
+    setIsFairnessLoading(true);
+    setFairnessError(null);
+    try {
+      const response = await getFairnessResult(auditId);
+      setFairnessResults(response.results);
+    } catch {
+      setFairnessResults([]);
+      setFairnessError('공정성 결과를 불러오지 못했습니다. 감사 완료 여부와 감사 ID를 확인해주세요.');
+    } finally {
+      setIsFairnessLoading(false);
+    }
+  };
 
   const isModelFileSupported = useMemo(() => {
     if (!modelFile) return null;
@@ -467,12 +490,35 @@ function AuditExecutionSection() {
                 (편향은 확정이 아닌 추가검토 신호)
               </span>
             </h2>
-            {FAIRNESS_GROUPS.length === 0 ? (
+
+            {/* 감사 실행 연동 전까지 임시로 감사 ID 를 입력해 결과를 조회한다. */}
+            <div className="audit-execution-section__fairness-lookup">
+              <input
+                type="number"
+                min={1}
+                value={auditIdInput}
+                onChange={(event) => setAuditIdInput(event.target.value)}
+                placeholder="감사 ID"
+                className="audit-execution-section__fairness-lookup-input"
+              />
+              <button
+                type="button"
+                onClick={handleFetchFairness}
+                disabled={isFairnessLoading || auditIdInput.trim() === ''}
+                className="audit-execution-section__fairness-lookup-button"
+              >
+                {isFairnessLoading ? '조회 중…' : '공정성 결과 조회'}
+              </button>
+            </div>
+
+            {fairnessError ? (
+              <p className="audit-execution-section__empty">{fairnessError}</p>
+            ) : fairnessGroups.length === 0 ? (
               <p className="audit-execution-section__empty">
-                Fairlearn 감사 API 연동 전이라 결과가 없습니다.
+                감사 ID를 입력해 공정성 결과를 조회하세요.
               </p>
             ) : (
-              FAIRNESS_GROUPS.map(([attribute, metrics]) => (
+              fairnessGroups.map(([attribute, metrics]) => (
                 <div key={attribute} className="audit-execution-section__fairness-group">
                   <p className="audit-execution-section__fairness-group-title">
                     {FAIRNESS_ATTRIBUTE_LABEL[attribute] ?? attribute}

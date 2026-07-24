@@ -1,7 +1,11 @@
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
+import { setAccessTokenProvider } from '../../../shared/api/client';
 import { reissue } from '../api/loginApi';
+
+// apiClient interceptor 가 authStore 의 accessToken 을 읽도록 주입 (FSD 경계 준수).
+setAccessTokenProvider(() => useAuthStore.getState().accessToken);
 
 interface AuthInitializerProps {
   children: ReactNode;

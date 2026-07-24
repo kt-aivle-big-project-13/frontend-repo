@@ -235,6 +235,35 @@
   text-align: center;
 }
 
+.audit-execution-section__fairness-lookup {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.audit-execution-section__fairness-lookup-input {
+  width: 140px;
+  padding: 8px 12px;
+  border: 1px solid #d9dee6;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.audit-execution-section__fairness-lookup-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2f6feb;
+  color: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.audit-execution-section__fairness-lookup-button:disabled {
+  background-color: #b6c4e0;
+  cursor: not-allowed;
+}
+
 .audit-execution-section__result-card {
   margin-bottom: 20px;
   padding: 24px;
