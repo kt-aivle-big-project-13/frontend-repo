@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
 import ImpactSection from '../../../widgets/impact-section/ui/ImpactSection';
 import MainLayout from '../../../widgets/layout/ui/MainLayout';
 
@@ -7,6 +10,14 @@ import StartAuditCtaSection from './sections/StartAuditCtaSection';
 import './FeaturesPage.css';
 
 function FeaturesPage() {
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (!hash) return;
+
+    document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' });
+  }, [hash]);
+
   return (
     <MainLayout>
       <div className="features-page">

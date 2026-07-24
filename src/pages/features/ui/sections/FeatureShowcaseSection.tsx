@@ -2,6 +2,7 @@ import './FeatureShowcaseSection.css';
 
 const SHOWCASE_FEATURES = [
   {
+    id: 'feature-01',
     label: 'FEATURE 01',
     title: '고영향 AI 사전진단',
     description:
@@ -10,6 +11,7 @@ const SHOWCASE_FEATURES = [
     image: '/features/feature-01-pre-diagnosis.png',
   },
   {
+    id: 'feature-02',
     label: 'FEATURE 02',
     title: 'AI 신뢰성 검증·규제대응',
     description:
@@ -18,6 +20,7 @@ const SHOWCASE_FEATURES = [
     image: '/features/feature-02-reliability.png',
   },
   {
+    id: 'feature-03',
     label: 'FEATURE 03',
     title: '산출물(보고서) 자동 생성',
     description:
@@ -26,6 +29,7 @@ const SHOWCASE_FEATURES = [
     image: '/features/feature-03-report.png',
   },
   {
+    id: 'feature-04',
     label: 'FEATURE 04',
     title: '이의제기 대응문서 생성',
     description:
@@ -34,6 +38,7 @@ const SHOWCASE_FEATURES = [
     image: '/features/feature-04-objection.png',
   },
   {
+    id: 'feature-05',
     label: 'FEATURE 05',
     title: 'AI 운영 모니터링 대시보드',
     description:
@@ -54,6 +59,7 @@ function FeatureShowcaseSection() {
         {SHOWCASE_FEATURES.map((feature, index) => (
           <div
             key={feature.label}
+            id={feature.id}
             className={
               index % 2 === 1
                 ? 'feature-showcase-section__row feature-showcase-section__row--reverse'
