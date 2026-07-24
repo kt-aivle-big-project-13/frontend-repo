@@ -468,7 +468,39 @@ function SignupForm() {
 
           {isTermsExpanded && (
             <div className="signup-form__term-detail">
-              <p>이용약관 상세 내용은 추후 반영 예정입니다.</p>
+              <table className="signup-form__table">
+                <thead>
+                  <tr>
+                    <th>항목</th>
+                    <th>내용</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>서비스</td>
+                    <td>
+                      AI 신용평가 규제준수 자동감사 플랫폼(FinAuditAI) 이용에
+                      관한 약관
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>회원 의무</td>
+                    <td>허위정보 등록, 타인 정보 도용, 계정 공유 금지</td>
+                  </tr>
+                  <tr>
+                    <td>서비스 이용</td>
+                    <td>
+                      역할(사용자/편집자/관리자)에 따라 이용 가능한 기능
+                      범위가 다름
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <p className="signup-form__table-note">
+                ※ 전체 약관 전문은 하단 &quot;이용약관&quot; 링크에서
+                확인하실 수 있습니다.
+              </p>
             </div>
           )}
 
