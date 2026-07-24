@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
 import AuthGatedLink from '../../../entities/user/ui/AuthGatedLink';
@@ -17,7 +17,16 @@ const NAV_ITEMS = [
 
 function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  const handleLogout = () => {
+    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('refreshToken');
+    clearAuth();
+    navigate('/');
+  };
 
   return (
     <header className="layout-header">
@@ -33,6 +42,13 @@ function Header() {
             <span className="layout-header__greeting">
               {maskName(user.name)} 고객님
             </span>
+            <button
+              type="button"
+              className="layout-header__logout"
+              onClick={handleLogout}
+            >
+              로그아웃
+            </button>
           </div>
         )}
       </div>

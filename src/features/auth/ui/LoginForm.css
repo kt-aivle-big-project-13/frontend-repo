@@ -4,38 +4,17 @@
 
 .login-form__recaptcha {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 25px;
-  padding: 14px 16px;
-  border: 1px solid #d9dee6;
-  border-radius: 7px;
-  background-color: #f9fafb;
+  justify-content: flex-start;
+  margin-bottom: 8px;
 }
 
-.login-form__recaptcha-check {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #202938;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.login-form__recaptcha-check input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.login-form__recaptcha-badge {
-  color: #9099a8;
-  font-size: 10px;
-  line-height: 1.4;
-  text-align: right;
-  white-space: nowrap;
+/* 작은 화면에서 위젯이 폼 너비를 넘지 않도록 처리 */
+@media (max-width: 420px) {
+  .login-form__recaptcha {
+    transform: scale(0.9);
+    transform-origin: left top;
+    margin-bottom: -8px;
+  }
 }
 
 /* =========================

@@ -6,7 +6,6 @@ import {
 } from 'react-router-dom';
 
 import AuthInitializer from '../features/auth/model/AuthInitializer';
-import AuditPage from '../pages/audit/ui/AuditPage';
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import HomePage from '../pages/home/ui/HomePage';
@@ -56,12 +55,6 @@ function App() {
             <Route
               path="/signup"
               element={<SignupPage />}
-            />
-
-            {/* 감사 */}
-            <Route
-              path="/audit"
-              element={<AuditPage />}
             />
 
             {/* 마이페이지 */}

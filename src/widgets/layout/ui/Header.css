@@ -34,13 +34,33 @@
 .layout-header__user {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .layout-header__greeting {
   color: #4d5765;
   font-size: 14px;
   font-weight: 600;
+}
+
+.layout-header__logout {
+  padding: 5px 12px;
+  border: 1px solid #dde2ea;
+  border-radius: 6px;
+  background: none;
+  color: #6b7684;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.layout-header__logout:hover {
+  border-color: #d92d20;
+  background-color: #fef3f2;
+  color: #d92d20;
 }
 
 .layout-header__nav {
