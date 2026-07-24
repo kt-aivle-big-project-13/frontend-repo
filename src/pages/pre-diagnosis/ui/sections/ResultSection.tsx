@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router-dom';
+
 import type { AssessmentResponse } from '../../../../features/pre-diagnosis/api/impactAssessmentApi';
 import type {
   AssessmentResultSource,
@@ -17,6 +19,7 @@ function ResultSection({
   result,
   resultSource,
 }: ResultSectionProps) {
+  const navigate = useNavigate();
   const isHighImpact = result.result === 'HIGH_IMPACT';
   const isQuantitativeResult = resultSource === 'quantitative';
 
@@ -25,7 +28,7 @@ function ResultSection({
   };
 
   const handleProceedAudit = () => {
-    window.alert('감사 진행 기능은 준비 중입니다.');
+    navigate('/audit');
   };
 
   return (
@@ -95,6 +98,7 @@ function ResultSection({
           <button
             type="button"
             className="pre-diagnosis-page__submit"
+            disabled={!isHighImpact}
             onClick={handleProceedAudit}
           >
             감사로 진행
