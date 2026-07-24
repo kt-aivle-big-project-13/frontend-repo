@@ -13,7 +13,10 @@ function StartAuditCtaSection() {
         모델 파일 업로드 한 번이면 충분합니다
       </p>
 
-      <AuthGatedLink to="/audit" className="start-audit-cta-section__button">
+      <AuthGatedLink
+        to="/pre-diagnosis"
+        className="start-audit-cta-section__button"
+      >
         감사 시작 →
       </AuthGatedLink>
     </section>
