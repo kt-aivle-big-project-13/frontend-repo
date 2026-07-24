@@ -4,6 +4,7 @@ export interface LoginRequest {
   email: string;
   password: string;
   rememberMe: boolean;
+  recaptchaToken: string;
 }
 
 export interface LoginResponse {
@@ -21,12 +22,17 @@ export async function login({
   email,
   password,
   rememberMe,
+  recaptchaToken,
 }: LoginRequest): Promise<LoginResponse> {
-  const { data } = await apiClient.post<LoginResponse>('/auth/login', {
-    email,
-    password,
-    rememberMe,
-  });
+  const { data } = await apiClient.post<LoginResponse>(
+    '/auth/login',
+    {
+      email,
+      password,
+      rememberMe,
+      recaptchaToken,
+    },
+  );
 
   return data;
 }

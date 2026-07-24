@@ -1,13 +1,15 @@
 import {
   type ChangeEvent,
   type FormEvent,
+  useRef,
   useState,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
 import '../../../shared/ui/authForm.css';
 import { login } from '../api/loginApi';
-import { useNavigate } from 'react-router-dom';
 
 import './LoginForm.css';
 
@@ -39,17 +41,30 @@ function LoginForm() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
+  const recaptchaSiteKey =
+    import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
+  if (!recaptchaSiteKey) {
+    throw new Error(
+      'VITE_RECAPTCHA_SITE_KEY가 설정되지 않았습니다.',
+    );
+  }
+
   const [form, setForm] =
     useState<LoginFormState>(INITIAL_FORM);
 
   const [errors, setErrors] =
     useState<LoginErrors>(INITIAL_ERRORS);
 
-  const [isRecaptchaChecked, setIsRecaptchaChecked] =
-    useState(false);
+  const [recaptchaToken, setRecaptchaToken] =
+    useState<string | null>(null);
 
-  const [isRememberMeChecked, setIsRememberMeChecked] =
-    useState(false);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+
+  const [
+    isRememberMeChecked,
+    setIsRememberMeChecked,
+  ] = useState(false);
 
   const [successMessage, setSuccessMessage] =
     useState('');
@@ -79,17 +94,6 @@ function LoginForm() {
     setSuccessMessage('');
   };
 
-  const handleRecaptchaChange = (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
-    setIsRecaptchaChecked(event.target.checked);
-
-    setErrors((previousErrors) => ({
-      ...previousErrors,
-      recaptcha: '',
-    }));
-  };
-
   const validateForm = (): boolean => {
     const nextErrors: LoginErrors = {
       email: '',
@@ -116,7 +120,7 @@ function LoginForm() {
         '비밀번호를 입력해주세요.';
     }
 
-    if (!isRecaptchaChecked) {
+    if (!recaptchaToken) {
       nextErrors.recaptcha =
         '로봇이 아님을 확인해주세요.';
     }
@@ -139,6 +143,10 @@ function LoginForm() {
       return;
     }
 
+    if (!recaptchaToken) {
+      return;
+    }
+
     try {
       setIsLoading(true);
       setSuccessMessage('');
@@ -152,6 +160,7 @@ function LoginForm() {
         email: form.email.trim(),
         password: form.password,
         rememberMe: isRememberMeChecked,
+        recaptchaToken,
       });
 
       const user = {
@@ -168,24 +177,36 @@ function LoginForm() {
           response.refreshToken,
         );
 
-        sessionStorage.removeItem('refreshToken');
+        sessionStorage.removeItem(
+          'refreshToken',
+        );
       } else {
         sessionStorage.setItem(
           'refreshToken',
           response.refreshToken,
         );
 
-        localStorage.removeItem('refreshToken');
+        localStorage.removeItem(
+          'refreshToken',
+        );
       }
 
       setSuccessMessage('로그인되었습니다.');
-      navigate('/', { replace: true });
-    } catch (error: unknown) {  // 로그인 실패 시 구체적인 사유는 노출하지 않음
+
+      navigate('/', {
+        replace: true,
+      });
+    } catch (error: unknown) {
+      // 로그인 실패 시 상세 오류는 화면에 노출하지 않음
       console.error('로그인 실패:', error);
+
+      setRecaptchaToken(null);
+      recaptchaRef.current?.reset();
 
       setErrors((previousErrors) => ({
         ...previousErrors,
-        submit: '이메일 또는 비밀번호를 확인해주세요.',
+        submit:
+          '이메일 또는 비밀번호를 확인해주세요.',
       }));
     } finally {
       setIsLoading(false);
@@ -216,7 +237,9 @@ function LoginForm() {
             onChange={handleChange}
             autoComplete="email"
             disabled={isLoading}
-            aria-invalid={Boolean(errors.email)}
+            aria-invalid={Boolean(
+              errors.email,
+            )}
             aria-describedby={
               errors.email
                 ? 'login-email-error'
@@ -245,15 +268,18 @@ function LoginForm() {
             type="password"
             value={form.password}
             onChange={handleChange}
-            autoComplete="off"
+            autoComplete="current-password"
             disabled={isLoading}
             aria-invalid={Boolean(
-              errors.password || errors.submit,
+              errors.password ||
+                errors.submit,
             )}
             aria-describedby={
               errors.password
                 ? 'login-password-error'
-                : undefined
+                : errors.submit
+                  ? 'login-submit-error'
+                  : undefined
             }
           />
 
@@ -268,6 +294,7 @@ function LoginForm() {
 
           {errors.submit && (
             <p
+              id="login-submit-error"
               className="auth-form__field-error"
               role="alert"
             >
@@ -277,26 +304,50 @@ function LoginForm() {
         </div>
 
         <div className="login-form__recaptcha">
-          <label className="login-form__recaptcha-check">
-            <input
-              type="checkbox"
-              checked={isRecaptchaChecked}
-              onChange={handleRecaptchaChange}
-              disabled={isLoading}
-              aria-invalid={Boolean(errors.recaptcha)}
-            />
-            <span>로봇이 아닙니다.</span>
-          </label>
+          <ReCAPTCHA
+            ref={recaptchaRef}
+            sitekey={recaptchaSiteKey}
+            hl="ko"
+            onChange={(token) => {
+              setRecaptchaToken(token);
 
-          <span className="login-form__recaptcha-badge">
-            reCAPTCHA
-            <br />
-            개인정보 보호 · 약관
-          </span>
+              setErrors(
+                (previousErrors) => ({
+                  ...previousErrors,
+                  recaptcha: '',
+                }),
+              );
+            }}
+            onExpired={() => {
+              setRecaptchaToken(null);
+
+              setErrors(
+                (previousErrors) => ({
+                  ...previousErrors,
+                  recaptcha:
+                    '로봇 인증이 만료되었습니다. 다시 확인해주세요.',
+                }),
+              );
+            }}
+            onErrored={() => {
+              setRecaptchaToken(null);
+
+              setErrors(
+                (previousErrors) => ({
+                  ...previousErrors,
+                  recaptcha:
+                    '로봇 인증 중 오류가 발생했습니다.',
+                }),
+              );
+            }}
+          />
         </div>
 
         {errors.recaptcha && (
-          <p className="auth-form__field-error">
+          <p
+            className="auth-form__field-error"
+            role="alert"
+          >
             {errors.recaptcha}
           </p>
         )}
@@ -312,6 +363,7 @@ function LoginForm() {
             }
             disabled={isLoading}
           />
+
           <span>자동 로그인</span>
         </label>
 
@@ -356,7 +408,8 @@ function LoginForm() {
         </div>
 
         <p className="auth-form__hint login-form__hint--center">
-          ※ 비밀번호 유효기간(반기 1회 변경) 만료 시 재설정이 안내됩니다.
+          ※ 비밀번호 유효기간(반기 1회 변경)
+          만료 시 재설정이 안내됩니다.
         </p>
       </form>
     </div>
