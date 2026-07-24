@@ -1,9 +1,11 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Modal, message } from 'antd';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
 import AuthGatedLink from '../../../entities/user/ui/AuthGatedLink';
 import Avatar from '../../../shared/ui/Avatar';
 import { maskName } from '../../../shared/lib/maskName';
+import { logout } from '../../../features/auth/api/loginApi';
 
 import './Header.css';
 
@@ -22,10 +24,28 @@ function Header() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
   const handleLogout = () => {
-    localStorage.removeItem('refreshToken');
-    sessionStorage.removeItem('refreshToken');
-    clearAuth();
-    navigate('/');
+    Modal.confirm({
+      title: '로그아웃',
+      content: '로그아웃 하시겠습니까?',
+      okText: '확인',
+      cancelText: '취소',
+      centered: true,
+
+      async onOk() {
+        try {
+          await logout();
+
+          localStorage.removeItem('refreshToken');
+          sessionStorage.removeItem('refreshToken');
+          clearAuth();
+          navigate('/');
+
+          message.success('로그아웃되었습니다.');
+        } catch {
+          message.error('로그아웃에 실패했습니다.');
+        }
+      },
+    });
   };
 
   return (
