@@ -1,0 +1,59 @@
+.step-indicator {
+  display: flex;
+  align-items: center;
+  margin: 0 0 32px;
+  padding: 0 3%;
+  list-style: none;
+}
+
+.step-indicator__item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.step-indicator__item:last-child {
+  flex: 0 0 auto;
+}
+
+.step-indicator__pill {
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #9099a8;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  background-color: #f2f4f7;
+}
+
+.step-indicator__pill--done {
+  background-color: #2d67e8;
+  color: #ffffff;
+}
+
+.step-indicator__pill--active {
+  background-color: #dbe6fc;
+  color: #2d67e8;
+}
+
+.step-indicator__line {
+  height: 1px;
+  flex: 1;
+  margin: 0 8px;
+  background-color: #dde2ea;
+}
+
+@media (max-width: 900px) {
+  .step-indicator {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .step-indicator__item {
+    flex: none;
+  }
+
+  .step-indicator__line {
+    display: none;
+  }
+}
