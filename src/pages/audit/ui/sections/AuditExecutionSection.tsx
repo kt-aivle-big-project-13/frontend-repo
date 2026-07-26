@@ -1,5 +1,19 @@
 import { useMemo, useRef, useState, type DragEvent } from 'react';
 
+import {
+  uploadModel,
+  uploadDataset,
+  updateSensitiveAttributes,
+  type ModelType,
+} from '../../../../features/audit/api/modelApi';
+import {
+  startAudit,
+  waitForAuditCompletion,
+  getFairness,
+  getExplainability,
+  type FairlearnResultItem,
+  type ShapMetricItem,
+} from '../../../../features/audit/api/auditApi';
 import StepIndicator from '../StepIndicator';
 
 import './AuditExecutionSection.css';
@@ -73,19 +87,8 @@ const DELIVERABLES: Deliverable[] = [
 
 const DEFAULT_SELECTED_DELIVERABLES = new Set<string>();
 
-type ShapMetricCode = 'SENSITIVE_CONTRIB' | 'GLOBAL_STABILITY' | 'FIDELITY';
-type ShapStatus = 'PASS' | 'REVIEW';
-
-interface ShapMetricItem {
-  metricCode: ShapMetricCode;
-  value: number;
-  threshold: number;
-  status: ShapStatus;
-}
-
-// TODO: 실제 SHAP 분석 API 연동 필요. 응답 스펙: { auditId, method: "SHAP", metrics: [...] }
-// — attribute 구분 없이 모델 전체 기준 3개 값 (metricCode/value/threshold/status)
-const SHAP_METRICS: ShapMetricItem[] = [];
+type ShapMetricCode = ShapMetricItem['metricCode'];
+type ShapStatus = ShapMetricItem['status'];
 
 const SHAP_METRIC_LABEL: Record<ShapMetricCode, string> = {
   SENSITIVE_CONTRIB: '민감변수 기여비율 (SENSITIVE_CONTRIB)',
@@ -103,32 +106,21 @@ const SHAP_STATUS_VARIANT: Record<ShapStatus, 'good' | 'warn'> = {
   REVIEW: 'warn',
 };
 
-type FairlearnMetricCode =
-  | 'DEMOGRAPHIC_PARITY'
-  | 'EQUAL_OPPORTUNITY'
-  | 'EQUALIZED_ODDS';
-type FairlearnStatus = 'PASS' | 'REVIEW' | 'FAIL';
+type FairlearnMetricCode = FairlearnResultItem['metricCode'];
+type FairlearnStatus = FairlearnResultItem['status'];
 
-interface FairlearnResultItem {
-  attribute: string;
-  metricCode: FairlearnMetricCode;
-  value: number;
-  threshold: number;
-  status: FairlearnStatus;
+function groupFairnessByAttribute(
+  results: FairlearnResultItem[],
+): [string, FairlearnResultItem[]][] {
+  return Array.from(
+    results.reduce((groups, item) => {
+      const list = groups.get(item.attribute) ?? [];
+      list.push(item);
+      groups.set(item.attribute, list);
+      return groups;
+    }, new Map<string, FairlearnResultItem[]>()),
+  );
 }
-
-// TODO: 실제 Fairlearn 감사 실행 API 연동 필요. 응답 스펙: { auditId, method: "FAIRLEARN",
-// results: [{ attribute, metricCode, value, threshold, status }] } — 지정한 민감변수별로 3개 지표
-const FAIRNESS_RESULTS: FairlearnResultItem[] = [];
-
-const FAIRNESS_GROUPS: [string, FairlearnResultItem[]][] = Array.from(
-  FAIRNESS_RESULTS.reduce((groups, item) => {
-    const list = groups.get(item.attribute) ?? [];
-    list.push(item);
-    groups.set(item.attribute, list);
-    return groups;
-  }, new Map<string, FairlearnResultItem[]>()),
-);
 
 const FAIRNESS_ATTRIBUTE_LABEL: Record<string, string> = {
   CODE_GENDER: '성별 (CODE_GENDER)',
@@ -165,6 +157,11 @@ function AuditExecutionSection() {
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzed, setIsAnalyzed] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [shapMetrics, setShapMetrics] = useState<ShapMetricItem[]>([]);
+  const [fairnessResults, setFairnessResults] = useState<
+    FairlearnResultItem[]
+  >([]);
 
   const [selfCheckAnswers, setSelfCheckAnswers] =
     useState<Record<string, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
@@ -185,6 +182,11 @@ function AuditExecutionSection() {
   const isSelfCheckComplete = unansweredCount === 0;
 
   const selectedDeliverableCount = selectedDeliverables.size;
+
+  const fairnessGroups = useMemo(
+    () => groupFairnessByAttribute(fairnessResults),
+    [fairnessResults],
+  );
 
   const isModelFileSupported = useMemo(() => {
     if (!modelFile) return null;
@@ -227,14 +229,66 @@ function AuditExecutionSection() {
     setManualColumnInput('');
   };
 
-  const handleRunAnalysis = () => {
+  // TODO: modelType 을 고르는 UI가 아직 없어 파일 확장자로 추정한다.
+  // .pkl/.joblib 은 XGBoost 외 모델일 수도 있어 실제로는 선택 UI가 필요하다.
+  const inferModelType = (file: File): ModelType =>
+    file.name.toLowerCase().endsWith('.json') ? 'XGBOOST' : 'LOGISTIC';
+
+  const handleRunAnalysis = async () => {
     if (!modelFile || !validationFile || isAnalyzing) return;
 
     setIsAnalyzing(true);
-    window.setTimeout(() => {
-      setIsAnalyzing(false);
+    setAnalysisError(null);
+
+    try {
+      const model = await uploadModel(
+        modelFile,
+        modelName || modelFile.name,
+        inferModelType(modelFile),
+      );
+
+      // 현재 화면엔 데이터셋 종류가 하나뿐이라 감사용(AUDIT) 데이터셋으로 업로드한다.
+      // 검증(VALIDATION) 데이터셋을 별도로 받는 흐름은 아직 UI가 없다.
+      const dataset = await uploadDataset(
+        model.modelId,
+        validationFile,
+        'AUDIT',
+      );
+
+      await updateSensitiveAttributes(
+        model.modelId,
+        dataset.datasetId,
+        [...sensitiveColumns],
+      );
+
+      // TODO: 임계값 산정 방식을 고르는 UI가 없어 MANUAL + 기본값 0.5로 고정한다.
+      const started = await startAudit({
+        modelId: model.modelId,
+        datasetId: dataset.datasetId,
+        auditName: modelName || modelFile.name,
+        thresholdMethod: 'MANUAL',
+        manualThreshold: 0.5,
+      });
+
+      await waitForAuditCompletion(started.auditId);
+
+      const [fairness, explainability] = await Promise.all([
+        getFairness(started.auditId),
+        getExplainability(started.auditId),
+      ]);
+
+      setFairnessResults(fairness.results);
+      setShapMetrics(explainability.metrics);
       setIsAnalyzed(true);
-    }, 900);
+    } catch (error) {
+      setAnalysisError(
+        error instanceof Error
+          ? error.message
+          : '감사 분석 실행 중 오류가 발생했습니다.',
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleSelfCheckAnswer = (id: string, answer: SelfCheckAnswer) => {
@@ -423,6 +477,12 @@ function AuditExecutionSection() {
         </button>
       </div>
 
+      {analysisError && (
+        <p className="audit-execution-section__empty" role="alert">
+          {analysisError}
+        </p>
+      )}
+
       {!isAnalyzed ? (
         <p className="audit-execution-section__empty">
           모델과 검증 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.
@@ -434,13 +494,13 @@ function AuditExecutionSection() {
               STEP 2 결과 — 설명가능성 3지표
             </h2>
 
-            {SHAP_METRICS.length === 0 ? (
+            {shapMetrics.length === 0 ? (
               <p className="audit-execution-section__empty">
-                SHAP 분석 API 연동 전이라 결과가 없습니다.
+                SHAP 분석 결과가 없습니다.
               </p>
             ) : (
               <div className="audit-execution-section__stat-grid">
-                {SHAP_METRICS.map((metric) => (
+                {shapMetrics.map((metric) => (
                   <div key={metric.metricCode} className="audit-execution-section__stat">
                     <p className="audit-execution-section__stat-label">
                       {SHAP_METRIC_LABEL[metric.metricCode]}
@@ -466,12 +526,12 @@ function AuditExecutionSection() {
                 (편향은 확정이 아닌 추가검토 신호)
               </span>
             </h2>
-            {FAIRNESS_GROUPS.length === 0 ? (
+            {fairnessGroups.length === 0 ? (
               <p className="audit-execution-section__empty">
-                Fairlearn 감사 API 연동 전이라 결과가 없습니다.
+                Fairlearn 감사 결과가 없습니다.
               </p>
             ) : (
-              FAIRNESS_GROUPS.map(([attribute, metrics]) => (
+              fairnessGroups.map(([attribute, metrics]) => (
                 <div key={attribute} className="audit-execution-section__fairness-group">
                   <p className="audit-execution-section__fairness-group-title">
                     {FAIRNESS_ATTRIBUTE_LABEL[attribute] ?? attribute}
