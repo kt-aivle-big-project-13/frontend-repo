@@ -62,7 +62,7 @@ export async function getAudits(): Promise<AuditSummary[]> {
 // 감사 실행은 202 Accepted 로 비동기 시작되므로, 최종 상태가 될 때까지 목록을 짧은 간격으로 다시 조회한다.
 export async function waitForAuditCompletion(
   auditId: number,
-  { intervalMs = 2000, timeoutMs = 60000 } = {},
+  { intervalMs = 2000, timeoutMs = 300000 } = {},
 ): Promise<AuditSummary> {
   const deadline = Date.now() + timeoutMs;
 
