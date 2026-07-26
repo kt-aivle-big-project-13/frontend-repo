@@ -74,12 +74,9 @@ function PasswordField({ id, value, disabled, onChange }: PasswordFieldProps) {
       <button
         type="button"
         className="my-page__password-toggle"
-        onMouseDown={() => setIsVisible(true)}
-        onMouseUp={() => setIsVisible(false)}
-        onMouseLeave={() => setIsVisible(false)}
-        onTouchStart={() => setIsVisible(true)}
-        onTouchEnd={() => setIsVisible(false)}
-        aria-label="누르고 있는 동안 비밀번호 보기"
+        onClick={() => setIsVisible((visible) => !visible)}
+        aria-label={isVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
+        aria-pressed={isVisible}
       >
         <EyeIcon open={isVisible} />
       </button>
