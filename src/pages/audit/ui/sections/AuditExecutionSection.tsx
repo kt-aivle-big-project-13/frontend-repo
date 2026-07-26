@@ -188,9 +188,11 @@ function AuditExecutionSection() {
     [fairnessResults],
   );
 
+  // AI 서버가 아직 XGBoost(.json) 외 포맷을 로드하지 못해 .pkl/.joblib은 실행 단계에서 막힌다.
+  // 여기서도 같은 기준으로 미리 알려준다 (resolveModelType 과 일치시킬 것).
   const isModelFileSupported = useMemo(() => {
     if (!modelFile) return null;
-    return /\.(pkl|joblib|json)$/i.test(modelFile.name);
+    return /\.json$/i.test(modelFile.name);
   }, [modelFile]);
 
   const handleModelDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -379,7 +381,7 @@ function AuditExecutionSection() {
             onDrop={handleModelDrop}
           >
             <span className="audit-execution-section__dropzone-text">
-              {modelFile ? modelFile.name : '.pkl / .joblib / .json 드래그앤드롭'}
+              {modelFile ? modelFile.name : 'XGBoost 모델(.json) 업로드'}
             </span>
             <button
               type="button"
@@ -391,7 +393,7 @@ function AuditExecutionSection() {
             <input
               ref={modelFileInputRef}
               type="file"
-              accept=".pkl,.joblib,.json"
+              accept=".json"
               className="audit-execution-section__hidden-input"
               onChange={(event) => setModelFile(event.target.files?.[0] ?? null)}
             />
@@ -400,7 +402,7 @@ function AuditExecutionSection() {
           <p
             className={`audit-execution-section__hint${isModelFileSupported === null ? '' : isModelFileSupported ? ' audit-execution-section__hint--valid' : ' audit-execution-section__hint--invalid'}`}
           >
-            지원 형식: XGBoost(.json, v1.0+) / .pkl / .joblib
+            지원 형식: XGBoost(.json, v1.0+) — .pkl / .joblib 은 준비 중입니다
           </p>
         </div>
 
@@ -415,7 +417,7 @@ function AuditExecutionSection() {
             onDrop={handleValidationDrop}
           >
             <span className="audit-execution-section__dropzone-text">
-              {validationFile ? validationFile.name : 'validation_data.csv 드래그앤드롭'}
+              {validationFile ? validationFile.name : 'validation_data.csv 업로드'}
             </span>
             <button
               type="button"
