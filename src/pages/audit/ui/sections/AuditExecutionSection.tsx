@@ -229,22 +229,35 @@ function AuditExecutionSection() {
     setManualColumnInput('');
   };
 
-  // TODO: modelType 을 고르는 UI가 아직 없어 파일 확장자로 추정한다.
-  // .pkl/.joblib 은 XGBoost 외 모델일 수도 있어 실제로는 선택 UI가 필요하다.
-  const inferModelType = (file: File): ModelType =>
-    file.name.toLowerCase().endsWith('.json') ? 'XGBOOST' : 'LOGISTIC';
+  // .json 파일만 XGBoost로 확정할 수 있다. .pkl/.joblib은 XGBoost/LightGBM 등이 섞여있을 수 있어
+  // 확장자만으로 단정하면 잘못된 modelType 이 저장될 위험이 있다. 모델 타입 선택 UI가 생기기 전까지는
+  // 확실하지 않으면 null 을 돌려주고 실행을 막는다.
+  const resolveModelType = (file: File): ModelType | null =>
+    file.name.toLowerCase().endsWith('.json') ? 'XGBOOST' : null;
 
   const handleRunAnalysis = async () => {
     if (!modelFile || !validationFile || isAnalyzing) return;
 
+    const modelType = resolveModelType(modelFile);
+    if (!modelType) {
+      setAnalysisError(
+        '.pkl/.joblib 모델은 아직 모델 타입을 자동으로 판단할 수 없습니다. .json(XGBoost) 파일로 업로드해주세요.',
+      );
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisError(null);
+    // 이전 실행 결과가 남아있으면 새 실행이 실패했을 때 옛 결과가 그대로 보이므로 먼저 지운다.
+    setIsAnalyzed(false);
+    setShapMetrics([]);
+    setFairnessResults([]);
 
     try {
       const model = await uploadModel(
         modelFile,
         modelName || modelFile.name,
-        inferModelType(modelFile),
+        modelType,
       );
 
       // 현재 화면엔 데이터셋 종류가 하나뿐이라 감사용(AUDIT) 데이터셋으로 업로드한다.
@@ -270,7 +283,13 @@ function AuditExecutionSection() {
         manualThreshold: 0.5,
       });
 
-      await waitForAuditCompletion(started.auditId);
+      const completed = await waitForAuditCompletion(started.auditId);
+
+      if (completed.status === 'FAILED') {
+        throw new Error(
+          '감사 분석이 실패했습니다. 백엔드·AI 서버 로그를 확인해주세요.',
+        );
+      }
 
       const [fairness, explainability] = await Promise.all([
         getFairness(started.auditId),
