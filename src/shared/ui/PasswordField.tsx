@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 
 import './PasswordField.css';
 
@@ -60,9 +60,9 @@ function PasswordField({
   // 손을 뗀 위치가 버튼 영역을 벗어나 있어도 항상 숨겨지도록 window 레벨에서 release를 감지한다.
   // 버튼에만 onMouseUp/onMouseLeave를 걸면, 커서가 버튼을 살짝 벗어난 채로 손을 뗐을 때
   // release 이벤트가 버튼에서 감지되지 않아 계속 보이는 상태로 남는다.
+  // isVisible이 true가 된 "이후"에 리스너를 붙이면 그 사이 짧은 틈에 손을 뗀 경우를 놓치므로,
+  // 마운트 시 한 번만 등록해서 그 틈 자체를 없앤다.
   useEffect(() => {
-    if (!isVisible) return;
-
     const hide = () => setIsVisible(false);
 
     window.addEventListener('mouseup', hide);
@@ -74,7 +74,22 @@ function PasswordField({
       window.removeEventListener('touchend', hide);
       window.removeEventListener('touchcancel', hide);
     };
-  }, [isVisible]);
+  }, []);
+
+  // Space/Enter로 포커스한 키보드 사용자도 "누르고 있는 동안만 보기"를 쓸 수 있도록,
+  // 마우스/터치와 별개로 keydown에 보이기·keyup(또는 포커스 이탈)에 숨기기를 붙인다.
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setIsVisible(true);
+    }
+  };
+
+  const handleKeyUp = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      setIsVisible(false);
+    }
+  };
 
   return (
     <div className="password-field">
@@ -92,8 +107,12 @@ function PasswordField({
       <button
         type="button"
         className="password-field__toggle"
+        disabled={disabled}
         onMouseDown={() => setIsVisible(true)}
         onTouchStart={() => setIsVisible(true)}
+        onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
+        onBlur={() => setIsVisible(false)}
         aria-label="누르고 있는 동안 비밀번호 보기"
       >
         <EyeIcon open={isVisible} />

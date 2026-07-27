@@ -75,6 +75,16 @@
   font-size: 13px;
 }
 
+.audit-execution-section__select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  color: #202938;
+  font-size: 13px;
+  background-color: #ffffff;
+}
+
 .audit-execution-section__dropzone {
   display: flex;
   align-items: center;
