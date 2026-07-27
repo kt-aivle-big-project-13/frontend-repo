@@ -155,12 +155,17 @@ function AuditExecutionSection() {
   const [modelMode, setModelMode] = useState<ModelMode>('new');
   const [modelName, setModelName] = useState('');
   const [modelFile, setModelFile] = useState<File | null>(null);
-  const [validationFile, setValidationFile] = useState<File | null>(null);
+  const [auditDatasetFile, setAuditDatasetFile] = useState<File | null>(null);
   const [sensitiveColumns, setSensitiveColumns] = useState<Set<string>>(
     () => new Set(),
   );
   const [manualColumnInput, setManualColumnInput] = useState('');
   const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+
+  // Validation 데이터셋은 선택 사항이다 — 안 켜면 기존과 동일하게 MANUAL 임계값(0.5)으로 동작한다.
+  const [useValidationDataset, setUseValidationDataset] = useState(false);
+  const [validationDatasetFile, setValidationDatasetFile] =
+    useState<File | null>(null);
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzed, setIsAnalyzed] = useState(false);
@@ -179,7 +184,8 @@ function AuditExecutionSection() {
   );
 
   const modelFileInputRef = useRef<HTMLInputElement>(null);
-  const validationFileInputRef = useRef<HTMLInputElement>(null);
+  const auditDatasetFileInputRef = useRef<HTMLInputElement>(null);
+  const validationDatasetFileInputRef = useRef<HTMLInputElement>(null);
 
   const answeredCount = useMemo(
     () => Object.values(selfCheckAnswers).filter((answer) => answer !== null).length,
@@ -225,8 +231,8 @@ function AuditExecutionSection() {
     reader.readAsText(file.slice(0, HEADER_PREVIEW_BYTES));
   };
 
-  const handleValidationFile = (file: File | null) => {
-    setValidationFile(file);
+  const handleAuditDatasetFile = (file: File | null) => {
+    setAuditDatasetFile(file);
 
     if (!file) {
       setAvailableColumns([]);
@@ -236,10 +242,18 @@ function AuditExecutionSection() {
     parseCsvHeader(file);
   };
 
-  const handleValidationDrop = (event: DragEvent<HTMLDivElement>) => {
+  const handleAuditDatasetDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
-    if (file) handleValidationFile(file);
+    if (file) handleAuditDatasetFile(file);
+  };
+
+  // Validation 데이터셋은 임계값 캘리브레이션 참고용일 뿐, 민감변수 선택 목록에는 영향을 주지 않는다
+  // (민감변수는 감사 데이터 헤더에서만 고른다) — 그래서 헤더 파싱은 하지 않는다.
+  const handleValidationDatasetDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file) setValidationDatasetFile(file);
   };
 
   const toggleSensitiveColumn = (column: string) => {
@@ -277,7 +291,8 @@ function AuditExecutionSection() {
     file.name.toLowerCase().endsWith('.json') ? 'XGBOOST' : null;
 
   const handleRunAnalysis = async () => {
-    if (!modelFile || !validationFile || isAnalyzing) return;
+    if (!modelFile || !auditDatasetFile || isAnalyzing) return;
+    if (useValidationDataset && !validationDatasetFile) return;
 
     const modelType = resolveModelType(modelFile);
     if (!modelType) {
@@ -301,11 +316,9 @@ function AuditExecutionSection() {
         modelType,
       );
 
-      // 현재 화면엔 데이터셋 종류가 하나뿐이라 감사용(AUDIT) 데이터셋으로 업로드한다.
-      // 검증(VALIDATION) 데이터셋을 별도로 받는 흐름은 아직 UI가 없다.
       const dataset = await uploadDataset(
         model.modelId,
-        validationFile,
+        auditDatasetFile,
         'AUDIT',
       );
 
@@ -315,14 +328,32 @@ function AuditExecutionSection() {
         [...sensitiveColumns],
       );
 
-      // TODO: 임계값 산정 방식을 고르는 UI가 없어 MANUAL + 기본값 0.5로 고정한다.
-      const started = await startAudit({
-        modelId: model.modelId,
-        datasetId: dataset.datasetId,
-        auditName: modelName || modelFile.name,
-        thresholdMethod: 'MANUAL',
-        manualThreshold: 0.5,
-      });
+      // Validation 데이터셋을 켠 경우에만 별도로 올려서 임계값 산출에 쓰고,
+      // 안 켠 경우(기본값)는 기존과 동일하게 MANUAL + 0.5 고정 임계값을 쓴다.
+      let started;
+      if (useValidationDataset && validationDatasetFile) {
+        const validationDataset = await uploadDataset(
+          model.modelId,
+          validationDatasetFile,
+          'VALIDATION',
+        );
+
+        started = await startAudit({
+          modelId: model.modelId,
+          datasetId: dataset.datasetId,
+          auditName: modelName || modelFile.name,
+          thresholdMethod: 'VALIDATION_DATASET',
+          validationDatasetId: validationDataset.datasetId,
+        });
+      } else {
+        started = await startAudit({
+          modelId: model.modelId,
+          datasetId: dataset.datasetId,
+          auditName: modelName || modelFile.name,
+          thresholdMethod: 'MANUAL',
+          manualThreshold: 0.5,
+        });
+      }
 
       const completed = await waitForAuditCompletion(started.auditId);
 
@@ -447,31 +478,31 @@ function AuditExecutionSection() {
 
         <div className="audit-execution-section__upload-card">
           <h2 className="audit-execution-section__upload-title">
-            ② 검증 데이터 + 민감변수 지정
+            ② 감사 데이터 + 민감변수 지정
           </h2>
 
           <div
             className="audit-execution-section__dropzone"
             onDragOver={(event) => event.preventDefault()}
-            onDrop={handleValidationDrop}
+            onDrop={handleAuditDatasetDrop}
           >
             <span className="audit-execution-section__dropzone-text">
-              {validationFile ? validationFile.name : 'validation_data.csv 드래그앤드롭 또는 업로드'}
+              {auditDatasetFile ? auditDatasetFile.name : 'audit_dataset.csv 드래그앤드롭 또는 업로드'}
             </span>
             <button
               type="button"
               className="audit-execution-section__upload-trigger"
-              onClick={() => validationFileInputRef.current?.click()}
+              onClick={() => auditDatasetFileInputRef.current?.click()}
             >
               업로드
             </button>
             <input
-              ref={validationFileInputRef}
+              ref={auditDatasetFileInputRef}
               type="file"
               accept=".csv"
               className="audit-execution-section__hidden-input"
               onChange={(event) =>
-                handleValidationFile(event.target.files?.[0] ?? null)
+                handleAuditDatasetFile(event.target.files?.[0] ?? null)
               }
             />
           </div>
@@ -515,7 +546,7 @@ function AuditExecutionSection() {
                     handleAddManualColumn();
                   }
                 }}
-                placeholder="검증 데이터를 업로드하면 컬럼을 선택할 수 있어요"
+                placeholder="감사 데이터를 업로드하면 컬럼을 선택할 수 있어요"
               />
               <button
                 type="button"
@@ -544,6 +575,48 @@ function AuditExecutionSection() {
               ))}
             </div>
           )}
+
+          <label className="audit-execution-section__checkbox-label">
+            <input
+              type="checkbox"
+              checked={useValidationDataset}
+              onChange={(event) => {
+                setUseValidationDataset(event.target.checked);
+                if (!event.target.checked) setValidationDatasetFile(null);
+              }}
+            />
+            Validation 데이터셋으로 임계값을 더 정확하게 산출 (선택)
+          </label>
+
+          {useValidationDataset && (
+            <div
+              className="audit-execution-section__dropzone"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={handleValidationDatasetDrop}
+            >
+              <span className="audit-execution-section__dropzone-text">
+                {validationDatasetFile
+                  ? validationDatasetFile.name
+                  : 'valid_processed.csv 드래그앤드롭 또는 업로드'}
+              </span>
+              <button
+                type="button"
+                className="audit-execution-section__upload-trigger"
+                onClick={() => validationDatasetFileInputRef.current?.click()}
+              >
+                업로드
+              </button>
+              <input
+                ref={validationDatasetFileInputRef}
+                type="file"
+                accept=".csv"
+                className="audit-execution-section__hidden-input"
+                onChange={(event) =>
+                  setValidationDatasetFile(event.target.files?.[0] ?? null)
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -551,7 +624,12 @@ function AuditExecutionSection() {
         <button
           type="button"
           className="audit-execution-section__run-button"
-          disabled={!modelFile || !validationFile || isAnalyzing}
+          disabled={
+            !modelFile ||
+            !auditDatasetFile ||
+            isAnalyzing ||
+            (useValidationDataset && !validationDatasetFile)
+          }
           onClick={handleRunAnalysis}
         >
           {isAnalyzing ? '분석 중…' : '감사 분석 실행'}
@@ -566,7 +644,7 @@ function AuditExecutionSection() {
 
       {!isAnalyzed ? (
         <p className="audit-execution-section__empty">
-          모델과 검증 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.
+          모델과 감사 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.
         </p>
       ) : (
         <>
