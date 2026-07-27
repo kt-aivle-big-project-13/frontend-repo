@@ -13,6 +13,8 @@ import '../../../shared/ui/authForm.css';
 import { login } from '../api/loginApi';
 
 import './LoginForm.css';
+import PasswordField from '../../../shared/ui/PasswordField';
+
 
 interface LoginFormState {
   email: string;
@@ -72,6 +74,21 @@ function LoginForm() {
 
   const [isLoading, setIsLoading] =
     useState(false);
+
+  const handlePasswordChange = (value: string) => {
+    setForm((previousForm) => ({
+      ...previousForm,
+      password: value,
+    }));
+
+    setErrors((previousErrors) => ({
+      ...previousErrors,
+      password: '',
+      submit: '',
+    }));
+
+    setSuccessMessage('');
+  };
 
   const handleChange = (
     event: ChangeEvent<HTMLInputElement>,
@@ -264,19 +281,18 @@ function LoginForm() {
             비밀번호
           </label>
 
-          <input
+          <PasswordField
             id="login-password"
             name="password"
-            type="password"
             value={form.password}
-            onChange={handleChange}
+            onChange={handlePasswordChange}
             autoComplete="current-password"
             disabled={isLoading}
-            aria-invalid={Boolean(
+            ariaInvalid={Boolean(
               errors.password ||
                 errors.submit,
             )}
-            aria-describedby={
+            ariaDescribedBy={
               errors.password
                 ? 'login-password-error'
                 : errors.submit

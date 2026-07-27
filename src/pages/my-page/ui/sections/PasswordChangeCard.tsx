@@ -2,6 +2,8 @@ import { useState } from 'react';
 import axios from 'axios';
 
 import { changeMyPassword, verifyCurrentPassword } from '../../../../features/my-page/api/myPageApi';
+import PasswordField from '../../../../shared/ui/PasswordField';
+
 const HAS_LETTER = /[A-Za-z]/;
 const HAS_DIGIT = /\d/;
 const HAS_SPECIAL = /[!@#$%^&*(),.?":{}|<>_\-+=~`[\]/;']/;
@@ -17,70 +19,6 @@ function isPasswordValid(password: string): boolean {
     password.length >= 10 &&
     password.length <= 16 &&
     countPasswordTypes(password) >= 2
-  );
-}
-
-function EyeIcon({ open }: { open: boolean }) {
-  if (open) {
-    return (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <path
-          d="M1.5 9C1.5 9 4.5 3.5 9 3.5C13.5 3.5 16.5 9 16.5 9C16.5 9 13.5 14.5 9 14.5C4.5 14.5 1.5 9 1.5 9Z"
-          stroke="currentColor"
-          strokeWidth="1.3"
-        />
-        <circle cx="9" cy="9" r="2.3" stroke="currentColor" strokeWidth="1.3" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <path
-        d="M2.5 2.5L15.5 15.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M4.7 4.9C2.7 6.1 1.5 9 1.5 9C1.5 9 4.5 14.5 9 14.5C10.4 14.5 11.6 14 12.6 13.3M7.3 3.7C7.85 3.58 8.42 3.5 9 3.5C13.5 3.5 16.5 9 16.5 9C16.5 9 15.9 10.1 14.9 11.2"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-interface PasswordFieldProps {
-  id: string;
-  value: string;
-  disabled?: boolean;
-  onChange: (value: string) => void;
-}
-
-function PasswordField({ id, value, disabled, onChange }: PasswordFieldProps) {
-  const [isVisible, setIsVisible] = useState(false);
-
-  return (
-    <div className="my-page__password-input">
-      <input
-        id={id}
-        type={isVisible ? 'text' : 'password'}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      <button
-        type="button"
-        className="my-page__password-toggle"
-        onClick={() => setIsVisible((visible) => !visible)}
-        aria-label={isVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
-        aria-pressed={isVisible}
-      >
-        <EyeIcon open={isVisible} />
-      </button>
-    </div>
   );
 }
 
