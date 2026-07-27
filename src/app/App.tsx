@@ -7,6 +7,7 @@ import {
 
 import AuthInitializer from '../features/auth/model/AuthInitializer';
 import AuditPage from '../pages/audit/ui/AuditPage';
+import AuditOutputsPage from '../pages/audit-outputs/ui/AuditOutputsPage';
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import HomePage from '../pages/home/ui/HomePage';
@@ -34,6 +35,9 @@ function App() {
 
             {/* 모델 감사 실행 */}
             <Route path="/audit" element={<AuditPage />} />
+
+            {/* 감사 산출물 관리 */}
+            <Route path="/audit-outputs" element={<AuditOutputsPage />} />
 
             {/* 비밀번호 찾기 */}
             <Route path="/find-password" element={<FindPasswordPage />} />
