@@ -1,4 +1,10 @@
-import { useMemo, useRef, useState, type DragEvent } from 'react';
+import {
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+} from 'react';
 
 import {
   uploadModel,
@@ -154,6 +160,7 @@ function AuditExecutionSection() {
     () => new Set(),
   );
   const [manualColumnInput, setManualColumnInput] = useState('');
+  const [availableColumns, setAvailableColumns] = useState<string[]>([]);
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzed, setIsAnalyzed] = useState(false);
@@ -201,8 +208,32 @@ function AuditExecutionSection() {
     if (file) setModelFile(file);
   };
 
+  // 헤더 한 줄만 읽으면 되므로 파일 앞부분만 잘라서 읽는다 — 큰 CSV 전체를 메모리에 올리지 않는다.
+  const HEADER_PREVIEW_BYTES = 8192;
+
+  const parseCsvHeader = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result ?? '');
+      const firstLine = text.split(/\r?\n/, 1)[0] ?? '';
+      const columns = firstLine
+        .split(',')
+        .map((column) => column.trim())
+        .filter(Boolean);
+      setAvailableColumns(columns);
+    };
+    reader.readAsText(file.slice(0, HEADER_PREVIEW_BYTES));
+  };
+
   const handleValidationFile = (file: File | null) => {
     setValidationFile(file);
+
+    if (!file) {
+      setAvailableColumns([]);
+      return;
+    }
+
+    parseCsvHeader(file);
   };
 
   const handleValidationDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -229,6 +260,14 @@ function AuditExecutionSection() {
 
     setSensitiveColumns((prev) => new Set(prev).add(column));
     setManualColumnInput('');
+  };
+
+  const handleSelectSensitiveColumn = (event: ChangeEvent<HTMLSelectElement>) => {
+    const column = event.target.value;
+    if (!column) return;
+
+    setSensitiveColumns((prev) => new Set(prev).add(column));
+    event.target.value = '';
   };
 
   // .json 파일만 XGBoost로 확정할 수 있다. .pkl/.joblib은 XGBoost/LightGBM 등이 섞여있을 수 있어
@@ -381,7 +420,7 @@ function AuditExecutionSection() {
             onDrop={handleModelDrop}
           >
             <span className="audit-execution-section__dropzone-text">
-              {modelFile ? modelFile.name : 'XGBoost 모델(.json) 업로드'}
+              {modelFile ? modelFile.name : 'XGBoost 모델(.json) 드래그앤드롭 또는 업로드'}
             </span>
             <button
               type="button"
@@ -417,7 +456,7 @@ function AuditExecutionSection() {
             onDrop={handleValidationDrop}
           >
             <span className="audit-execution-section__dropzone-text">
-              {validationFile ? validationFile.name : 'validation_data.csv 업로드'}
+              {validationFile ? validationFile.name : 'validation_data.csv 드래그앤드롭 또는 업로드'}
             </span>
             <button
               type="button"
@@ -444,28 +483,49 @@ function AuditExecutionSection() {
             </span>
           </p>
 
-          <div className="audit-execution-section__sensitive-input-row">
-            <input
-              type="text"
-              className="audit-execution-section__text-input"
-              value={manualColumnInput}
-              onChange={(event) => setManualColumnInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  handleAddManualColumn();
-                }
-              }}
-              placeholder="컬럼명을 입력해주세요"
-            />
-            <button
-              type="button"
-              className="audit-execution-section__tag-add-button"
-              onClick={handleAddManualColumn}
-            >
-              추가
-            </button>
-          </div>
+          {availableColumns.length > 0 ? (
+            <div className="audit-execution-section__sensitive-input-row">
+              <select
+                className="audit-execution-section__select"
+                defaultValue=""
+                onChange={handleSelectSensitiveColumn}
+              >
+                <option value="" disabled>
+                  컬럼 선택
+                </option>
+                {availableColumns
+                  .filter((column) => !sensitiveColumns.has(column))
+                  .map((column) => (
+                    <option key={column} value={column}>
+                      {column}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          ) : (
+            <div className="audit-execution-section__sensitive-input-row">
+              <input
+                type="text"
+                className="audit-execution-section__text-input"
+                value={manualColumnInput}
+                onChange={(event) => setManualColumnInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleAddManualColumn();
+                  }
+                }}
+                placeholder="검증 데이터를 업로드하면 컬럼을 선택할 수 있어요"
+              />
+              <button
+                type="button"
+                className="audit-execution-section__tag-add-button"
+                onClick={handleAddManualColumn}
+              >
+                추가
+              </button>
+            </div>
+          )}
 
           {sensitiveColumns.size > 0 && (
             <div className="audit-execution-section__tag-list">
