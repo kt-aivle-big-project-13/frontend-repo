@@ -12,7 +12,7 @@ function AuditOutputsPage() {
         <header className="audit-outputs-page__header">
           <div>
             {/* TODO: 실제 감사 이력 API 연동 후 모델명·버전을 그 응답값으로 교체 */}
-            <p className="audit-outputs-page__model">A모델(v2)</p>
+            <p className="audit-outputs-page__model">—</p>
             <h1 className="audit-outputs-page__title">산출물 (보고서) 관리</h1>
           </div>
 

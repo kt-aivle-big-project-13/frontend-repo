@@ -12,6 +12,17 @@
   font-weight: 800;
 }
 
+.version-history-section__empty {
+  margin: 0;
+  padding: 28px 16px;
+  border: 1px dashed #d9dee6;
+  border-radius: 8px;
+  background-color: #f7f8fa;
+  color: #9099a8;
+  font-size: 13px;
+  text-align: center;
+}
+
 .version-history-section__list {
   display: flex;
   flex-direction: column;
