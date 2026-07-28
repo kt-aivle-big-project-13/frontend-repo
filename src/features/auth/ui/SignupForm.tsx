@@ -133,8 +133,14 @@ function SignupForm() {
   const [confirmCodeMessage, setConfirmCodeMessage] = useState('');
   const [confirmCodeError, setConfirmCodeError] = useState('');
 
-  // 인증번호 유효시간 카운트다운. null이면 타이머 자체가 꺼진 상태(발송 전/인증 완료 후).
-  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null,);
+  // 인증번호 만료 시각(ms epoch). null이면 타이머 자체가 꺼진 상태(발송 전/인증 완료 후).
+  // 카운트다운을 "1초마다 -1"로 세면 백그라운드 탭에서 setInterval이 지연될 때 실제
+  // 서버 만료 시각보다 화면이 늦게 만료 처리되므로, 절대 시각을 기준으로 매 tick마다
+  // 다시 계산한다.
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(
+    null,
+  );
   const isCodeExpired = remainingSeconds === 0;
 
   const [isTermsExpanded, setIsTermsExpanded] = useState(false);
@@ -176,24 +182,27 @@ function SignupForm() {
     setSendCodeError('');
     setConfirmCodeMessage('');
     setConfirmCodeError('');
+    setExpiresAt(null);
     setRemainingSeconds(null);
   };
 
-  // 인증번호가 발송된 동안(재발송 포함)에만 1초 단위로 카운트다운한다.
+  // 인증번호가 발송된 동안(재발송 포함)에만 1초 단위로 남은 시간을 다시 계산한다.
+  // expiresAt(절대 시각) 기준으로 매번 새로 계산하므로, 탭이 백그라운드에 있다가
+  // 돌아와도 다음 tick에서 바로 정확한 값으로 보정된다.
   useEffect(() => {
-    if (!isCodeSent || isEmailVerified) {
+    if (!isCodeSent || isEmailVerified || expiresAt === null) {
       return;
     }
 
-    const timerId = window.setInterval(() => {
-      setRemainingSeconds((previous) =>
-        previous !== null && previous > 0 ? previous - 1 : 0,
-      );
-    }, 1000);
+    const tick = () => {
+      setRemainingSeconds(Math.max(0, Math.round((expiresAt - Date.now()) / 1000)));
+    };
+
+    tick();
+    const timerId = window.setInterval(tick, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [isCodeSent, isEmailVerified]);
-
+  }, [isCodeSent, isEmailVerified, expiresAt]);
 
   const handleSendCode = async () => {
     const emailResult = z.string().email().safeParse(email);
@@ -206,7 +215,8 @@ function SignupForm() {
     try {
       setIsSendingCode(true);
       setSendCodeMessage('');
-      setSendCodeError('');
+
+      setSendCodeError(''); // 이전 오류 메시지 초기화
 
       const response = await sendVerificationCode({ email });
 
@@ -217,7 +227,7 @@ function SignupForm() {
       setVerificationCode('');
       setConfirmCodeMessage('');
       setConfirmCodeError('');
-      setRemainingSeconds(response.expiresIn);
+      setExpiresAt(Date.now() + response.expiresIn * 1000);
     } catch (error: unknown) {
       const errorMessage = getApiErrorMessage(
         error,
