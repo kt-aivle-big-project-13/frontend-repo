@@ -368,6 +368,54 @@
   text-decoration: underline;
 }
 
+.my-page__withdraw-modal-warning {
+  margin: 0 0 14px;
+  color: #4d5765;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.my-page__withdraw-modal-error {
+  margin: 8px 0 0;
+  color: #d92d20;
+  font-size: 12px;
+}
+
+.my-page__withdraw-modal-cancel,
+.my-page__withdraw-modal-confirm {
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.my-page__withdraw-modal-cancel {
+  background-color: #eceff3;
+  color: #4d5765;
+}
+
+.my-page__withdraw-modal-cancel:hover:not(:disabled) {
+  background-color: #dfe3e9;
+}
+
+.my-page__withdraw-modal-confirm {
+  background-color: #d92d20;
+  color: #ffffff;
+}
+
+.my-page__withdraw-modal-confirm:hover:not(:disabled) {
+  background-color: #b8241a;
+}
+
+.my-page__withdraw-modal-cancel:disabled,
+.my-page__withdraw-modal-confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 @media (max-width: 900px) {
   .my-page__layout {
     grid-template-columns: 1fr;
