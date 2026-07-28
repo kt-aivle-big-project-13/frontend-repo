@@ -16,10 +16,6 @@ function FeaturesSection() {
             to={feature.to}
             className="features-section__card"
           >
-            <div
-              className="features-section__card-icon"
-              aria-hidden="true"
-            />
             <span
               className="features-section__card-arrow"
               aria-hidden="true"

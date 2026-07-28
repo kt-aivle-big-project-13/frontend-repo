@@ -67,7 +67,7 @@
 }
 
 .features-section__card-title {
-  margin: 40px 0 0;
+  margin: 8px 0 0;   /* 기존 40px → 아이콘이 없어져서 줄임 */
   color: #202938;
   font-size: 15px;
   font-weight: 700;

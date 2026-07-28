@@ -16,9 +16,9 @@ export const CORE_FEATURES: CoreFeature[] = [
     to: '/features#feature-02',
   },
   {
-    title: '③ AI 기본법 체크리스트 제공',
+    title: '③ 산출물(보고서) 자동 생성',
     description:
-      'AI 기본법 조항 관련 체크리스트를 통해 자동으로 감사할 수 있습니다.',
+      '설명가능성·공정성 진단 보고서 등 산출물을 자동으로 생성할 수 있습니다.',
     to: '/features#feature-03',
   },
   {
