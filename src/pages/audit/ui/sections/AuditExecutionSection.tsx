@@ -642,7 +642,18 @@ function AuditExecutionSection() {
         </p>
       )}
 
-      {!isAnalyzed ? (
+      {isAnalyzing ? (
+        <div
+          className="audit-execution-section__loading"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="audit-execution-section__spinner" aria-hidden="true" />
+          <p className="audit-execution-section__loading-text">
+            감사 분석을 실행하고 있습니다. 잠시만 기다려주세요.
+          </p>
+        </div>
+      ) : !isAnalyzed ? (
         <p className="audit-execution-section__empty">
           모델과 감사 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.
         </p>
