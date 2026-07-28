@@ -1,0 +1,357 @@
+.board-detail-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 24px 100px;
+}
+
+.board-detail-page__denied {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+  background-color: #fef3f2;
+  color: #d92d20;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.board-detail-page__loading {
+  margin: 0;
+  padding: 60px 0;
+  color: #9099a8;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.board-detail-page__back {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: #6b7684;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.board-detail-page__back:hover {
+  color: #2d67e8;
+}
+
+.board-detail-page__header {
+  padding-bottom: 20px;
+  border-bottom: 1.5px solid #eef0f3;
+  margin-bottom: 20px;
+}
+
+.board-detail-page__badge {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.board-detail-page__title {
+  margin: 0 0 12px;
+  color: #202938;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.board-detail-page__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9099a8;
+  font-size: 12.5px;
+}
+
+.board-detail-page__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.board-detail-page__action {
+  padding: 8px 16px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #4d5765;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.board-detail-page__action:hover {
+  border-color: #2d67e8;
+  color: #2d67e8;
+}
+
+.board-detail-page__action--danger:hover {
+  border-color: #d92d20;
+  background-color: #fef3f2;
+  color: #d92d20;
+}
+
+.board-detail-page__content {
+  min-height: 160px;
+  margin-bottom: 24px;
+  color: #202938;
+  font-size: 14.5px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.board-detail-page__section-title {
+  margin: 0 0 12px;
+  color: #202938;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.board-detail-page__attachments {
+  padding: 18px 20px;
+  border: 1.5px solid #eef0f3;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  background-color: #f9fafb;
+}
+
+.board-detail-page__attachments ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board-detail-page__attachments li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.board-detail-page__attachments button {
+  overflow: hidden;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2d67e8;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.board-detail-page__file-size {
+  flex-shrink: 0;
+  color: #9099a8;
+  font-size: 12px;
+}
+
+.board-detail-page__comments {
+  padding-top: 24px;
+  border-top: 1.5px solid #eef0f3;
+}
+
+.board-detail-page__no-comments {
+  margin: 0 0 20px;
+  padding: 20px;
+  border: 1px dashed #dde2ea;
+  border-radius: 10px;
+  color: #9099a8;
+  font-size: 13px;
+  text-align: center;
+}
+
+.board-detail-page__comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.board-detail-page__comment {
+  padding: 16px 18px;
+  border: 1.5px solid #eef0f3;
+  border-radius: 12px;
+  background-color: #f9fafb;
+}
+
+.board-detail-page__comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.board-detail-page__comment-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.board-detail-page__admin-badge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background-color: #eef4ff;
+  color: #2d67e8;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.board-detail-page__comment-date {
+  color: #9099a8;
+  font-size: 11.5px;
+}
+
+.board-detail-page__comment-content {
+  margin: 0;
+  color: #4d5765;
+  font-size: 13.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.board-detail-page__comment-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.board-detail-page__comment-actions button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #9099a8;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.board-detail-page__comment-actions button:hover {
+  color: #2d67e8;
+  text-decoration: underline;
+}
+
+.board-detail-page__comment-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.board-detail-page__comment-edit textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  color: #202938;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.board-detail-page__comment-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.board-detail-page__comment-edit-actions button {
+  padding: 6px 14px;
+  border: 1px solid #dde2ea;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #4d5765;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.board-detail-page__comment-edit-actions button:first-child {
+  border-color: #2d67e8;
+  background-color: #2d67e8;
+  color: #ffffff;
+}
+
+.board-detail-page__comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.board-detail-page__comment-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #dde2ea;
+  border-radius: 10px;
+  color: #202938;
+  font-family: inherit;
+  font-size: 13.5px;
+  resize: vertical;
+}
+
+.board-detail-page__comment-form textarea:focus {
+  outline: none;
+  border-color: #2d67e8;
+  box-shadow: 0 0 0 3px rgb(45 103 232 / 10%);
+}
+
+.board-detail-page__comment-form button {
+  align-self: flex-end;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.board-detail-page__comment-form button:hover:not(:disabled) {
+  background-color: #244fb8;
+}
+
+.board-detail-page__comment-form button:disabled {
+  background-color: #c8d0dc;
+  cursor: not-allowed;
+}
+
+.board-detail-page__comment-notice {
+  margin: 0;
+  padding: 14px;
+  border-radius: 8px;
+  background-color: #f2f4f7;
+  color: #9099a8;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .board-detail-page {
+    padding: 32px 20px 80px;
+  }
+}
