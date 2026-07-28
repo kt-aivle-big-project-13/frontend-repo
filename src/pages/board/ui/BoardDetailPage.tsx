@@ -193,9 +193,11 @@ function BoardDetailPage() {
           <p className="board-detail-page__loading">불러오는 중...</p>
         ) : (
           <>
-            <Link to="/board" className="board-detail-page__back">
-              ← 목록으로
-            </Link>
+            <div className="board-detail-page__back-row">
+              <Link to="/board" className="board-detail-page__back">
+                목록으로
+              </Link>
+            </div>
 
             <header className="board-detail-page__header">
               {post.pinned && (

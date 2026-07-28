@@ -23,16 +23,29 @@
   text-align: center;
 }
 
+.board-detail-page__back-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
 .board-detail-page__back {
   display: inline-block;
-  margin-bottom: 20px;
-  color: #6b7684;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 8px 16px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  color: #4d5765;
+  font-size: 12.5px;
+  font-weight: 700;
   text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .board-detail-page__back:hover {
+  border-color: #2d67e8;
   color: #2d67e8;
 }
 
@@ -237,6 +250,7 @@
 
 .board-detail-page__comment-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 10px;
   margin-top: 10px;
 }

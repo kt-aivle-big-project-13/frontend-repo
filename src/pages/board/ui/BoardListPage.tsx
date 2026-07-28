@@ -195,15 +195,21 @@ function BoardListPage() {
             </header>
 
             <div className="board-list-page__toolbar">
-              <select
-                className="board-list-page__sort"
-                value={sort}
-                onChange={handleSortChange}
-                aria-label="정렬"
-              >
-                <option value="latest">최신순</option>
-                <option value="oldest">오래된순</option>
-              </select>
+              <div className="board-list-page__toolbar-left">
+                <select
+                  className="board-list-page__sort"
+                  value={sort}
+                  onChange={handleSortChange}
+                  aria-label="정렬"
+                >
+                  <option value="latest">최신순</option>
+                  <option value="oldest">오래된순</option>
+                </select>
+
+                <span className="board-list-page__total">
+                  전체 {totalElements}건
+                </span>
+              </div>
 
               <form
                 className="board-list-page__search"
@@ -297,9 +303,6 @@ function BoardListPage() {
             </div>
 
             <div className="board-list-page__footer">
-              <span className="board-list-page__total">
-                전체 {totalElements}건
-              </span>
               <BoardPagination
                 page={page}
                 totalPages={totalPages}
