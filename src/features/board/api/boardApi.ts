@@ -95,10 +95,11 @@ function buildPostFormData(input: {
 }
 
 export async function createPost(input: PostCreateInput): Promise<PostDetail> {
+  // Content-Type을 직접 지정하면 axios/브라우저가 FormData에 맞춰 자동으로
+  // 채우는 boundary가 빠져 서버가 멀티파트 본문을 파싱하지 못한다.
   const { data } = await apiClient.post<PostDetail>(
     '/posts',
     buildPostFormData(input),
-    { headers: { 'Content-Type': 'multipart/form-data' } },
   );
 
   return data;
@@ -118,7 +119,6 @@ export async function updatePost(
   const { data } = await apiClient.patch<PostDetail>(
     `/posts/${postId}`,
     buildPostFormData(input),
-    { headers: { 'Content-Type': 'multipart/form-data' } },
   );
 
   return data;
