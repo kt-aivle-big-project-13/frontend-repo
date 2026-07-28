@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -200,6 +201,22 @@ function AuditExecutionSection() {
     () => groupFairnessByAttribute(fairnessResults),
     [fairnessResults],
   );
+
+  // 분석 진행 상태와 결과는 이 컴포넌트 state 에만 있어서 새로고침하면 그대로 사라진다.
+  // 실행 중이거나 결과가 떠 있을 때만 브라우저 기본 이탈 경고를 붙인다.
+  useEffect(() => {
+    if (!isAnalyzing && !isAnalyzed) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // 경고 문구는 브라우저가 고정하므로 커스터마이즈할 수 없다.
+      // 다만 구형 브라우저는 returnValue 가 설정돼야 경고를 띄운다.
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isAnalyzing, isAnalyzed]);
 
   // AI 서버가 아직 XGBoost(.json) 외 포맷을 로드하지 못해 .pkl/.joblib은 실행 단계에서 막힌다.
   // 여기서도 같은 기준으로 미리 알려준다 (resolveModelType 과 일치시킬 것).
