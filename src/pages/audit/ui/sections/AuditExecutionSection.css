@@ -389,6 +389,11 @@
   background-color: #d92d20;
 }
 
+.audit-execution-section__fairness-note {
+  margin: -4px 0 10px;
+  color: #8a8f98;
+  font-size: 12px;
+}
 
 .audit-execution-section__step4-grid {
   display: grid;

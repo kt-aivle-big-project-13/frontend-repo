@@ -96,6 +96,7 @@ export interface FairlearnResultItem {
   value: number;
   threshold: number;
   status: FairlearnStatus;
+  note: string | null;
 }
 
 export interface FairnessResponse {

@@ -727,6 +727,11 @@ function AuditExecutionSection() {
                   <p className="audit-execution-section__fairness-group-title">
                     {FAIRNESS_ATTRIBUTE_LABEL[attribute] ?? attribute}
                   </p>
+                  {metrics[0]?.note && (
+                    <p className="audit-execution-section__fairness-note">
+                      {metrics[0].note}
+                    </p>
+                  )}
                   <div className="audit-execution-section__stat-grid">
                     {metrics.map((metric) => (
                       <div
