@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch, type SubmitHandler } from 'react-hook-form';
@@ -91,6 +91,14 @@ const signupSchema = z
 // zod 스키마 기반 회원가입 폼 타입 생성
 type SignupFormValues = z.infer<typeof signupSchema>;
 
+// 남은 초를 "M:SS" 형태로 표시
+function formatRemainingTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+}
+
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <svg
@@ -124,6 +132,16 @@ function SignupForm() {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [confirmCodeMessage, setConfirmCodeMessage] = useState('');
   const [confirmCodeError, setConfirmCodeError] = useState('');
+
+  // 인증번호 만료 시각(ms epoch). null이면 타이머 자체가 꺼진 상태(발송 전/인증 완료 후).
+  // 카운트다운을 "1초마다 -1"로 세면 백그라운드 탭에서 setInterval이 지연될 때 실제
+  // 서버 만료 시각보다 화면이 늦게 만료 처리되므로, 절대 시각을 기준으로 매 tick마다
+  // 다시 계산한다.
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(
+    null,
+  );
+  const isCodeExpired = remainingSeconds === 0;
 
   const [isTermsExpanded, setIsTermsExpanded] = useState(false);
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
@@ -164,7 +182,27 @@ function SignupForm() {
     setSendCodeError('');
     setConfirmCodeMessage('');
     setConfirmCodeError('');
+    setExpiresAt(null);
+    setRemainingSeconds(null);
   };
+
+  // 인증번호가 발송된 동안(재발송 포함)에만 1초 단위로 남은 시간을 다시 계산한다.
+  // expiresAt(절대 시각) 기준으로 매번 새로 계산하므로, 탭이 백그라운드에 있다가
+  // 돌아와도 다음 tick에서 바로 정확한 값으로 보정된다.
+  useEffect(() => {
+    if (!isCodeSent || isEmailVerified || expiresAt === null) {
+      return;
+    }
+
+    const tick = () => {
+      setRemainingSeconds(Math.max(0, Math.round((expiresAt - Date.now()) / 1000)));
+    };
+
+    tick();
+    const timerId = window.setInterval(tick, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [isCodeSent, isEmailVerified, expiresAt]);
 
   const handleSendCode = async () => {
     const emailResult = z.string().email().safeParse(email);
@@ -186,6 +224,10 @@ function SignupForm() {
       setSendCodeMessage(
         response.message ?? '인증번호가 발송되었습니다.',
       );
+      setVerificationCode('');
+      setConfirmCodeMessage('');
+      setConfirmCodeError('');
+      setExpiresAt(Date.now() + response.expiresIn * 1000);
     } catch (error: unknown) {
       const errorMessage = getApiErrorMessage(
         error,
@@ -199,6 +241,11 @@ function SignupForm() {
   };
 
   const handleConfirmCode = async () => {
+    if (isCodeExpired) {
+      setConfirmCodeError('인증번호가 만료되었습니다. 다시 발송해주세요.');
+      return;
+    }
+
     if (!verificationCode) {
       setConfirmCodeError('인증번호를 입력해주세요.');
       return;
@@ -369,7 +416,7 @@ function SignupForm() {
                 id="signup-verification-code"
                 type="text"
                 placeholder="인증번호 6자리"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isCodeExpired}
                 value={verificationCode}
                 onChange={(event) => setVerificationCode(event.target.value)}
               />
@@ -378,11 +425,24 @@ function SignupForm() {
                 type="button"
                 className="signup-form__inline-button"
                 onClick={handleConfirmCode}
-                disabled={isSubmitting || isConfirmingCode}
+                disabled={isSubmitting || isConfirmingCode || isCodeExpired}
               >
                 {isConfirmingCode ? '확인 중' : '확인'}
               </button>
             </div>
+
+            {remainingSeconds !== null && remainingSeconds > 0 && (
+              <p className="signup-form__timer">
+                남은 시간 {formatRemainingTime(remainingSeconds)}
+              </p>
+            )}
+
+            {isCodeExpired && (
+              <p className="auth-form__field-error" role="alert">
+                인증번호가 만료되었습니다. &quot;인증&quot; 버튼을 눌러 다시
+                발송해주세요.
+              </p>
+            )}
 
             {confirmCodeMessage && (
               <p className="auth-form__hint">{confirmCodeMessage}</p>

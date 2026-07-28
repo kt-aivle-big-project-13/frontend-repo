@@ -9,6 +9,7 @@ export interface SendVerificationCodeRequest {
 // 이메일 인증번호 발송 응답
 export interface SendVerificationCodeResponse {
   message: string;
+  expiresIn: number;
 }
 
 // 이메일 인증번호 확인 요청
