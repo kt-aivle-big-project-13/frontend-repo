@@ -83,7 +83,11 @@ export async function waitForAuditCompletion(
 export type FairlearnMetricCode =
   | 'DEMOGRAPHIC_PARITY'
   | 'EQUAL_OPPORTUNITY'
-  | 'EQUALIZED_ODDS';
+  | 'EQUALIZED_ODDS'
+  | 'PROPORTIONAL_PARITY'
+  | 'FPR_PARITY'
+  | 'FDR_PARITY'
+  | 'FOR_PARITY';
 export type FairlearnStatus = 'PASS' | 'REVIEW' | 'FAIL';
 
 export interface FairlearnResultItem {

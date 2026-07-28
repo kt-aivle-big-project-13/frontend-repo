@@ -138,6 +138,10 @@ const FAIRNESS_METRIC_LABEL: Record<FairlearnMetricCode, string> = {
   DEMOGRAPHIC_PARITY: 'Demographic Parity',
   EQUAL_OPPORTUNITY: 'Equal Opportunity',
   EQUALIZED_ODDS: 'Equalized Odds',
+  PROPORTIONAL_PARITY: 'Proportional Parity (80% Rule)',
+  FPR_PARITY: 'FPR Parity',
+  FDR_PARITY: 'FDR Parity',
+  FOR_PARITY: 'FOR Parity',
 };
 
 const FAIRNESS_STATUS_LABEL: Record<FairlearnStatus, string> = {
