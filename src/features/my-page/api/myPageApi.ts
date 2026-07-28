@@ -64,3 +64,22 @@ export async function verifyCurrentPassword(
   );
   return data;
 }
+
+export interface WithdrawRequest {
+  password: string;
+}
+
+export interface WithdrawResponse {
+  message: string;
+}
+
+// 회원 탈퇴. 성공 시 서버가 현재 세션(액세스 토큰 블랙리스트 + 리프레시 토큰)을
+// 이미 무효화하므로, 별도로 로그아웃 API를 호출할 필요는 없다.
+export async function withdraw(
+  request: WithdrawRequest,
+): Promise<WithdrawResponse> {
+  const { data } = await apiClient.delete<WithdrawResponse>('/users/me', {
+    data: request,
+  });
+  return data;
+}
