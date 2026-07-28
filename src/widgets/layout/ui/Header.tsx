@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: '감사', to: '/pre-diagnosis', gated: true },
   { label: '대시보드', to: '/dashboard', gated: true },
   { label: '이의제기', to: '/objections', gated: true },
+  { label: '게시판', to: '/board', gated: true },
   { label: '마이페이지', to: '/my-page', gated: true },
 ];
 
@@ -75,7 +76,7 @@ function Header() {
 
       <nav className="layout-header__nav" aria-label="메인 메뉴">
         {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.to;
+          const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(`${item.to}/`));
           const className = isActive
             ? 'layout-header__nav-link layout-header__nav-link--active'
             : 'layout-header__nav-link';

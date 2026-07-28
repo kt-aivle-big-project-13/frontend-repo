@@ -35,6 +35,7 @@ function AuthInitializer({
           id: response.userId,
           email: response.email,
           name: response.name,
+          role: response.role,
         };
 
         setAuth(response.accessToken, user);

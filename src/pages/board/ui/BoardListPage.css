@@ -1,0 +1,338 @@
+.board-list-page {
+  padding: 48px 10% 80px;
+}
+
+.board-list-page__denied {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+  background-color: #fef3f2;
+  color: #d92d20;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.board-list-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.board-list-page__title {
+  margin: 0;
+  color: #202938;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.board-list-page__subtitle {
+  margin: 8px 0 0;
+  color: #6b7684;
+  font-size: 13px;
+}
+
+.board-list-page__write-button {
+  flex-shrink: 0;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.board-list-page__write-button:hover {
+  background-color: #244fb8;
+}
+
+.board-list-page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.board-list-page__toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.board-list-page__sort {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.board-list-page__search {
+  display: flex;
+  gap: 8px;
+}
+
+.board-list-page__search input {
+  width: 340px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  color: #202938;
+  font-size: 13px;
+}
+
+.board-list-page__search input:focus {
+  outline: none;
+  border-color: #2d67e8;
+  box-shadow: 0 0 0 3px rgb(45 103 232 / 10%);
+}
+
+.board-list-page__search button {
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 8px;
+  background-color: #eceff3;
+  color: #4d5765;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.board-list-page__search button:hover {
+  background-color: #dfe3e9;
+}
+
+.board-list-page__table {
+  border: 1.5px solid #eef0f3;
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.board-list-page__row {
+  display: grid;
+  grid-template-columns: 1fr 140px 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f2f4f7;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.board-list-page__table:has(.board-list-page__col--pin) .board-list-page__row {
+  grid-template-columns: 1fr 140px 120px 120px;
+}
+
+.board-list-page__row:last-child {
+  border-bottom: none;
+}
+
+.board-list-page__row:not(.board-list-page__row--head):hover {
+  background-color: #f9fafb;
+}
+
+.board-list-page__row--head {
+  padding: 14px 20px;
+  background-color: #f9fafb;
+  color: #6b7684;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.board-list-page__row--pinned {
+  background-color: #f5f8ff;
+}
+
+.board-list-page__col {
+  min-width: 0;
+  overflow: hidden;
+  color: #202938;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-list-page__col--title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.board-list-page__row-title {
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-list-page__row-title:hover {
+  text-decoration: underline;
+}
+
+.board-list-page__badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.board-list-page__comment-count {
+  flex-shrink: 0;
+  color: #2d67e8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.board-list-page__col--author,
+.board-list-page__col--date {
+  color: #6b7684;
+}
+
+.board-list-page__col--pin {
+  text-align: center;
+}
+
+.board-list-page__pin-button {
+  padding: 5px 10px;
+  border: 1px solid #dde2ea;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #6b7684;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.board-list-page__pin-button:hover {
+  border-color: #2d67e8;
+  color: #2d67e8;
+}
+
+.board-list-page__pin-button--active {
+  border-color: #2d67e8;
+  background-color: #2d67e8;
+  color: #ffffff;
+}
+
+.board-list-page__empty {
+  margin: 0;
+  padding: 60px 20px;
+  color: #9099a8;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.board-list-page__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.board-list-page__total {
+  color: #9099a8;
+  font-size: 12.5px;
+}
+
+.board-list-page__pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.board-list-page__page,
+.board-list-page__page-nav {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #dde2ea;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #4d5765;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.board-list-page__page:hover,
+.board-list-page__page-nav:hover:not(:disabled) {
+  border-color: #2d67e8;
+  color: #2d67e8;
+}
+
+.board-list-page__page--active {
+  border-color: #2d67e8;
+  background-color: #2d67e8;
+  color: #ffffff;
+}
+
+.board-list-page__page-nav:disabled {
+  cursor: not-allowed;
+  color: #c8d0dc;
+}
+
+@media (max-width: 900px) {
+  .board-list-page {
+    padding: 32px 24px 60px;
+  }
+
+  .board-list-page__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .board-list-page__search input {
+    width: 100%;
+    flex: 1;
+  }
+
+  .board-list-page__row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .board-list-page__table:has(.board-list-page__col--pin) .board-list-page__row {
+    grid-template-columns: 1fr;
+  }
+
+  .board-list-page__row--head {
+    display: none;
+  }
+
+  .board-list-page__col--author::before {
+    content: '작성자 ';
+    color: #9099a8;
+  }
+
+  .board-list-page__col--date::before {
+    content: '작성일 ';
+    color: #9099a8;
+  }
+}

@@ -1,0 +1,206 @@
+.board-form-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 24px 100px;
+}
+
+.board-form-page__denied {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+  background-color: #fef3f2;
+  color: #d92d20;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.board-form-page__loading {
+  margin: 0;
+  padding: 60px 0;
+  color: #9099a8;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.board-form-page__title {
+  margin: 0 0 28px;
+  color: #202938;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.board-form-page__form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.board-form-page__field {
+  display: flex;
+  flex-direction: column;
+}
+
+.board-form-page__field label {
+  margin-bottom: 9px;
+  color: #4d5765;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.board-form-page__field input[type='text'],
+.board-form-page__field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9dee6;
+  border-radius: 10px;
+  outline: none;
+  background-color: #ffffff;
+  color: #202938;
+  font-family: inherit;
+  font-size: 14px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.board-form-page__field textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.board-form-page__field input:focus,
+.board-form-page__field textarea:focus {
+  border-color: #2d67e8;
+  box-shadow: 0 0 0 3px rgb(45 103 232 / 10%);
+}
+
+.board-form-page__field input:disabled,
+.board-form-page__field textarea:disabled {
+  cursor: not-allowed;
+  background-color: #f4f6f8;
+  color: #8b95a5;
+}
+
+.board-form-page__field input[type='file'] {
+  margin-top: 10px;
+  color: #4d5765;
+  font-size: 13px;
+}
+
+.board-form-page__file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.board-form-page__file-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid #eef0f3;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  color: #202938;
+  font-size: 12.5px;
+}
+
+.board-form-page__file-list li span:first-child {
+  overflow: hidden;
+  flex: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-form-page__file-size {
+  flex-shrink: 0;
+  color: #9099a8;
+  font-size: 11.5px;
+}
+
+.board-form-page__file-list li button {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #d92d20;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.board-form-page__file-list li button:hover {
+  text-decoration: underline;
+}
+
+.board-form-page__file--removed {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.board-form-page__file--removed button {
+  color: #6b7684;
+}
+
+.board-form-page__error {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #fecdca;
+  border-radius: 6px;
+  background-color: #fef3f2;
+  color: #d92d20;
+  font-size: 12px;
+}
+
+.board-form-page__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.board-form-page__cancel,
+.board-form-page__submit {
+  padding: 12px 26px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.board-form-page__cancel {
+  border: 1px solid #dde2ea;
+  background-color: #ffffff;
+  color: #4d5765;
+}
+
+.board-form-page__cancel:hover:not(:disabled) {
+  background-color: #f2f4f7;
+}
+
+.board-form-page__submit {
+  background-color: #2d67e8;
+  color: #ffffff;
+}
+
+.board-form-page__submit:hover:not(:disabled) {
+  background-color: #244fb8;
+}
+
+.board-form-page__cancel:disabled,
+.board-form-page__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 700px) {
+  .board-form-page {
+    padding: 32px 20px 80px;
+  }
+}

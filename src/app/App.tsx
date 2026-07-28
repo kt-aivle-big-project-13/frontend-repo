@@ -8,6 +8,9 @@ import {
 import AuthInitializer from '../features/auth/model/AuthInitializer';
 import AuditPage from '../pages/audit/ui/AuditPage';
 import AuditOutputsPage from '../pages/audit-outputs/ui/AuditOutputsPage';
+import BoardDetailPage from '../pages/board/ui/BoardDetailPage';
+import BoardFormPage from '../pages/board/ui/BoardFormPage';
+import BoardListPage from '../pages/board/ui/BoardListPage';
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import HomePage from '../pages/home/ui/HomePage';
@@ -38,6 +41,12 @@ function App() {
 
             {/* 감사 산출물 관리 */}
             <Route path="/audit-outputs" element={<AuditOutputsPage />} />
+
+            {/* 게시판 */}
+            <Route path="/board" element={<BoardListPage />} />
+            <Route path="/board/write" element={<BoardFormPage />} />
+            <Route path="/board/:postId" element={<BoardDetailPage />} />
+            <Route path="/board/:postId/edit" element={<BoardFormPage />} />
 
             {/* 비밀번호 찾기 */}
             <Route path="/find-password" element={<FindPasswordPage />} />
