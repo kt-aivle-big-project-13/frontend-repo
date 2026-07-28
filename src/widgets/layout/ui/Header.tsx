@@ -76,7 +76,7 @@ function Header() {
 
       <nav className="layout-header__nav" aria-label="메인 메뉴">
         {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.to;
+          const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(`${item.to}/`));
           const className = isActive
             ? 'layout-header__nav-link layout-header__nav-link--active'
             : 'layout-header__nav-link';

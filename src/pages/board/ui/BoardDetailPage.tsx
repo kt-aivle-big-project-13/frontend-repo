@@ -37,6 +37,7 @@ function BoardDetailPage() {
   const isAdmin = user?.role === 'ADMIN';
 
   const numericPostId = Number(postId);
+  const isValidPostId = Number.isInteger(numericPostId) && numericPostId > 0;
 
   const [post, setPost] = useState<PostDetail | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -49,7 +50,11 @@ function BoardDetailPage() {
   const [editingCommentContent, setEditingCommentContent] = useState('');
 
   const loadPost = useCallback(() => {
-    if (!user || !numericPostId) return;
+    if (!user) return;
+    if (!isValidPostId) {
+      navigate('/board', { replace: true });
+      return;
+    }
 
     Promise.all([fetchPost(numericPostId), fetchComments(numericPostId)])
       .then(([postResponse, commentsResponse]) => {

@@ -83,7 +83,8 @@ function BoardListPage() {
   const isAdmin = user?.role === 'ADMIN';
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const page = Number(searchParams.get('page') ?? '1');
+  const rawPage = Number(searchParams.get('page'));
+  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
   const sort = (searchParams.get('sort') as BoardSort) || 'latest';
   const keywordParam = searchParams.get('keyword') ?? '';
 
@@ -116,6 +117,7 @@ function BoardListPage() {
       })
       .catch(() => {
         message.error('게시글 목록을 불러오지 못했습니다.');
+        setPosts([]);
       });
   }, [user, page, keywordParam, sort]);
 
@@ -254,9 +256,12 @@ function BoardListPage() {
                 </p>
               ) : (
                 posts.map((post) => (
-                  <Link
+                  // 행 전체는 마우스 클릭 편의용 영역일 뿐이라 role/tabIndex를 주지 않는다.
+                  // 실제 키보드/스크린리더 접근은 제목의 <Link>와 공지 버튼(둘 다 서로
+                  // 중첩되지 않은 형제 요소)이 담당한다.
+                  <div
                     key={post.id}
-                    to={`/board/${post.id}`}
+                    onClick={() => navigate(`/board/${post.id}`)}
                     className={
                       post.pinned
                         ? 'board-list-page__row board-list-page__row--pinned'
@@ -267,9 +272,13 @@ function BoardListPage() {
                       {post.pinned && (
                         <span className="board-list-page__badge">공지</span>
                       )}
-                      <span className="board-list-page__row-title">
+                      <Link
+                        to={`/board/${post.id}`}
+                        className="board-list-page__row-title"
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         {post.title}
-                      </span>
+                      </Link>
                       {post.commentCount > 0 && (
                         <span className="board-list-page__comment-count">
                           [{post.commentCount}]
@@ -297,7 +306,7 @@ function BoardListPage() {
                         </button>
                       </span>
                     )}
-                  </Link>
+                  </div>
                 ))
               )}
             </div>

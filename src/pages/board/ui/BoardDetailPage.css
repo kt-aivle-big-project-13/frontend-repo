@@ -72,7 +72,7 @@
   font-size: 24px;
   font-weight: 800;
   line-height: 1.4;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .board-detail-page__meta {
@@ -123,7 +123,7 @@
   font-size: 14.5px;
   line-height: 1.8;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .board-detail-page__section-title {
@@ -245,7 +245,7 @@
   font-size: 13.5px;
   line-height: 1.65;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .board-detail-page__comment-actions {
