@@ -138,10 +138,10 @@ const FAIRNESS_METRIC_LABEL: Record<FairlearnMetricCode, string> = {
   DEMOGRAPHIC_PARITY: 'Demographic Parity',
   EQUAL_OPPORTUNITY: 'Equal Opportunity',
   EQUALIZED_ODDS: 'Equalized Odds',
-  PROPORTIONAL_PARITY: 'Proportional Parity (80% Rule)',
-  FPR_PARITY: 'FPR Parity',
-  FDR_PARITY: 'FDR Parity',
-  FOR_PARITY: 'FOR Parity',
+  PROPORTIONAL_PARITY: '비례성 패리티 (Proportional Parity, 80% Rule)',
+  FPR_PARITY: '거짓 양성률 패리티 (FPR Parity)',
+  FDR_PARITY: '거짓 발견율 패리티 (FDR Parity)',
+  FOR_PARITY: '거짓 누락률 패리티 (FOR Parity)',
 };
 
 const FAIRNESS_STATUS_LABEL: Record<FairlearnStatus, string> = {
