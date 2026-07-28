@@ -147,21 +147,32 @@ function MyPage() {
                 비밀번호를 입력해주세요.
               </p>
 
-              <PasswordField
-                id="my-page-withdraw-password"
-                value={withdrawPassword}
-                disabled={isWithdrawing}
-                onChange={(value) => {
-                  setWithdrawPassword(value);
-                  setWithdrawError('');
-                }}
-              />
+              <div className="my-page__field">
+                <label htmlFor="my-page-withdraw-password">비밀번호</label>
+                <PasswordField
+                  id="my-page-withdraw-password"
+                  value={withdrawPassword}
+                  disabled={isWithdrawing}
+                  ariaInvalid={!!withdrawError}
+                  ariaDescribedBy={
+                    withdrawError ? 'my-page-withdraw-password-error' : undefined
+                  }
+                  onChange={(value) => {
+                    setWithdrawPassword(value);
+                    setWithdrawError('');
+                  }}
+                />
 
-              {withdrawError && (
-                <p className="my-page__withdraw-modal-error">
-                  {withdrawError}
-                </p>
-              )}
+                {withdrawError && (
+                  <p
+                    id="my-page-withdraw-password-error"
+                    className="my-page__withdraw-modal-error"
+                    role="alert"
+                  >
+                    {withdrawError}
+                  </p>
+                )}
+              </div>
             </Modal>
           </>
         )}
