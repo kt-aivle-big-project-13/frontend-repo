@@ -105,12 +105,14 @@ const SHAP_METRIC_LABEL: Record<ShapMetricCode, string> = {
 
 const SHAP_STATUS_LABEL: Record<ShapStatus, string> = {
   PASS: '충족',
+  WARNING: '주의',
   REVIEW: '추가검토',
 };
 
-const SHAP_STATUS_VARIANT: Record<ShapStatus, 'good' | 'warn'> = {
+const SHAP_STATUS_VARIANT: Record<ShapStatus, 'good' | 'caution' | 'bad'> = {
   PASS: 'good',
-  REVIEW: 'warn',
+  WARNING: 'caution',
+  REVIEW: 'bad',
 };
 
 type FairlearnMetricCode = FairlearnResultItem['metricCode'];

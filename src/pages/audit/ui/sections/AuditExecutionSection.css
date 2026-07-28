@@ -364,6 +364,10 @@
   background-color: #12875a;
 }
 
+.audit-execution-section__fairness-status--caution {
+  background-color: #92400e;
+}
+
 .audit-execution-section__fairness-status--warn {
   background-color: #f2b21a;
 }

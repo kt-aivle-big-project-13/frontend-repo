@@ -119,7 +119,7 @@ export type ShapMetricCode =
   | 'SENSITIVE_CONTRIB'
   | 'GLOBAL_STABILITY'
   | 'FIDELITY';
-export type ShapStatus = 'PASS' | 'REVIEW';
+export type ShapStatus = 'PASS' | 'WARNING' | 'REVIEW';
 
 export interface ShapMetricItem {
   metricCode: ShapMetricCode;
