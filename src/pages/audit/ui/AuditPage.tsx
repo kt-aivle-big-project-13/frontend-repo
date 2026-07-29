@@ -7,14 +7,15 @@ import './AuditPage.css';
 
 function AuditPage() {
   const { auditId: auditIdParam } = useParams<{ auditId?: string }>();
-  const viewAuditId = auditIdParam ? Number(auditIdParam) : undefined;
+  const parsedAuditId = auditIdParam !== undefined ? Number(auditIdParam) : NaN;
+  const viewAuditId = Number.isFinite(parsedAuditId) ? parsedAuditId : undefined;
 
   return (
     <MainLayout>
       <div className="audit-page">
         <header className="audit-page__header">
           <h1 className="audit-page__title">
-            {viewAuditId ? '감사 결과' : '모델 감사 실행'}
+            {viewAuditId != null ? '감사 결과' : '모델 감사 실행'}
           </h1>
         </header>
 

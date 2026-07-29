@@ -85,7 +85,12 @@ const RECENT_AUDITS_LIMIT = 10;
 
 function toRecentAudits(audits: AuditSummary[]): RecentAudit[] {
   return audits
-    .filter((audit) => TERMINAL_STATUSES.includes(audit.status) && audit.status !== 'FAILED')
+    .filter((audit) => TERMINAL_STATUSES.includes(audit.status))
+    .sort((a, b) => {
+      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      return bTime - aTime;
+    })
     .slice(0, RECENT_AUDITS_LIMIT)
     .map((audit) => ({
       auditId: audit.auditId,
@@ -138,9 +143,11 @@ function AuditOverviewSection() {
   const [audits, setAudits] = useState<AuditSummary[] | null>(null);
 
   const refreshAudits = useCallback(() => {
+    // 일시적인 네트워크 오류로 목록을 빈 배열로 초기화하면 "이력 없음"이 순간적으로
+    // 노출되므로, 실패 시에는 이전 값을 그대로 유지하고 다음 폴링에서 재시도한다.
     getAudits()
       .then(setAudits)
-      .catch(() => setAudits([]));
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
