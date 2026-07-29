@@ -9,6 +9,9 @@ export interface MyProfileResponse {
   institution: string;
   createdAt: string;
   lastLoginAt: string | null;
+  lawSmsEnabled: boolean;
+  reauditAlertEnabled: boolean;
+  auditCompleteAlertEnabled: boolean;
 }
 
 export interface UpdateProfileRequest {
@@ -42,6 +45,22 @@ export async function changeMyPassword(
 ): Promise<ChangePasswordResponse> {
   const { data } = await apiClient.patch<ChangePasswordResponse>(
     '/users/me/password',
+    request,
+  );
+  return data;
+}
+
+export interface UpdateNotificationPreferencesRequest {
+  lawSmsEnabled: boolean;
+  reauditAlertEnabled: boolean;
+  auditCompleteAlertEnabled: boolean;
+}
+
+export async function updateNotificationPreferences(
+  request: UpdateNotificationPreferencesRequest,
+): Promise<MyProfileResponse> {
+  const { data } = await apiClient.patch<MyProfileResponse>(
+    '/users/me/notifications',
     request,
   );
   return data;

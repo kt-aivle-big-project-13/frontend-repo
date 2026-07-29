@@ -1,0 +1,163 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Badge, Empty, Popover, Spin } from 'antd';
+import { BellOutlined } from '@ant-design/icons';
+
+import {
+  fetchNotifications,
+  fetchUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type NotificationItem,
+} from '../../../features/notifications/api/notificationApi';
+
+import './NotificationBell.css';
+
+const UNREAD_COUNT_POLL_MS = 30000;
+
+function formatSentAt(value: string): string {
+  return new Date(value).toLocaleString('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function NotificationBell() {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const refreshUnreadCount = useCallback(() => {
+    fetchUnreadNotificationCount()
+      .then(setUnreadCount)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    refreshUnreadCount();
+
+    const timer = window.setInterval(refreshUnreadCount, UNREAD_COUNT_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [refreshUnreadCount]);
+
+  const loadNotifications = useCallback(() => {
+    setIsLoading(true);
+
+    fetchNotifications(1, 10)
+      .then((response) => setNotifications(response.content))
+      .catch(() => setNotifications([]))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+
+    if (open) {
+      loadNotifications();
+    }
+  };
+
+  const handleItemClick = async (item: NotificationItem) => {
+    if (item.isRead) return;
+
+    try {
+      await markNotificationRead(item.id);
+
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === item.id
+            ? { ...notification, isRead: true }
+            : notification,
+        ),
+      );
+      setUnreadCount((prev) => Math.max(prev - 1, 0));
+    } catch {
+      // 읽음 처리 실패는 조용히 무시한다 - 다음 폴링에서 배지 정합성이 복구된다.
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsRead();
+
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true })),
+      );
+      setUnreadCount(0);
+    } catch {
+      // no-op
+    }
+  };
+
+  const panel = (
+    <div className="notification-bell__panel">
+      <div className="notification-bell__panel-header">
+        <span>알림</span>
+        <button
+          type="button"
+          className="notification-bell__mark-all"
+          onClick={handleMarkAllRead}
+          disabled={unreadCount === 0}
+        >
+          모두 읽음
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="notification-bell__loading">
+          <Spin size="small" />
+        </div>
+      ) : notifications.length === 0 ? (
+        <Empty
+          description="알림이 없습니다"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      ) : (
+        <ul className="notification-bell__list">
+          {notifications.map((item) => (
+            <li key={item.id}>
+              <button
+                type="button"
+                className={`notification-bell__item${
+                  item.isRead ? '' : ' notification-bell__item--unread'
+                }`}
+                onClick={() => handleItemClick(item)}
+              >
+                <span className="notification-bell__item-title">
+                  {item.title}
+                </span>
+                <span className="notification-bell__item-message">
+                  {item.message}
+                </span>
+                <span className="notification-bell__item-time">
+                  {formatSentAt(item.sentAt)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
+  return (
+    <Popover
+      content={panel}
+      trigger="click"
+      open={isOpen}
+      onOpenChange={handleOpenChange}
+      placement="bottomRight"
+      arrow={false}
+    >
+      <button type="button" className="notification-bell__trigger" aria-label="알림">
+        <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+          <BellOutlined style={{ fontSize: 20 }} />
+        </Badge>
+      </button>
+    </Popover>
+  );
+}
+
+export default NotificationBell;
