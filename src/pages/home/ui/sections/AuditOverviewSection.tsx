@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
-
 import AuthGatedLink from '../../../../entities/user/ui/AuthGatedLink';
 import { useAuthStore } from '../../../../entities/user/model/authStore';
 import { useLoginPromptStore } from '../../../../entities/user/model/loginPromptStore';
 import {
-  getAudits,
   TERMINAL_STATUSES,
   type AuditStatus,
   type AuditSummary,
 } from '../../../../features/audit/api/auditApi';
+import { useAuditsPolling } from '../../../../features/audit/model/useAuditsPolling';
 
 import './AuditOverviewSection.css';
 
@@ -69,7 +67,6 @@ const STATUS_CLASS_NAME: Record<DisplayStatus, string> = {
 };
 
 const LOCKED_MESSAGE = '로그인 후 이용 가능합니다';
-const AUDIT_POLL_INTERVAL_MS = 5000;
 
 function formatDate(value: string | null): string {
   if (!value) return '';
@@ -140,29 +137,9 @@ function AuditOverviewSection() {
   const isAuthenticated = useAuthStore((state) => Boolean(state.user));
   const showLoginPrompt = useLoginPromptStore((state) => state.show);
 
-  const [audits, setAudits] = useState<AuditSummary[] | null>(null);
-
-  const refreshAudits = useCallback(() => {
-    // 일시적인 네트워크 오류로 목록을 빈 배열로 초기화하면 "이력 없음"이 순간적으로
-    // 노출되므로, 실패 시에는 이전 값을 그대로 유지하고 다음 폴링에서 재시도한다.
-    getAudits()
-      .then(setAudits)
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    // 비로그인일 때는 아래 recentAudits/inProgressAudit 계산이 audits state를
-    // 쓰지 않고 데모 데이터로 대체하므로 조회할 필요가 없다.
-    if (!isAuthenticated) return;
-
-    refreshAudits();
-
-    // 감사 분석은 짧으면 몇 초 안에 끝나서, 한 번만 조회하면 진행중 상태를
-    // 거의 못 보고 완료 상태로 넘어가버린다. 이 화면에 머무는 동안은 주기적으로
-    // 다시 조회해 진행중 -> 완료 전환이 반영되도록 한다.
-    const timer = window.setInterval(refreshAudits, AUDIT_POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [isAuthenticated, refreshAudits]);
+  // 비로그인일 때는 아래 recentAudits/inProgressAudit 계산이 audits를 쓰지 않고
+  // 데모 데이터로 대체하므로 조회할 필요가 없다.
+  const audits = useAuditsPolling(isAuthenticated);
 
   const recentAudits = isAuthenticated
     ? toRecentAudits(audits ?? [])

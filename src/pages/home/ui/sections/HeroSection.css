@@ -53,6 +53,16 @@
   background-color: #2458cb;
 }
 
+.hero-section__cta--disabled {
+  display: inline-block;
+  background-color: #a9b6cc;
+  cursor: not-allowed;
+}
+
+.hero-section__cta--disabled:hover {
+  background-color: #a9b6cc;
+}
+
 .hero-section__secondary-cta {
   padding: 14px 28px;
   border-radius: 8px;
