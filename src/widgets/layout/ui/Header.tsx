@@ -6,6 +6,7 @@ import AuthGatedLink from '../../../entities/user/ui/AuthGatedLink';
 import Avatar from '../../../shared/ui/Avatar';
 import { maskName } from '../../../shared/lib/maskName';
 import { logout } from '../../../features/auth/api/loginApi';
+import NotificationBell from './NotificationBell';
 
 import './Header.css';
 
@@ -95,6 +96,8 @@ function Header() {
             </Link>
           );
         })}
+
+        {user && <NotificationBell />}
       </nav>
     </header>
   );

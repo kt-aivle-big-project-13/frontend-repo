@@ -101,7 +101,11 @@ function MyPage() {
               <div className="my-page__main">
                 <AccountInfoCard user={user} />
                 <PasswordChangeCard />
-                <NotificationSettingsCard />
+                <NotificationSettingsCard
+                  key={profile?.userId ?? 'loading'}
+                  profile={profile}
+                />
+
               </div>
             </div>
 
