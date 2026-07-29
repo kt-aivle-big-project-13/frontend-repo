@@ -9,7 +9,7 @@ export interface MyProfileResponse {
   institution: string;
   createdAt: string;
   lastLoginAt: string | null;
-  lawSmsEnabled: boolean;
+  lawEmailEnabled: boolean;
   reauditAlertEnabled: boolean;
   auditCompleteAlertEnabled: boolean;
 }
@@ -51,7 +51,7 @@ export async function changeMyPassword(
 }
 
 export interface UpdateNotificationPreferencesRequest {
-  lawSmsEnabled: boolean;
+  lawEmailEnabled: boolean;
   reauditAlertEnabled: boolean;
   auditCompleteAlertEnabled: boolean;
 }

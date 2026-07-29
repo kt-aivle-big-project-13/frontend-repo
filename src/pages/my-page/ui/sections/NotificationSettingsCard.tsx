@@ -46,14 +46,14 @@ interface NotificationSettingsCardProps {
 }
 
 type PreferenceKey =
-  | 'lawSmsEnabled'
+  | 'lawEmailEnabled'
   | 'reauditAlertEnabled'
   | 'auditCompleteAlertEnabled';
 
 // MyPage가 profile 로딩 완료 시 key를 바꿔 이 컴포넌트를 다시 마운트시키므로,
 // 초기 state는 그 시점의 profile 값을 그대로 반영한다(useEffect로 동기화할 필요 없음).
 function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
-  const [isLawAlertOn, setIsLawAlertOn] = useState(profile?.lawSmsEnabled ?? true);
+  const [isLawAlertOn, setIsLawAlertOn] = useState(profile?.lawEmailEnabled ?? true);
   const [isReauditAlertOn, setIsReauditAlertOn] = useState(
     profile?.reauditAlertEnabled ?? true,
   );
@@ -65,7 +65,7 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
 
   const save = async (key: PreferenceKey, nextValue: boolean) => {
     const previous = {
-      lawSmsEnabled: isLawAlertOn,
+      lawEmailEnabled: isLawAlertOn,
       reauditAlertEnabled: isReauditAlertOn,
       auditCompleteAlertEnabled: isAuditCompleteAlertOn,
     };
@@ -74,7 +74,7 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
     setError(null);
     setSavingKey(key);
 
-    if (key === 'lawSmsEnabled') setIsLawAlertOn(nextValue);
+    if (key === 'lawEmailEnabled') setIsLawAlertOn(nextValue);
     if (key === 'reauditAlertEnabled') setIsReauditAlertOn(nextValue);
     if (key === 'auditCompleteAlertEnabled') setIsAuditCompleteAlertOn(nextValue);
 
@@ -82,7 +82,7 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
       await updateNotificationPreferences(next);
     } catch {
       // 저장 실패 시 이전 값으로 되돌린다.
-      if (key === 'lawSmsEnabled') setIsLawAlertOn(previous.lawSmsEnabled);
+      if (key === 'lawEmailEnabled') setIsLawAlertOn(previous.lawEmailEnabled);
       if (key === 'reauditAlertEnabled') setIsReauditAlertOn(previous.reauditAlertEnabled);
       if (key === 'auditCompleteAlertEnabled') {
         setIsAuditCompleteAlertOn(previous.auditCompleteAlertEnabled);
@@ -101,11 +101,11 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
       <h2 className="my-page__card-title">알림 설정</h2>
 
       <NotificationToggle
-        label="법령 개정 SMS 알림"
-        description="관련 법령·고시 개정 시 즉시 문자로 안내"
+        label="법령 개정 이메일 알림"
+        description="관련 법령·고시 개정 시 이메일로 안내"
         checked={isLawAlertOn}
         disabled={isDisabled}
-        onChange={(value) => save('lawSmsEnabled', value)}
+        onChange={(value) => save('lawEmailEnabled', value)}
       />
       <NotificationToggle
         label="재감사 권고 알림"
