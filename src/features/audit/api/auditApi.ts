@@ -11,7 +11,7 @@ export type AuditStatus =
   | 'UNCONFIRMED'
   | 'FAILED';
 
-const TERMINAL_STATUSES: AuditStatus[] = [
+export const TERMINAL_STATUSES: AuditStatus[] = [
   'COMPLIANT',
   'WARNING',
   'NON_COMPLIANT',

@@ -16,6 +16,7 @@ import {
 import {
   startAudit,
   waitForAuditCompletion,
+  getAudits,
   getFairness,
   getExplainability,
   type FairlearnResultItem,
@@ -158,7 +159,14 @@ const FAIRNESS_STATUS_VARIANT: Record<FairlearnStatus, 'good' | 'warn' | 'bad'> 
   FAIL: 'bad',
 };
 
-function AuditExecutionSection() {
+interface AuditExecutionSectionProps {
+  // 지정되면 새 감사를 실행하는 대신 이미 완료된 감사의 결과를 조회해서 보여준다.
+  viewAuditId?: number;
+}
+
+function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
+  const isViewMode = viewAuditId != null;
+
   const [modelMode, setModelMode] = useState<ModelMode>('new');
   const [modelName, setModelName] = useState('');
   const [modelFile, setModelFile] = useState<File | null>(null);
@@ -181,6 +189,47 @@ function AuditExecutionSection() {
   const [fairnessResults, setFairnessResults] = useState<
     FairlearnResultItem[]
   >([]);
+
+  const [isLoadingExisting, setIsLoadingExisting] = useState(isViewMode);
+
+  const [runningAuditId, setRunningAuditId] = useState<number | null>(null);
+  const [runningStep, setRunningStep] = useState(2);
+
+  // 분석 중(STEP2 SHAP → STEP3 Fairlearn) 진행 상황을 보여주기 위해 짧은 간격으로
+  // currentStep을 조회한다. 완료 여부 판단은 handleRunAnalysis의
+  // waitForAuditCompletion이 그대로 담당하고, 이건 화면 표시용이다.
+  useEffect(() => {
+    if (!isAnalyzing || runningAuditId == null) return;
+
+    const timer = window.setInterval(() => {
+      getAudits()
+        .then((audits) => {
+          const current = audits.find((item) => item.auditId === runningAuditId);
+          if (current) setRunningStep(current.currentStep);
+        })
+        .catch(() => {});
+    }, 2000);
+
+    return () => window.clearInterval(timer);
+  }, [isAnalyzing, runningAuditId]);
+
+  // 알림/최근 감사 이력에서 특정 감사를 보러 온 경우, 새로 실행하는 대신
+  // 그 감사의 실제 SHAP/Fairlearn 결과를 조회해서 STEP2~4 결과 영역에 그대로 채운다.
+  useEffect(() => {
+    if (!viewAuditId) return;
+
+    Promise.all([
+      getExplainability(viewAuditId),
+      getFairness(viewAuditId),
+    ])
+      .then(([explainability, fairness]) => {
+        setShapMetrics(explainability.metrics);
+        setFairnessResults(fairness.results);
+        setIsAnalyzed(true);
+      })
+      .catch(() => setAnalysisError('감사 결과를 불러오지 못했습니다.'))
+      .finally(() => setIsLoadingExisting(false));
+  }, [viewAuditId]);
 
   const [selfCheckAnswers, setSelfCheckAnswers] =
     useState<Record<string, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
@@ -331,6 +380,8 @@ function AuditExecutionSection() {
     setIsAnalyzed(false);
     setShapMetrics([]);
     setFairnessResults([]);
+    setRunningAuditId(null);
+    setRunningStep(2);
 
     try {
       const model = await uploadModel(
@@ -377,6 +428,8 @@ function AuditExecutionSection() {
           manualThreshold: 0.5,
         });
       }
+
+      setRunningAuditId(started.auditId);
 
       const completed = await waitForAuditCompletion(started.auditId);
 
@@ -433,6 +486,8 @@ function AuditExecutionSection() {
         }
       />
 
+      {!isViewMode && !isAnalyzed && (
+      <>
       <div className="audit-execution-section__upload-grid">
         <div className="audit-execution-section__upload-card">
           <div className="audit-execution-section__upload-header">
@@ -658,6 +713,8 @@ function AuditExecutionSection() {
           {isAnalyzing ? '분석 중…' : '감사 분석 실행'}
         </button>
       </div>
+      </>
+      )}
 
       {analysisError && (
         <p className="audit-execution-section__empty" role="alert">
@@ -665,7 +722,7 @@ function AuditExecutionSection() {
         </p>
       )}
 
-      {isAnalyzing ? (
+      {isAnalyzing || (isViewMode && isLoadingExisting) ? (
         <div
           className="audit-execution-section__loading"
           role="status"
@@ -673,13 +730,58 @@ function AuditExecutionSection() {
         >
           <span className="audit-execution-section__spinner" aria-hidden="true" />
           <p className="audit-execution-section__loading-text">
-            감사 분석을 실행하고 있습니다. 잠시만 기다려주세요.
+            {isViewMode
+              ? '감사 결과를 불러오고 있습니다. 잠시만 기다려주세요.'
+              : '감사 분석을 실행하고 있습니다. 잠시만 기다려주세요.'}
           </p>
+
+          {isAnalyzing && !isViewMode && (
+            <div className="audit-execution-section__progress">
+              <div className="audit-execution-section__progress-track">
+                <div className="audit-execution-section__progress-fill" />
+              </div>
+
+              <ul className="audit-execution-section__progress-steps">
+                <li
+                  className={`audit-execution-section__progress-step${
+                    runningStep > 2
+                      ? ' audit-execution-section__progress-step--done'
+                      : runningStep === 2
+                        ? ' audit-execution-section__progress-step--active'
+                        : ''
+                  }`}
+                >
+                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true">
+                    {runningStep > 2 ? '✓' : ''}
+                  </span>
+                  설명가능성(SHAP) 분석
+                </li>
+                <li
+                  className={`audit-execution-section__progress-step${
+                    runningStep > 3
+                      ? ' audit-execution-section__progress-step--done'
+                      : runningStep === 3
+                        ? ' audit-execution-section__progress-step--active'
+                        : ''
+                  }`}
+                >
+                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true">
+                    {runningStep > 3 ? '✓' : ''}
+                  </span>
+                  Fairlearn 공정성 분석
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
       ) : !isAnalyzed ? (
-        <p className="audit-execution-section__empty">
-          모델과 감사 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.
-        </p>
+        analysisError ? null : (
+          <p className="audit-execution-section__empty">
+            {isViewMode
+              ? '조회할 감사 결과가 없습니다.'
+              : '모델과 감사 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.'}
+          </p>
+        )
       ) : (
         <>
           <section className="audit-execution-section__result-card">
