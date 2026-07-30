@@ -227,6 +227,19 @@ function AuditExecutionSection() {
     <div className="audit-execution-section">
       <StepIndicator doneSteps={[1]} activeSteps={[2]} />
 
+      {isSubmitting ? (
+        <div
+          className="audit-execution-section__loading"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="audit-execution-section__spinner" aria-hidden="true" />
+          <p className="audit-execution-section__loading-text">
+            모델과 감사 데이터를 업로드하고 감사를 시작하는 중입니다. 잠시만 기다려주세요.
+          </p>
+        </div>
+      ) : (
+        <>
       <div className="audit-execution-section__upload-grid">
         <div className="audit-execution-section__upload-card">
           <div className="audit-execution-section__upload-header">
@@ -449,9 +462,11 @@ function AuditExecutionSection() {
           }
           onClick={handleStartAudit}
         >
-          {isSubmitting ? '시작 중…' : '감사 시작'}
+          감사 시작
         </button>
       </div>
+        </>
+      )}
 
       {submitError && (
         <p className="audit-execution-section__empty" role="alert">
