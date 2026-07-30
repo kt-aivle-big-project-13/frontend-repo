@@ -35,6 +35,7 @@ function AuditStartLink({ className, children }: AuditStartLinkProps) {
       okText: '예, 확실합니다',
       cancelText: '아니요, 사전진단 진행',
       centered: true,
+      keyboard: false,
       onOk() {
         navigate('/audit');
       },

@@ -28,6 +28,11 @@ const NAV_ITEMS = [
 // 홈 화면 히어로 CTA와 동일한 규칙을 헤더 내비게이션에도 적용한다.
 const AUDIT_START_PATH = '/pre-diagnosis';
 
+// "감사" 메뉴는 고영향 AI 확인 모달에서 "예"를 선택하면 사전진단을 건너뛰고
+// /audit로 바로 이동할 수 있으므로, 그 경로들도 같은 메뉴의 활성 상태로 표시한다.
+const isAuditRoute = (pathname: string) =>
+  pathname === '/audit' || pathname.startsWith('/audit/');
+
 function Header() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -89,7 +94,10 @@ function Header() {
 
       <nav className="layout-header__nav" aria-label="메인 메뉴">
         {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(`${item.to}/`));
+          const isActive =
+            location.pathname === item.to ||
+            (item.to !== '/' && location.pathname.startsWith(`${item.to}/`)) ||
+            (item.to === AUDIT_START_PATH && isAuditRoute(location.pathname));
           const className = isActive
             ? 'layout-header__nav-link layout-header__nav-link--active'
             : 'layout-header__nav-link';
