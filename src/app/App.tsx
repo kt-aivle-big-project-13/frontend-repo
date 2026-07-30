@@ -19,6 +19,7 @@ import PreDiagnosisPage from '../pages/pre-diagnosis/ui/PreDiagnosisPage';
 import ResetPasswordPage from '../pages/reset-password/ui/ResetPasswordPage';
 import SignupPage from '../pages/signup/ui/SignupPage';
 import { QueryProvider } from './providers/QueryProvider';
+import ObjectionsPage from '../pages/objections/ui/ObjectionsPage';
 
 function App() {
   return (
@@ -47,6 +48,9 @@ function App() {
               path="/audit/:auditId/results"
               element={<AuditPage mode="results" />}
             />
+
+            {/* 이의제기 */}
+            <Route path="/objections" element={<ObjectionsPage />} />
 
             {/* 게시판 */}
             <Route path="/board" element={<BoardListPage />} />
