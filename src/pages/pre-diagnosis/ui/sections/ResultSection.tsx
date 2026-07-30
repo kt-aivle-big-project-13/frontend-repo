@@ -23,10 +23,6 @@ function ResultSection({
   const isHighImpact = result.result === 'HIGH_IMPACT';
   const isQuantitativeResult = resultSource === 'quantitative';
 
-  const handleSavePdf = () => {
-    window.alert('PDF 저장 기능은 준비 중입니다.');
-  };
-
   const handleProceedAudit = () => {
     navigate('/audit');
   };
@@ -88,13 +84,6 @@ function ResultSection({
         </div>
 
         <div className="pre-diagnosis-page__result-actions">
-          <button
-            type="button"
-            className="pre-diagnosis-page__secondary-button"
-            onClick={handleSavePdf}
-          >
-            자가검토 결과서 PDF 저장
-          </button>
           <button
             type="button"
             className="pre-diagnosis-page__submit"

@@ -737,7 +737,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
           }
           onClick={handleRunAnalysis}
         >
-          {isAnalyzing ? '분석 중…' : '감사 분석 실행'}
+          {isAnalyzing ? '분석 중…' : '감사 시작'}
         </button>
       </div>
       </>
