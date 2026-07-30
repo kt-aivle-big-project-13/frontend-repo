@@ -13,6 +13,7 @@ import {
   type RegulationMappingItem,
   type SelfCheckItemCode,
 } from '../../../../features/audit/api/auditApi';
+import { markAuditResultsViewed } from '../../../../features/audit/model/viewedAuditResults';
 import StepIndicator from '../StepIndicator';
 
 import './AuditFlow.css';
@@ -470,7 +471,11 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
           type="button"
           className="audit-execution-section__run-button"
           disabled={!isAnalyzed || (!skipSelfCheck && !isSelfCheckSubmitted)}
-          onClick={() => navigate(`/audit/${auditId}/results`)}
+          onClick={() => {
+            // 홈 화면 "최근 감사 이력"은 결과를 실제로 확인한 감사만 보여준다.
+            markAuditResultsViewed(auditId);
+            navigate(`/audit/${auditId}/results`);
+          }}
         >
           결과 확인
         </button>
