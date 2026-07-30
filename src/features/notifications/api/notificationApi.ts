@@ -12,6 +12,7 @@ export interface NotificationItem {
   message: string;
   isRead: boolean;
   sentAt: string;
+  auditId: number | null;
 }
 
 export interface PageResponse<T> {

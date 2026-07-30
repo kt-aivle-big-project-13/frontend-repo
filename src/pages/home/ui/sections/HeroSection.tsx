@@ -2,11 +2,17 @@ import { Link } from 'react-router-dom';
 
 import { useAuthStore } from '../../../../entities/user/model/authStore';
 import AuthGatedLink from '../../../../entities/user/ui/AuthGatedLink';
+import {
+  hasInProgressAudit,
+  useAuditsPolling,
+} from '../../../../features/audit/model/useAuditsPolling';
 
 import './HeroSection.css';
 
 function HeroSection() {
   const isAuthenticated = useAuthStore((state) => Boolean(state.user));
+  const audits = useAuditsPolling(isAuthenticated);
+  const isAuditRunning = isAuthenticated && hasInProgressAudit(audits);
 
   return (
     <section className="hero-section">
@@ -20,9 +26,18 @@ function HeroSection() {
         </p>
 
         <div className="hero-section__actions">
-          <AuthGatedLink to="/pre-diagnosis" className="hero-section__cta">
-            감사 시작
-          </AuthGatedLink>
+          {isAuditRunning ? (
+            <span
+              className="hero-section__cta hero-section__cta--disabled"
+              aria-disabled="true"
+            >
+              감사 시작 (진행 중인 감사 완료 후 이용 가능)
+            </span>
+          ) : (
+            <AuthGatedLink to="/pre-diagnosis" className="hero-section__cta">
+              감사 시작
+            </AuthGatedLink>
+          )}
 
           <Link to="/features" className="hero-section__secondary-cta">
             기능 살펴보기

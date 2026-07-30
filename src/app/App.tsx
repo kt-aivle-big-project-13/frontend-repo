@@ -7,7 +7,6 @@ import {
 
 import AuthInitializer from '../features/auth/model/AuthInitializer';
 import AuditPage from '../pages/audit/ui/AuditPage';
-import AuditOutputsPage from '../pages/audit-outputs/ui/AuditOutputsPage';
 import BoardDetailPage from '../pages/board/ui/BoardDetailPage';
 import BoardFormPage from '../pages/board/ui/BoardFormPage';
 import BoardListPage from '../pages/board/ui/BoardListPage';
@@ -38,9 +37,8 @@ function App() {
 
             {/* 모델 감사 실행 */}
             <Route path="/audit" element={<AuditPage />} />
-
-            {/* 감사 산출물 관리 */}
-            <Route path="/audit-outputs" element={<AuditOutputsPage />} />
+            {/* 완료된 감사 결과 조회 */}
+            <Route path="/audit/:auditId" element={<AuditPage />} />
 
             {/* 게시판 */}
             <Route path="/board" element={<BoardListPage />} />

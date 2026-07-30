@@ -6,6 +6,10 @@ import AuthGatedLink from '../../../entities/user/ui/AuthGatedLink';
 import Avatar from '../../../shared/ui/Avatar';
 import { maskName } from '../../../shared/lib/maskName';
 import { logout } from '../../../features/auth/api/loginApi';
+import {
+  hasInProgressAudit,
+  useAuditsPolling,
+} from '../../../features/audit/model/useAuditsPolling';
 import NotificationBell from './NotificationBell';
 
 import './Header.css';
@@ -19,11 +23,18 @@ const NAV_ITEMS = [
   { label: '마이페이지', to: '/my-page', gated: true },
 ];
 
+// 이미 진행 중인 감사가 있으면 새 감사(사전진단)를 시작하는 진입점을 막는다.
+// 홈 화면 히어로 CTA와 동일한 규칙을 헤더 내비게이션에도 적용한다.
+const AUDIT_START_PATH = '/pre-diagnosis';
+
 function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const isAuthenticated = Boolean(user);
+  const audits = useAuditsPolling(isAuthenticated);
+  const isAuditRunning = isAuthenticated && hasInProgressAudit(audits);
 
   const handleLogout = () => {
     Modal.confirm({
@@ -81,6 +92,19 @@ function Header() {
           const className = isActive
             ? 'layout-header__nav-link layout-header__nav-link--active'
             : 'layout-header__nav-link';
+
+          if (item.to === AUDIT_START_PATH && isAuditRunning) {
+            return (
+              <span
+                key={item.to}
+                className={`${className} layout-header__nav-link--disabled`}
+                aria-disabled="true"
+                title="진행 중인 감사가 완료된 후 이용할 수 있습니다"
+              >
+                {item.label}
+              </span>
+            );
+          }
 
           if (item.gated) {
             return (
