@@ -27,17 +27,19 @@ function AuditPage({ mode }: AuditPageProps) {
   return (
     <MainLayout>
       <div className="audit-page">
-        <header className="audit-page__header">
-          <h1 className="audit-page__title">{PAGE_TITLE[mode]}</h1>
-        </header>
+        <div className="audit-page__inner">
+          <header className="audit-page__header">
+            <h1 className="audit-page__title">{PAGE_TITLE[mode]}</h1>
+          </header>
 
-        {mode === 'upload' && <AuditExecutionSection />}
-        {mode === 'checklist' && auditId != null && (
-          <AuditChecklistSection auditId={auditId} />
-        )}
-        {mode === 'results' && auditId != null && (
-          <AuditResultsSection auditId={auditId} />
-        )}
+          {mode === 'upload' && <AuditExecutionSection />}
+          {mode === 'checklist' && auditId != null && (
+            <AuditChecklistSection auditId={auditId} />
+          )}
+          {mode === 'results' && auditId != null && (
+            <AuditResultsSection auditId={auditId} />
+          )}
+        </div>
       </div>
     </MainLayout>
   );

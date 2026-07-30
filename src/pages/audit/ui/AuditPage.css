@@ -2,6 +2,11 @@
   padding: 48px 10% 80px;
 }
 
+.audit-page__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
 .audit-page__header {
   margin-bottom: 28px;
 }

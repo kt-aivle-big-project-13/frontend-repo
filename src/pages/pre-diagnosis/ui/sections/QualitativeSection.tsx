@@ -115,7 +115,11 @@ function QualitativeSection({
         </p>
       )}
 
-      <div className="pre-diagnosis-page__actions">
+      <div className="pre-diagnosis-page__actions pre-diagnosis-page__actions--with-hint">
+        <p className="pre-diagnosis-page__actions-hint">
+          고영향 AI 판정 가이드라인에 따라, 문항 중 하나라도 &ldquo;예&rdquo;로
+          응답하면 정량 배점 단계 없이 바로 고영향 AI로 판정됩니다.
+        </p>
         <button
           type="button"
           className="pre-diagnosis-page__submit"
