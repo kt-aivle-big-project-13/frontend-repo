@@ -7,7 +7,6 @@ import {
 
 import AuthInitializer from '../features/auth/model/AuthInitializer';
 import AuditPage from '../pages/audit/ui/AuditPage';
-import AuditOutputsPage from '../pages/audit-outputs/ui/AuditOutputsPage';
 import BoardDetailPage from '../pages/board/ui/BoardDetailPage';
 import BoardFormPage from '../pages/board/ui/BoardFormPage';
 import BoardListPage from '../pages/board/ui/BoardListPage';

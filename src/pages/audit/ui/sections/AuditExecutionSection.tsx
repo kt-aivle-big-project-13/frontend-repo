@@ -19,8 +19,15 @@ import {
   getAudits,
   getFairness,
   getExplainability,
+  saveSelfCheckAnswers,
+  getSelfCheckAnswers,
+  waitForRegulationMappings,
+  getRegulationMappings,
+  RegulationMappingTimeoutError,
   type FairlearnResultItem,
   type ShapMetricItem,
+  type SelfCheckItemCode,
+  type RegulationMappingItem,
 } from '../../../../features/audit/api/auditApi';
 import StepIndicator from '../StepIndicator';
 
@@ -30,54 +37,46 @@ type ModelMode = 'new' | 'update';
 type SelfCheckAnswer = 'yes' | 'no' | null;
 
 interface SelfCheckItem {
-  id: string;
+  id: SelfCheckItemCode;
   question: string;
   location: string;
 }
 
 const SELF_CHECK_ITEMS: SelfCheckItem[] = [
   {
-    id: 'notice',
+    id: 'NOTICE',
     question: 'AI 심사 사실을 고객에게 사전에 알리고 있나요?',
     location: '확인 위치: 대출 신청 화면, 약관, 상품 설명서',
   },
   {
-    id: 'objection',
+    id: 'OBJECTION',
     question: '고객이 심사 결과에 이의를 제기할 절차가 있나요?',
     location: '확인 위치: 이의제기 및 재심사 절차서, 고객센터 지침',
   },
   {
-    id: 'oversight',
+    id: 'OVERSIGHT',
     question: 'AI 결정을 사람이 관리 및 감독하는 체계가 있나요?',
     location: '확인 위치: 승인권자 지정 문서, 심사 개입 프로세스',
   },
   {
-    id: 'risk-management',
+    id: 'RISK_MANAGEMENT',
     question: '위험관리 규정이 수립 및 운영되고 있나요?',
     location: '확인 위치: 위험관리 내규, 운영 회의록',
   },
   {
-    id: 'documentation',
+    id: 'DOCUMENTATION',
     question: '조치 내용을 문서로 작성 및 보관하고 있나요?',
     location: '확인 위치: 위험관리 내규, 운영 회의록',
   },
 ];
 
-const DEFAULT_SELF_CHECK: Record<string, SelfCheckAnswer> = {
-  notice: null,
-  objection: null,
-  oversight: null,
-  'risk-management': null,
-  documentation: null,
+const DEFAULT_SELF_CHECK: Record<SelfCheckItemCode, SelfCheckAnswer> = {
+  NOTICE: null,
+  OBJECTION: null,
+  OVERSIGHT: null,
+  RISK_MANAGEMENT: null,
+  DOCUMENTATION: null,
 };
-
-interface MatchedArticle {
-  id: string;
-  title: string;
-}
-
-// TODO: 실제 RAG 법조문 매칭 API 연동 필요 — 원문 인용은 검색된 조항만 표시(임의 생성 금지)
-const MATCHED_ARTICLES: MatchedArticle[] = [];
 
 interface Deliverable {
   id: string;
@@ -190,6 +189,18 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     FairlearnResultItem[]
   >([]);
 
+  const [selfCheckAnswers, setSelfCheckAnswers] =
+    useState<Record<SelfCheckItemCode, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
+  const [isSelfCheckSubmitting, setIsSelfCheckSubmitting] = useState(false);
+  const [isSelfCheckSubmitted, setIsSelfCheckSubmitted] = useState(false);
+  const [selfCheckError, setSelfCheckError] = useState<string | null>(null);
+
+  const [matchedArticles, setMatchedArticles] = useState<
+    RegulationMappingItem[]
+  >([]);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(false);
+  const [isMappingPending, setIsMappingPending] = useState(false);
+
   const [isLoadingExisting, setIsLoadingExisting] = useState(isViewMode);
 
   // viewAuditId가 바뀌면(알림/최근 이력에서 다른 감사로 연속 이동) 이전 감사의 결과가
@@ -204,10 +215,27 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     setAnalysisError(null);
     setShapMetrics([]);
     setFairnessResults([]);
+    setSelfCheckAnswers(DEFAULT_SELF_CHECK);
+    setIsSelfCheckSubmitted(false);
+    setSelfCheckError(null);
+    setMatchedArticles([]);
+    setIsMappingPending(false);
   }
 
   const [runningAuditId, setRunningAuditId] = useState<number | null>(null);
   const [runningStep, setRunningStep] = useState(2);
+
+  // auditId는 새로 실행한 감사(runningAuditId) 또는 조회 중인 기존 감사(viewAuditId) 중
+  // 현재 화면에 결과가 떠 있는 쪽을 가리킨다 — 자가점검 제출/조회는 이 값을 기준으로 한다.
+  const auditId = viewAuditId ?? runningAuditId;
+
+  // 자가점검 제출·매핑 폴링이 진행되는 동안 다른 감사로 전환되면(viewAuditId 변경) 리셋은
+  // 즉시 일어나지만 이미 날아간 요청은 취소되지 않는다. 뒤늦게 도착한 응답이 현재 화면에
+  // 반영되지 않도록, 요청 시작 시점의 auditId와 최신 auditId(ref)가 같을 때만 상태를 갱신한다.
+  const auditIdRef = useRef(auditId);
+  useEffect(() => {
+    auditIdRef.current = auditId;
+  }, [auditId]);
 
   // 분석 중(currentStep 3=SHAP 분석 중 → 4=Fairlearn 분석 중) 진행 상황을 보여주기
   // 위해 짧은 간격으로 currentStep을 조회한다. 이 값의 의미는
@@ -229,7 +257,9 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
   }, [isAnalyzing, runningAuditId]);
 
   // 알림/최근 감사 이력에서 특정 감사를 보러 온 경우, 새로 실행하는 대신
-  // 그 감사의 실제 SHAP/Fairlearn 결과를 조회해서 STEP2~4 결과 영역에 그대로 채운다.
+  // 그 감사의 실제 SHAP/Fairlearn 결과와 자가점검 응답·매핑 결과를 조회해서
+  // STEP2~4 결과 영역에 그대로 채운다. (자가점검 응답이 있으면 이미 제출된 것으로
+  // 표시해 view 모드에서 재제출하듯 보이지 않게 한다.)
   useEffect(() => {
     if (viewAuditId == null) return;
 
@@ -239,12 +269,22 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     Promise.all([
       getExplainability(viewAuditId),
       getFairness(viewAuditId),
+      getSelfCheckAnswers(viewAuditId),
+      getRegulationMappings(viewAuditId),
     ])
-      .then(([explainability, fairness]) => {
+      .then(([explainability, fairness, selfCheck, regulationMappings]) => {
         if (cancelled) return;
         setShapMetrics(explainability.metrics);
         setFairnessResults(fairness.results);
         setIsAnalyzed(true);
+
+        const hydratedAnswers = { ...DEFAULT_SELF_CHECK };
+        selfCheck.answers.forEach((item) => {
+          hydratedAnswers[item.itemCode] = item.answer ? 'yes' : 'no';
+        });
+        setSelfCheckAnswers(hydratedAnswers);
+        setIsSelfCheckSubmitted(selfCheck.answers.length > 0);
+        setMatchedArticles(regulationMappings.mappings);
       })
       .catch(() => {
         if (!cancelled) setAnalysisError('감사 결과를 불러오지 못했습니다.');
@@ -257,10 +297,6 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
       cancelled = true;
     };
   }, [viewAuditId]);
-
-  const [selfCheckAnswers, setSelfCheckAnswers] =
-    useState<Record<string, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
-  const [isSelfCheckSubmitted, setIsSelfCheckSubmitted] = useState(false);
 
   const [selectedDeliverables, setSelectedDeliverables] = useState<Set<string>>(
     () => new Set(DEFAULT_SELECTED_DELIVERABLES),
@@ -409,6 +445,11 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     setFairnessResults([]);
     setRunningAuditId(null);
     setRunningStep(2);
+    setSelfCheckAnswers(DEFAULT_SELF_CHECK);
+    setIsSelfCheckSubmitted(false);
+    setSelfCheckError(null);
+    setMatchedArticles([]);
+    setIsMappingPending(false);
 
     try {
       const model = await uploadModel(
@@ -485,9 +526,82 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     }
   };
 
-  const handleSelfCheckAnswer = (id: string, answer: SelfCheckAnswer) => {
+  const handleSelfCheckAnswer = (
+    id: SelfCheckItemCode,
+    answer: SelfCheckAnswer,
+  ) => {
     setIsSelfCheckSubmitted(false);
     setSelfCheckAnswers((prev) => ({ ...prev, [id]: answer }));
+    // 답변을 바꾸면 이전 제출 기준으로 나온 매칭 조항은 더 이상 유효하지 않으므로 같이 지운다.
+    setMatchedArticles([]);
+  };
+
+  // 매핑 생성이 제한 시간 내에 안 끝나면(RegulationMappingTimeoutError) 실제로 매핑이
+  // 없는 것("매칭된 조항이 없습니다")과 구분해 아직 생성 중인 상태로 보여주고, 재조회할 수 있게 한다.
+  // id는 이 요청을 시작한 시점의 auditId — 응답이 왔을 때 auditIdRef.current(최신 auditId)와
+  // 다르면 이미 다른 감사로 전환된 것이므로 상태를 건드리지 않고 버린다.
+  const loadMatchedArticles = async (id: number) => {
+    setIsLoadingMatches(true);
+    setIsMappingPending(false);
+
+    try {
+      const mappings = await waitForRegulationMappings(id);
+      if (auditIdRef.current !== id) return;
+      setMatchedArticles(mappings);
+    } catch (error) {
+      if (auditIdRef.current !== id) return;
+
+      if (error instanceof RegulationMappingTimeoutError) {
+        setIsMappingPending(true);
+      } else {
+        setSelfCheckError(
+          error instanceof Error
+            ? error.message
+            : '매칭 조항 조회 중 오류가 발생했습니다.',
+        );
+      }
+    } finally {
+      if (auditIdRef.current === id) setIsLoadingMatches(false);
+    }
+  };
+
+  const handleSelfCheckSubmit = async () => {
+    if (!auditId || !isSelfCheckComplete || isSelfCheckSubmitting) return;
+
+    // 제출을 시작한 감사를 고정해둔다 — 폴링 도중 다른 감사로 전환돼도 이 값 기준으로
+    // 판단하므로, 뒤늦게 도착한 응답이 새로 전환된 화면을 덮어쓰지 않는다.
+    const submittedAuditId = auditId;
+
+    setIsSelfCheckSubmitting(true);
+    setSelfCheckError(null);
+
+    try {
+      const answers = SELF_CHECK_ITEMS.map((item) => ({
+        itemCode: item.id,
+        answer: selfCheckAnswers[item.id] === 'yes',
+      }));
+
+      await saveSelfCheckAnswers(submittedAuditId, answers);
+      if (auditIdRef.current !== submittedAuditId) return;
+
+      setIsSelfCheckSubmitted(true);
+      await loadMatchedArticles(submittedAuditId);
+    } catch (error) {
+      if (auditIdRef.current === submittedAuditId) {
+        setSelfCheckError(
+          error instanceof Error
+            ? error.message
+            : '규제 자가 점검 제출 중 오류가 발생했습니다.',
+        );
+      }
+    } finally {
+      if (auditIdRef.current === submittedAuditId) setIsSelfCheckSubmitting(false);
+    }
+  };
+
+  const handleRetryMatches = () => {
+    if (!auditId || isLoadingMatches) return;
+    loadMatchedArticles(auditId);
   };
 
   const toggleDeliverable = (id: string) => {
@@ -926,6 +1040,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
                         <button
                           type="button"
                           className={`audit-execution-section__answer audit-execution-section__answer--yes${selfCheckAnswers[item.id] === 'yes' ? ' audit-execution-section__answer--selected-yes' : ''}`}
+                          disabled={isViewMode}
                           onClick={() => handleSelfCheckAnswer(item.id, 'yes')}
                         >
                           예
@@ -933,6 +1048,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
                         <button
                           type="button"
                           className={`audit-execution-section__answer audit-execution-section__answer--no${selfCheckAnswers[item.id] === 'no' ? ' audit-execution-section__answer--selected-no' : ''}`}
+                          disabled={isViewMode}
                           onClick={() => handleSelfCheckAnswer(item.id, 'no')}
                         >
                           아니오
@@ -957,31 +1073,62 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
                   <button
                     type="button"
                     className="audit-execution-section__submit-button"
-                    disabled={!isSelfCheckComplete || isSelfCheckSubmitted}
-                    onClick={() => setIsSelfCheckSubmitted(true)}
+                    disabled={
+                      !isSelfCheckComplete ||
+                      isSelfCheckSubmitted ||
+                      isSelfCheckSubmitting ||
+                      isViewMode
+                    }
+                    onClick={handleSelfCheckSubmit}
                   >
-                    제출
+                    {isSelfCheckSubmitting ? '제출 중…' : '제출'}
                   </button>
                 </div>
+
+                {selfCheckError && (
+                  <p className="audit-execution-section__empty" role="alert">
+                    {selfCheckError}
+                  </p>
+                )}
               </div>
 
               <div className="audit-execution-section__matched-articles">
                 <h3 className="audit-execution-section__self-check-title">
                   STEP 4 — 매칭 조항 (실제 조항명·원문 인용)
                 </h3>
-                {MATCHED_ARTICLES.length === 0 ? (
+                {isLoadingMatches ? (
                   <p className="audit-execution-section__empty">
-                    RAG 법조문 매칭 API 연동 전이라 결과가 없습니다.
+                    매칭 조항을 불러오는 중입니다…
+                  </p>
+                ) : isMappingPending ? (
+                  <div className="audit-execution-section__empty">
+                    <p>매칭 조항을 아직 생성하는 중입니다. 잠시 후 다시 조회해주세요.</p>
+                    <button
+                      type="button"
+                      className="audit-execution-section__submit-button"
+                      onClick={handleRetryMatches}
+                    >
+                      다시 조회
+                    </button>
+                  </div>
+                ) : matchedArticles.length === 0 ? (
+                  <p className="audit-execution-section__empty">
+                    {isSelfCheckSubmitted
+                      ? '매칭된 조항이 없습니다.'
+                      : '자가점검을 제출하면 매칭 결과가 표시됩니다.'}
                   </p>
                 ) : (
                   <ul className="audit-execution-section__matched-list">
-                    {MATCHED_ARTICLES.map((article) => (
-                      <li key={article.id} className="audit-execution-section__matched-item">
+                    {matchedArticles.map((article) => (
+                      <li
+                        key={article.mappingId}
+                        className="audit-execution-section__matched-item"
+                      >
                         <p className="audit-execution-section__matched-title">
-                          {article.title}
+                          {article.regulation} {article.article}
                         </p>
                         <p className="audit-execution-section__matched-quote">
-                          「...원문 인용 표시 영역...」
+                          「{article.content}」
                         </p>
                       </li>
                     ))}
