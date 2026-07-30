@@ -107,17 +107,30 @@ function toRecentAudits(audits: AuditSummary[]): RecentAudit[] {
 }
 
 function toInProgressAudit(audits: AuditSummary[]): InProgressAudit | null {
+  // 모델 분석(FAILED 제외한 터미널 상태)이 끝났어도 사용자가 자가점검·결과 확인을
+  // 아직 하지 않았다면(viewedIds에 없다면) 홈 화면에서는 계속 "진행중"으로 본다.
+  const viewedIds = getViewedAuditResultIds();
+
   const inProgress = audits.find(
-    (audit) => audit.status === 'PENDING' || audit.status === 'IN_PROGRESS',
+    (audit) =>
+      audit.status === 'PENDING' ||
+      audit.status === 'IN_PROGRESS' ||
+      (audit.status !== 'FAILED' &&
+        TERMINAL_STATUSES.includes(audit.status) &&
+        !viewedIds.has(audit.auditId)),
   );
 
   if (!inProgress) return null;
 
+  const isAwaitingSelfCheck = TERMINAL_STATUSES.includes(inProgress.status);
+
   return {
     auditId: inProgress.auditId,
-    step: inProgress.currentStep,
+    step: isAwaitingSelfCheck ? TOTAL_STEPS : inProgress.currentStep,
     totalSteps: TOTAL_STEPS,
-    label: STEP_LABEL[inProgress.currentStep] ?? '분석 진행 중',
+    label: isAwaitingSelfCheck
+      ? '자가점검 및 결과 확인 대기 중'
+      : (STEP_LABEL[inProgress.currentStep] ?? '분석 진행 중'),
   };
 }
 
