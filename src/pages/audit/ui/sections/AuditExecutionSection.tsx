@@ -530,7 +530,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
       setSelfCheckError(
         error instanceof Error
           ? error.message
-          : '자율점검 제출 중 오류가 발생했습니다.',
+          : '규제 자가 점검 제출 중 오류가 발생했습니다.',
       );
     } finally {
       setIsSelfCheckSubmitting(false);
