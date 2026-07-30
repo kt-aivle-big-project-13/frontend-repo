@@ -16,6 +16,7 @@ import {
 import {
   startAudit,
   waitForAuditCompletion,
+  getAudits,
   getFairness,
   getExplainability,
   type FairlearnResultItem,
@@ -158,7 +159,14 @@ const FAIRNESS_STATUS_VARIANT: Record<FairlearnStatus, 'good' | 'warn' | 'bad'> 
   FAIL: 'bad',
 };
 
-function AuditExecutionSection() {
+interface AuditExecutionSectionProps {
+  // 지정되면 새 감사를 실행하는 대신 이미 완료된 감사의 결과를 조회해서 보여준다.
+  viewAuditId?: number;
+}
+
+function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
+  const isViewMode = viewAuditId != null;
+
   const [modelMode, setModelMode] = useState<ModelMode>('new');
   const [modelName, setModelName] = useState('');
   const [modelFile, setModelFile] = useState<File | null>(null);
@@ -181,6 +189,74 @@ function AuditExecutionSection() {
   const [fairnessResults, setFairnessResults] = useState<
     FairlearnResultItem[]
   >([]);
+
+  const [isLoadingExisting, setIsLoadingExisting] = useState(isViewMode);
+
+  // viewAuditId가 바뀌면(알림/최근 이력에서 다른 감사로 연속 이동) 이전 감사의 결과가
+  // 잠시 남아있지 않도록 렌더링 중에 바로 리셋한다. 이펙트 안에서 동기적으로 setState를
+  // 호출하면 불필요한 추가 렌더가 발생하므로, React가 권장하는 "props 변경 시 렌더링
+  // 중 상태 조정" 패턴을 사용한다.
+  const [prevViewAuditId, setPrevViewAuditId] = useState(viewAuditId);
+  if (viewAuditId !== prevViewAuditId) {
+    setPrevViewAuditId(viewAuditId);
+    setIsLoadingExisting(viewAuditId != null);
+    setIsAnalyzed(false);
+    setAnalysisError(null);
+    setShapMetrics([]);
+    setFairnessResults([]);
+  }
+
+  const [runningAuditId, setRunningAuditId] = useState<number | null>(null);
+  const [runningStep, setRunningStep] = useState(2);
+
+  // 분석 중(currentStep 3=SHAP 분석 중 → 4=Fairlearn 분석 중) 진행 상황을 보여주기
+  // 위해 짧은 간격으로 currentStep을 조회한다. 이 값의 의미는
+  // AuditOverviewSection의 STEP_LABEL과 동일해야 한다. 완료 여부 판단은
+  // handleRunAnalysis의 waitForAuditCompletion이 그대로 담당하고, 이건 화면 표시용이다.
+  useEffect(() => {
+    if (!isAnalyzing || runningAuditId == null) return;
+
+    const timer = window.setInterval(() => {
+      getAudits()
+        .then((audits) => {
+          const current = audits.find((item) => item.auditId === runningAuditId);
+          if (current) setRunningStep(current.currentStep);
+        })
+        .catch(() => {});
+    }, 2000);
+
+    return () => window.clearInterval(timer);
+  }, [isAnalyzing, runningAuditId]);
+
+  // 알림/최근 감사 이력에서 특정 감사를 보러 온 경우, 새로 실행하는 대신
+  // 그 감사의 실제 SHAP/Fairlearn 결과를 조회해서 STEP2~4 결과 영역에 그대로 채운다.
+  useEffect(() => {
+    if (viewAuditId == null) return;
+
+    // 뒤늦게 도착한 이전 요청의 응답이 최신 화면을 덮어쓰지 않도록 취소 플래그를 둔다.
+    let cancelled = false;
+
+    Promise.all([
+      getExplainability(viewAuditId),
+      getFairness(viewAuditId),
+    ])
+      .then(([explainability, fairness]) => {
+        if (cancelled) return;
+        setShapMetrics(explainability.metrics);
+        setFairnessResults(fairness.results);
+        setIsAnalyzed(true);
+      })
+      .catch(() => {
+        if (!cancelled) setAnalysisError('감사 결과를 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingExisting(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [viewAuditId]);
 
   const [selfCheckAnswers, setSelfCheckAnswers] =
     useState<Record<string, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
@@ -331,6 +407,8 @@ function AuditExecutionSection() {
     setIsAnalyzed(false);
     setShapMetrics([]);
     setFairnessResults([]);
+    setRunningAuditId(null);
+    setRunningStep(2);
 
     try {
       const model = await uploadModel(
@@ -377,6 +455,8 @@ function AuditExecutionSection() {
           manualThreshold: 0.5,
         });
       }
+
+      setRunningAuditId(started.auditId);
 
       const completed = await waitForAuditCompletion(started.auditId);
 
@@ -433,6 +513,8 @@ function AuditExecutionSection() {
         }
       />
 
+      {!isViewMode && !isAnalyzed && (
+      <>
       <div className="audit-execution-section__upload-grid">
         <div className="audit-execution-section__upload-card">
           <div className="audit-execution-section__upload-header">
@@ -658,6 +740,8 @@ function AuditExecutionSection() {
           {isAnalyzing ? '분석 중…' : '감사 분석 실행'}
         </button>
       </div>
+      </>
+      )}
 
       {analysisError && (
         <p className="audit-execution-section__empty" role="alert">
@@ -665,7 +749,7 @@ function AuditExecutionSection() {
         </p>
       )}
 
-      {isAnalyzing ? (
+      {isAnalyzing || (isViewMode && isLoadingExisting) ? (
         <div
           className="audit-execution-section__loading"
           role="status"
@@ -673,13 +757,58 @@ function AuditExecutionSection() {
         >
           <span className="audit-execution-section__spinner" aria-hidden="true" />
           <p className="audit-execution-section__loading-text">
-            감사 분석을 실행하고 있습니다. 잠시만 기다려주세요.
+            {isViewMode
+              ? '감사 결과를 불러오고 있습니다. 잠시만 기다려주세요.'
+              : '감사 분석을 실행하고 있습니다. 잠시만 기다려주세요.'}
           </p>
+
+          {isAnalyzing && !isViewMode && (
+            <div className="audit-execution-section__progress">
+              <div className="audit-execution-section__progress-track">
+                <div className="audit-execution-section__progress-fill" />
+              </div>
+
+              <ul className="audit-execution-section__progress-steps">
+                <li
+                  className={`audit-execution-section__progress-step${
+                    runningStep > 3
+                      ? ' audit-execution-section__progress-step--done'
+                      : runningStep === 3
+                        ? ' audit-execution-section__progress-step--active'
+                        : ''
+                  }`}
+                >
+                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true">
+                    {runningStep > 3 ? '✓' : ''}
+                  </span>
+                  설명가능성(SHAP) 분석
+                </li>
+                <li
+                  className={`audit-execution-section__progress-step${
+                    runningStep > 4
+                      ? ' audit-execution-section__progress-step--done'
+                      : runningStep === 4
+                        ? ' audit-execution-section__progress-step--active'
+                        : ''
+                  }`}
+                >
+                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true">
+                    {runningStep > 4 ? '✓' : ''}
+                  </span>
+                  Fairlearn 공정성 분석
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
       ) : !isAnalyzed ? (
-        <p className="audit-execution-section__empty">
-          모델과 감사 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.
-        </p>
+        analysisError ? null : (
+          <p className="audit-execution-section__empty">
+            {isViewMode
+              ? '조회할 감사 결과가 없습니다.'
+              : '모델과 감사 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.'}
+          </p>
+        )
       ) : (
         <>
           <section className="audit-execution-section__result-card">

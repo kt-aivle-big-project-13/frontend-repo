@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge, Empty, Popover, Spin } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
 
@@ -24,6 +25,7 @@ function formatSentAt(value: string): string {
 }
 
 function NotificationBell() {
+  const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,21 +62,26 @@ function NotificationBell() {
   };
 
   const handleItemClick = async (item: NotificationItem) => {
-    if (item.isRead) return;
+    if (!item.isRead) {
+      try {
+        await markNotificationRead(item.id);
 
-    try {
-      await markNotificationRead(item.id);
+        setNotifications((prev) =>
+          prev.map((notification) =>
+            notification.id === item.id
+              ? { ...notification, isRead: true }
+              : notification,
+          ),
+        );
+        setUnreadCount((prev) => Math.max(prev - 1, 0));
+      } catch {
+        // 읽음 처리 실패는 조용히 무시한다 - 다음 폴링에서 배지 정합성이 복구된다.
+      }
+    }
 
-      setNotifications((prev) =>
-        prev.map((notification) =>
-          notification.id === item.id
-            ? { ...notification, isRead: true }
-            : notification,
-        ),
-      );
-      setUnreadCount((prev) => Math.max(prev - 1, 0));
-    } catch {
-      // 읽음 처리 실패는 조용히 무시한다 - 다음 폴링에서 배지 정합성이 복구된다.
+    if (item.auditId !== null) {
+      setIsOpen(false);
+      navigate(`/audit/${item.auditId}`);
     }
   };
 

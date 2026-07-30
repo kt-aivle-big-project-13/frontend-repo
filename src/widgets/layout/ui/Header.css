@@ -87,6 +87,15 @@
   text-underline-offset: 6px;
 }
 
+.layout-header__nav-link--disabled {
+  color: #c1c7d0;
+  cursor: not-allowed;
+}
+
+.layout-header__nav-link--disabled:hover {
+  color: #c1c7d0;
+}
+
 @media (max-width: 768px) {
   .layout-header {
     padding: 0 20px;
