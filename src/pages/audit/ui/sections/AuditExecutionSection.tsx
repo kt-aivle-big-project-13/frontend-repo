@@ -21,6 +21,7 @@ import {
   getExplainability,
   saveSelfCheckAnswers,
   waitForRegulationMappings,
+  RegulationMappingTimeoutError,
   type FairlearnResultItem,
   type ShapMetricItem,
   type SelfCheckItemCode,
@@ -196,6 +197,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     RegulationMappingItem[]
   >([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
+  const [isMappingPending, setIsMappingPending] = useState(false);
 
   const [isLoadingExisting, setIsLoadingExisting] = useState(isViewMode);
 
@@ -215,6 +217,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     setIsSelfCheckSubmitted(false);
     setSelfCheckError(null);
     setMatchedArticles([]);
+    setIsMappingPending(false);
   }
 
   const [runningAuditId, setRunningAuditId] = useState<number | null>(null);
@@ -424,6 +427,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     setIsSelfCheckSubmitted(false);
     setSelfCheckError(null);
     setMatchedArticles([]);
+    setIsMappingPending(false);
 
     try {
       const model = await uploadModel(
@@ -508,6 +512,30 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     setSelfCheckAnswers((prev) => ({ ...prev, [id]: answer }));
   };
 
+  // 매핑 생성이 제한 시간 내에 안 끝나면(RegulationMappingTimeoutError) 실제로 매핑이
+  // 없는 것("매칭된 조항이 없습니다")과 구분해 아직 생성 중인 상태로 보여주고, 재조회할 수 있게 한다.
+  const loadMatchedArticles = async (id: number) => {
+    setIsLoadingMatches(true);
+    setIsMappingPending(false);
+
+    try {
+      const mappings = await waitForRegulationMappings(id);
+      setMatchedArticles(mappings);
+    } catch (error) {
+      if (error instanceof RegulationMappingTimeoutError) {
+        setIsMappingPending(true);
+      } else {
+        setSelfCheckError(
+          error instanceof Error
+            ? error.message
+            : '매칭 조항 조회 중 오류가 발생했습니다.',
+        );
+      }
+    } finally {
+      setIsLoadingMatches(false);
+    }
+  };
+
   const handleSelfCheckSubmit = async () => {
     if (!auditId || !isSelfCheckComplete || isSelfCheckSubmitting) return;
 
@@ -522,10 +550,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
 
       await saveSelfCheckAnswers(auditId, answers);
       setIsSelfCheckSubmitted(true);
-
-      setIsLoadingMatches(true);
-      const mappings = await waitForRegulationMappings(auditId);
-      setMatchedArticles(mappings);
+      await loadMatchedArticles(auditId);
     } catch (error) {
       setSelfCheckError(
         error instanceof Error
@@ -534,8 +559,12 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
       );
     } finally {
       setIsSelfCheckSubmitting(false);
-      setIsLoadingMatches(false);
     }
+  };
+
+  const handleRetryMatches = () => {
+    if (!auditId || isLoadingMatches) return;
+    loadMatchedArticles(auditId);
   };
 
   const toggleDeliverable = (id: string) => {
@@ -1031,11 +1060,22 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
                   <p className="audit-execution-section__empty">
                     매칭 조항을 불러오는 중입니다…
                   </p>
+                ) : isMappingPending ? (
+                  <div className="audit-execution-section__empty">
+                    <p>매칭 조항을 아직 생성하는 중입니다. 잠시 후 다시 조회해주세요.</p>
+                    <button
+                      type="button"
+                      className="audit-execution-section__submit-button"
+                      onClick={handleRetryMatches}
+                    >
+                      다시 조회
+                    </button>
+                  </div>
                 ) : matchedArticles.length === 0 ? (
                   <p className="audit-execution-section__empty">
                     {isSelfCheckSubmitted
                       ? '매칭된 조항이 없습니다.'
-                      : '자율점검을 제출하면 매칭 결과가 표시됩니다.'}
+                      : '자가점검을 제출하면 매칭 결과가 표시됩니다.'}
                   </p>
                 ) : (
                   <ul className="audit-execution-section__matched-list">

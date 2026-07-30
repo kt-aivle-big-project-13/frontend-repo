@@ -210,6 +210,15 @@ export async function getRegulationMappings(
   return data;
 }
 
+// 폴링이 제한 시간 안에 매핑을 못 받아온 경우. 실제로 매핑이 없는 것(빈 배열)과 구분해야
+// 화면에서 "매칭된 조항이 없습니다"로 잘못 단정하지 않고 재조회를 유도할 수 있다.
+export class RegulationMappingTimeoutError extends Error {
+  constructor() {
+    super('규제 매핑 조회가 제한 시간 내에 끝나지 않았습니다.');
+    this.name = 'RegulationMappingTimeoutError';
+  }
+}
+
 // 자율점검 제출 커밋 후 백엔드가 비동기로 법조문 매핑을 생성하므로, 매핑이 아직
 // 비어있으면 완료될 때까지 짧게 폴링한다.
 export async function waitForRegulationMappings(
@@ -225,5 +234,5 @@ export async function waitForRegulationMappings(
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
-  return [];
+  throw new RegulationMappingTimeoutError();
 }
