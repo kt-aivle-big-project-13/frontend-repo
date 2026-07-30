@@ -83,6 +83,10 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
   const [isMappingPending, setIsMappingPending] = useState(false);
 
+  // 자가점검을 하지 않고 넘어가고 싶은 사용자를 위한 건너뛰기 옵션 — 체크하면 자가점검
+  // 제출 여부와 무관하게 결과 확인으로 넘어갈 수 있다.
+  const [skipSelfCheck, setSkipSelfCheck] = useState(false);
+
   const isAnalyzed = isDone && status !== 'FAILED';
   const isFailed = isDone && status === 'FAILED';
 
@@ -100,6 +104,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     setSelfCheckError(null);
     setMatchedArticles([]);
     setIsMappingPending(false);
+    setSkipSelfCheck(false);
   }
 
   // 뒤늦게 도착한 이전 감사의 응답이 이미 전환된 화면을 덮어쓰지 않도록, 요청 시작 시점의
@@ -277,7 +282,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               : '모델 분석을 실행하고 있습니다. 잠시만 기다려주세요.'}
           </p>
           <p className="audit-execution-section__status-note">
-            체크리스트를 작성하는 동안 분석이 함께 진행됩니다.
+            자가 점검하는 동안 분석이 함께 진행됩니다.
           </p>
 
           {!isAnalyzed && (
@@ -452,10 +457,19 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       </section>
 
       <div className="audit-execution-section__proceed-bar">
+        <label className="audit-execution-section__checkbox-label">
+          <input
+            type="checkbox"
+            checked={skipSelfCheck}
+            onChange={(event) => setSkipSelfCheck(event.target.checked)}
+          />
+          자가점검을 건너뛰실 거면 체크해주세요
+        </label>
+
         <button
           type="button"
           className="audit-execution-section__run-button"
-          disabled={!isAnalyzed}
+          disabled={!isAnalyzed || (!skipSelfCheck && !isSelfCheckSubmitted)}
           onClick={() => navigate(`/audit/${auditId}/results`)}
         >
           결과 확인

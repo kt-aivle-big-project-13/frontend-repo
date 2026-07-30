@@ -7,12 +7,6 @@
 }
 
 .step-indicator__item {
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-.step-indicator__item:last-child {
   flex: 0 0 auto;
 }
 
@@ -37,8 +31,8 @@
 }
 
 .step-indicator__line {
+  flex: 1 1 0;
   height: 1px;
-  flex: 1;
   margin: 0 8px;
   background-color: #dde2ea;
 }

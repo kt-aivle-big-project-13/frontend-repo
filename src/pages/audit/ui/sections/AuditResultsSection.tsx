@@ -17,10 +17,10 @@ interface Deliverable {
 }
 
 const DELIVERABLES: Deliverable[] = [
+  { id: 'high-impact-ai', label: '고영향 AI 사전진단', fileType: 'PDF' },
   { id: 'shap-report', label: '설명가능성 리포트 (SHAP)', fileType: 'PDF' },
   { id: 'fairness-report', label: '편향 진단 보고서 (Fairlearn)', fileType: 'PDF' },
   { id: 'compliance-verdict', label: '규제준수 판정서', fileType: 'PDF' },
-  { id: 'impact-assessment', label: '영향평가서 초안', fileType: 'PDF' },
   { id: 'improvement-guide', label: '개선 권고 가이드', fileType: 'Word' },
 ];
 

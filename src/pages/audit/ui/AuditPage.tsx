@@ -11,7 +11,7 @@ export type AuditPageMode = 'upload' | 'checklist' | 'results';
 
 const PAGE_TITLE: Record<AuditPageMode, string> = {
   upload: '모델 감사 실행',
-  checklist: '체크리스트 작성',
+  checklist: '감사 진행 및 자가 점검',
   results: '결과물 및 보고서 다운로드',
 };
 
