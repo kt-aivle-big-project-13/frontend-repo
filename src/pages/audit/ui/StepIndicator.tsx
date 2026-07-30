@@ -2,10 +2,9 @@ import './StepIndicator.css';
 
 const STEPS = [
   { step: 1, label: 'STEP1 고영향 AI 사전진단' },
-  { step: 2, label: 'STEP2 SHAP 설명가능성' },
-  { step: 3, label: 'STEP3 Fairlearn 공정성' },
-  { step: 4, label: 'STEP4 RAG 법조문 매칭' },
-  { step: 5, label: 'STEP5 LLM 보고서' },
+  { step: 2, label: 'STEP2 모델 업로드' },
+  { step: 3, label: 'STEP3 체크리스트 작성' },
+  { step: 4, label: 'STEP4 결과물 및 보고서 다운로드' },
 ];
 
 interface StepIndicatorProps {

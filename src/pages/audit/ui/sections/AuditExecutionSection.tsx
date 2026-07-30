@@ -6,6 +6,7 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   uploadModel,
@@ -13,159 +14,15 @@ import {
   updateSensitiveAttributes,
   type ModelType,
 } from '../../../../features/audit/api/modelApi';
-import {
-  startAudit,
-  waitForAuditCompletion,
-  getAudits,
-  getFairness,
-  getExplainability,
-  type FairlearnResultItem,
-  type ShapMetricItem,
-} from '../../../../features/audit/api/auditApi';
+import { startAudit } from '../../../../features/audit/api/auditApi';
 import StepIndicator from '../StepIndicator';
 
-import './AuditExecutionSection.css';
+import './AuditFlow.css';
 
 type ModelMode = 'new' | 'update';
-type SelfCheckAnswer = 'yes' | 'no' | null;
 
-interface SelfCheckItem {
-  id: string;
-  question: string;
-  location: string;
-}
-
-const SELF_CHECK_ITEMS: SelfCheckItem[] = [
-  {
-    id: 'notice',
-    question: 'AI 심사 사실을 고객에게 사전에 알리고 있나요?',
-    location: '확인 위치: 대출 신청 화면, 약관, 상품 설명서',
-  },
-  {
-    id: 'objection',
-    question: '고객이 심사 결과에 이의를 제기할 절차가 있나요?',
-    location: '확인 위치: 이의제기 및 재심사 절차서, 고객센터 지침',
-  },
-  {
-    id: 'oversight',
-    question: 'AI 결정을 사람이 관리 및 감독하는 체계가 있나요?',
-    location: '확인 위치: 승인권자 지정 문서, 심사 개입 프로세스',
-  },
-  {
-    id: 'risk-management',
-    question: '위험관리 규정이 수립 및 운영되고 있나요?',
-    location: '확인 위치: 위험관리 내규, 운영 회의록',
-  },
-  {
-    id: 'documentation',
-    question: '조치 내용을 문서로 작성 및 보관하고 있나요?',
-    location: '확인 위치: 위험관리 내규, 운영 회의록',
-  },
-];
-
-const DEFAULT_SELF_CHECK: Record<string, SelfCheckAnswer> = {
-  notice: null,
-  objection: null,
-  oversight: null,
-  'risk-management': null,
-  documentation: null,
-};
-
-interface MatchedArticle {
-  id: string;
-  title: string;
-}
-
-// TODO: 실제 RAG 법조문 매칭 API 연동 필요 — 원문 인용은 검색된 조항만 표시(임의 생성 금지)
-const MATCHED_ARTICLES: MatchedArticle[] = [];
-
-interface Deliverable {
-  id: string;
-  label: string;
-  fileType: 'PDF' | 'Word';
-}
-
-const DELIVERABLES: Deliverable[] = [
-  { id: 'shap-report', label: '설명가능성 리포트 (SHAP)', fileType: 'PDF' },
-  { id: 'fairness-report', label: '편향 진단 보고서 (Fairlearn)', fileType: 'PDF' },
-  { id: 'compliance-verdict', label: '규제준수 판정서', fileType: 'PDF' },
-  { id: 'impact-assessment', label: '영향평가서 초안', fileType: 'PDF' },
-  { id: 'improvement-guide', label: '개선 권고 가이드', fileType: 'Word' },
-];
-
-const DEFAULT_SELECTED_DELIVERABLES = new Set<string>();
-
-type ShapMetricCode = ShapMetricItem['metricCode'];
-type ShapStatus = ShapMetricItem['status'];
-
-const SHAP_METRIC_LABEL: Record<ShapMetricCode, string> = {
-  SENSITIVE_CONTRIB: '민감변수 기여비율 (SENSITIVE_CONTRIB)',
-  GLOBAL_STABILITY: '설명 일관성 (GLOBAL_STABILITY)',
-  FIDELITY: '설명 충실성 (FIDELITY)',
-};
-
-const SHAP_STATUS_LABEL: Record<ShapStatus, string> = {
-  PASS: '충족',
-  WARNING: '주의',
-  REVIEW: '추가검토',
-};
-
-const SHAP_STATUS_VARIANT: Record<ShapStatus, 'good' | 'caution' | 'bad'> = {
-  PASS: 'good',
-  WARNING: 'caution',
-  REVIEW: 'bad',
-};
-
-type FairlearnMetricCode = FairlearnResultItem['metricCode'];
-type FairlearnStatus = FairlearnResultItem['status'];
-
-function groupFairnessByAttribute(
-  results: FairlearnResultItem[],
-): [string, FairlearnResultItem[]][] {
-  return Array.from(
-    results.reduce((groups, item) => {
-      const list = groups.get(item.attribute) ?? [];
-      list.push(item);
-      groups.set(item.attribute, list);
-      return groups;
-    }, new Map<string, FairlearnResultItem[]>()),
-  );
-}
-
-const FAIRNESS_ATTRIBUTE_LABEL: Record<string, string> = {
-  CODE_GENDER: '성별 (CODE_GENDER)',
-  AGE_GROUP: '연령대 (AGE_GROUP)',
-};
-
-const FAIRNESS_METRIC_LABEL: Record<FairlearnMetricCode, string> = {
-  DEMOGRAPHIC_PARITY: 'Demographic Parity',
-  EQUAL_OPPORTUNITY: 'Equal Opportunity',
-  EQUALIZED_ODDS: 'Equalized Odds',
-  PROPORTIONAL_PARITY: '비례성 패리티 (Proportional Parity, 80% Rule)',
-  FPR_PARITY: '거짓 양성률 패리티 (FPR Parity)',
-  FDR_PARITY: '거짓 발견율 패리티 (FDR Parity)',
-  FOR_PARITY: '거짓 누락률 패리티 (FOR Parity)',
-};
-
-const FAIRNESS_STATUS_LABEL: Record<FairlearnStatus, string> = {
-  PASS: '정상',
-  REVIEW: '추가검토',
-  FAIL: '기준초과',
-};
-
-const FAIRNESS_STATUS_VARIANT: Record<FairlearnStatus, 'good' | 'warn' | 'bad'> = {
-  PASS: 'good',
-  REVIEW: 'warn',
-  FAIL: 'bad',
-};
-
-interface AuditExecutionSectionProps {
-  // 지정되면 새 감사를 실행하는 대신 이미 완료된 감사의 결과를 조회해서 보여준다.
-  viewAuditId?: number;
-}
-
-function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
-  const isViewMode = viewAuditId != null;
+function AuditExecutionSection() {
+  const navigate = useNavigate();
 
   const [modelMode, setModelMode] = useState<ModelMode>('new');
   const [modelName, setModelName] = useState('');
@@ -182,123 +39,25 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
   const [validationDatasetFile, setValidationDatasetFile] =
     useState<File | null>(null);
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isAnalyzed, setIsAnalyzed] = useState(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [shapMetrics, setShapMetrics] = useState<ShapMetricItem[]>([]);
-  const [fairnessResults, setFairnessResults] = useState<
-    FairlearnResultItem[]
-  >([]);
-
-  const [isLoadingExisting, setIsLoadingExisting] = useState(isViewMode);
-
-  // viewAuditId가 바뀌면(알림/최근 이력에서 다른 감사로 연속 이동) 이전 감사의 결과가
-  // 잠시 남아있지 않도록 렌더링 중에 바로 리셋한다. 이펙트 안에서 동기적으로 setState를
-  // 호출하면 불필요한 추가 렌더가 발생하므로, React가 권장하는 "props 변경 시 렌더링
-  // 중 상태 조정" 패턴을 사용한다.
-  const [prevViewAuditId, setPrevViewAuditId] = useState(viewAuditId);
-  if (viewAuditId !== prevViewAuditId) {
-    setPrevViewAuditId(viewAuditId);
-    setIsLoadingExisting(viewAuditId != null);
-    setIsAnalyzed(false);
-    setAnalysisError(null);
-    setShapMetrics([]);
-    setFairnessResults([]);
-  }
-
-  const [runningAuditId, setRunningAuditId] = useState<number | null>(null);
-  const [runningStep, setRunningStep] = useState(2);
-
-  // 분석 중(currentStep 3=SHAP 분석 중 → 4=Fairlearn 분석 중) 진행 상황을 보여주기
-  // 위해 짧은 간격으로 currentStep을 조회한다. 이 값의 의미는
-  // AuditOverviewSection의 STEP_LABEL과 동일해야 한다. 완료 여부 판단은
-  // handleRunAnalysis의 waitForAuditCompletion이 그대로 담당하고, 이건 화면 표시용이다.
-  useEffect(() => {
-    if (!isAnalyzing || runningAuditId == null) return;
-
-    const timer = window.setInterval(() => {
-      getAudits()
-        .then((audits) => {
-          const current = audits.find((item) => item.auditId === runningAuditId);
-          if (current) setRunningStep(current.currentStep);
-        })
-        .catch(() => {});
-    }, 2000);
-
-    return () => window.clearInterval(timer);
-  }, [isAnalyzing, runningAuditId]);
-
-  // 알림/최근 감사 이력에서 특정 감사를 보러 온 경우, 새로 실행하는 대신
-  // 그 감사의 실제 SHAP/Fairlearn 결과를 조회해서 STEP2~4 결과 영역에 그대로 채운다.
-  useEffect(() => {
-    if (viewAuditId == null) return;
-
-    // 뒤늦게 도착한 이전 요청의 응답이 최신 화면을 덮어쓰지 않도록 취소 플래그를 둔다.
-    let cancelled = false;
-
-    Promise.all([
-      getExplainability(viewAuditId),
-      getFairness(viewAuditId),
-    ])
-      .then(([explainability, fairness]) => {
-        if (cancelled) return;
-        setShapMetrics(explainability.metrics);
-        setFairnessResults(fairness.results);
-        setIsAnalyzed(true);
-      })
-      .catch(() => {
-        if (!cancelled) setAnalysisError('감사 결과를 불러오지 못했습니다.');
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoadingExisting(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [viewAuditId]);
-
-  const [selfCheckAnswers, setSelfCheckAnswers] =
-    useState<Record<string, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
-  const [isSelfCheckSubmitted, setIsSelfCheckSubmitted] = useState(false);
-
-  const [selectedDeliverables, setSelectedDeliverables] = useState<Set<string>>(
-    () => new Set(DEFAULT_SELECTED_DELIVERABLES),
-  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const modelFileInputRef = useRef<HTMLInputElement>(null);
   const auditDatasetFileInputRef = useRef<HTMLInputElement>(null);
   const validationDatasetFileInputRef = useRef<HTMLInputElement>(null);
 
-  const answeredCount = useMemo(
-    () => Object.values(selfCheckAnswers).filter((answer) => answer !== null).length,
-    [selfCheckAnswers],
-  );
-  const unansweredCount = SELF_CHECK_ITEMS.length - answeredCount;
-  const isSelfCheckComplete = unansweredCount === 0;
-
-  const selectedDeliverableCount = selectedDeliverables.size;
-
-  const fairnessGroups = useMemo(
-    () => groupFairnessByAttribute(fairnessResults),
-    [fairnessResults],
-  );
-
-  // 분석 진행 상태와 결과는 이 컴포넌트 state 에만 있어서 새로고침하면 그대로 사라진다.
-  // 실행 중이거나 결과가 떠 있을 때만 브라우저 기본 이탈 경고를 붙인다.
+  // 업로드·감사 시작 요청이 나가는 동안 새로고침하면 처음부터 다시 올려야 하므로 이탈을 경고한다.
   useEffect(() => {
-    if (!isAnalyzing && !isAnalyzed) return;
+    if (!isSubmitting) return;
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      // 경고 문구는 브라우저가 고정하므로 커스터마이즈할 수 없다.
-      // 다만 구형 브라우저는 returnValue 가 설정돼야 경고를 띄운다.
       event.returnValue = '';
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isAnalyzing, isAnalyzed]);
+  }, [isSubmitting]);
 
   // AI 서버가 아직 XGBoost(.json) 외 포맷을 로드하지 못해 .pkl/.joblib은 실행 단계에서 막힌다.
   // 여기서도 같은 기준으로 미리 알려준다 (resolveModelType 과 일치시킬 것).
@@ -389,26 +148,20 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
   const resolveModelType = (file: File): ModelType | null =>
     file.name.toLowerCase().endsWith('.json') ? 'XGBOOST' : null;
 
-  const handleRunAnalysis = async () => {
-    if (!modelFile || !auditDatasetFile || isAnalyzing) return;
+  const handleStartAudit = async () => {
+    if (!modelFile || !auditDatasetFile || isSubmitting) return;
     if (useValidationDataset && !validationDatasetFile) return;
 
     const modelType = resolveModelType(modelFile);
     if (!modelType) {
-      setAnalysisError(
+      setSubmitError(
         '.pkl/.joblib 모델은 아직 모델 타입을 자동으로 판단할 수 없습니다. .json(XGBoost) 파일로 업로드해주세요.',
       );
       return;
     }
 
-    setIsAnalyzing(true);
-    setAnalysisError(null);
-    // 이전 실행 결과가 남아있으면 새 실행이 실패했을 때 옛 결과가 그대로 보이므로 먼저 지운다.
-    setIsAnalyzed(false);
-    setShapMetrics([]);
-    setFairnessResults([]);
-    setRunningAuditId(null);
-    setRunningStep(2);
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const model = await uploadModel(
@@ -456,65 +209,24 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
         });
       }
 
-      setRunningAuditId(started.auditId);
-
-      const completed = await waitForAuditCompletion(started.auditId);
-
-      if (completed.status === 'FAILED') {
-        throw new Error(
-          '감사 분석이 실패했습니다. 백엔드·AI 서버 로그를 확인해주세요.',
-        );
-      }
-
-      const [fairness, explainability] = await Promise.all([
-        getFairness(started.auditId),
-        getExplainability(started.auditId),
-      ]);
-
-      setFairnessResults(fairness.results);
-      setShapMetrics(explainability.metrics);
-      setIsAnalyzed(true);
+      // 실제 SHAP/Fairlearn 분석은 오래 걸릴 수 있어, 여기서 기다리는 대신
+      // STEP3(체크리스트 작성) 페이지로 바로 이동해 분석 진행 상황을 보여주면서
+      // 자가점검 체크리스트를 함께 작성할 수 있게 한다.
+      navigate(`/audit/${started.auditId}`);
     } catch (error) {
-      setAnalysisError(
+      setSubmitError(
         error instanceof Error
           ? error.message
-          : '감사 분석 실행 중 오류가 발생했습니다.',
+          : '감사 시작 중 오류가 발생했습니다.',
       );
-    } finally {
-      setIsAnalyzing(false);
+      setIsSubmitting(false);
     }
-  };
-
-  const handleSelfCheckAnswer = (id: string, answer: SelfCheckAnswer) => {
-    setIsSelfCheckSubmitted(false);
-    setSelfCheckAnswers((prev) => ({ ...prev, [id]: answer }));
-  };
-
-  const toggleDeliverable = (id: string) => {
-    setSelectedDeliverables((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
   };
 
   return (
     <div className="audit-execution-section">
-      <StepIndicator
-        doneSteps={
-          isSelfCheckSubmitted ? [1, 2, 3, 4] : isAnalyzed ? [1, 2, 3] : [1]
-        }
-        activeSteps={
-          isSelfCheckSubmitted ? [5] : isAnalyzed ? [4] : [2, 3, 4]
-        }
-      />
+      <StepIndicator doneSteps={[1]} activeSteps={[2]} />
 
-      {!isViewMode && !isAnalyzed && (
-      <>
       <div className="audit-execution-section__upload-grid">
         <div className="audit-execution-section__upload-card">
           <div className="audit-execution-section__upload-header">
@@ -732,318 +444,19 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
           disabled={
             !modelFile ||
             !auditDatasetFile ||
-            isAnalyzing ||
+            isSubmitting ||
             (useValidationDataset && !validationDatasetFile)
           }
-          onClick={handleRunAnalysis}
+          onClick={handleStartAudit}
         >
-          {isAnalyzing ? '분석 중…' : '감사 시작'}
+          {isSubmitting ? '시작 중…' : '감사 시작'}
         </button>
       </div>
-      </>
-      )}
 
-      {analysisError && (
+      {submitError && (
         <p className="audit-execution-section__empty" role="alert">
-          {analysisError}
+          {submitError}
         </p>
-      )}
-
-      {isAnalyzing || (isViewMode && isLoadingExisting) ? (
-        <div
-          className="audit-execution-section__loading"
-          role="status"
-          aria-live="polite"
-        >
-          <span className="audit-execution-section__spinner" aria-hidden="true" />
-          <p className="audit-execution-section__loading-text">
-            {isViewMode
-              ? '감사 결과를 불러오고 있습니다. 잠시만 기다려주세요.'
-              : '감사 분석을 실행하고 있습니다. 잠시만 기다려주세요.'}
-          </p>
-
-          {isAnalyzing && !isViewMode && (
-            <div className="audit-execution-section__progress">
-              <div className="audit-execution-section__progress-track">
-                <div className="audit-execution-section__progress-fill" />
-              </div>
-
-              <ul className="audit-execution-section__progress-steps">
-                <li
-                  className={`audit-execution-section__progress-step${
-                    runningStep > 3
-                      ? ' audit-execution-section__progress-step--done'
-                      : runningStep === 3
-                        ? ' audit-execution-section__progress-step--active'
-                        : ''
-                  }`}
-                >
-                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true">
-                    {runningStep > 3 ? '✓' : ''}
-                  </span>
-                  설명가능성(SHAP) 분석
-                </li>
-                <li
-                  className={`audit-execution-section__progress-step${
-                    runningStep > 4
-                      ? ' audit-execution-section__progress-step--done'
-                      : runningStep === 4
-                        ? ' audit-execution-section__progress-step--active'
-                        : ''
-                  }`}
-                >
-                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true">
-                    {runningStep > 4 ? '✓' : ''}
-                  </span>
-                  Fairlearn 공정성 분석
-                </li>
-              </ul>
-            </div>
-          )}
-        </div>
-      ) : !isAnalyzed ? (
-        analysisError ? null : (
-          <p className="audit-execution-section__empty">
-            {isViewMode
-              ? '조회할 감사 결과가 없습니다.'
-              : '모델과 감사 데이터를 업로드하고 분석을 실행하면 결과가 표시됩니다.'}
-          </p>
-        )
-      ) : (
-        <>
-          <section className="audit-execution-section__result-card">
-            <h2 className="audit-execution-section__result-title">
-              STEP 2 결과 — 설명가능성 3지표
-            </h2>
-
-            {shapMetrics.length === 0 ? (
-              <p className="audit-execution-section__empty">
-                SHAP 분석 결과가 없습니다.
-              </p>
-            ) : (
-              <div className="audit-execution-section__stat-grid">
-                {shapMetrics.map((metric) => (
-                  <div key={metric.metricCode} className="audit-execution-section__stat">
-                    <p className="audit-execution-section__stat-label">
-                      {SHAP_METRIC_LABEL[metric.metricCode]}
-                    </p>
-                    <div className="audit-execution-section__fairness-row">
-                      <p className="audit-execution-section__stat-value">{metric.value}</p>
-                      <span
-                        className={`audit-execution-section__fairness-status audit-execution-section__fairness-status--${SHAP_STATUS_VARIANT[metric.status]}`}
-                      >
-                        {SHAP_STATUS_LABEL[metric.status]}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="audit-execution-section__result-card">
-            <h2 className="audit-execution-section__result-title">
-              STEP 3 결과 — Fairlearn 공정성{' '}
-              <span className="audit-execution-section__result-note">
-                (편향은 확정이 아닌 추가검토 신호)
-              </span>
-            </h2>
-            {fairnessGroups.length === 0 ? (
-              <p className="audit-execution-section__empty">
-                Fairlearn 감사 결과가 없습니다.
-              </p>
-            ) : (
-              fairnessGroups.map(([attribute, metrics]) => (
-                <div key={attribute} className="audit-execution-section__fairness-group">
-                  <p className="audit-execution-section__fairness-group-title">
-                    {FAIRNESS_ATTRIBUTE_LABEL[attribute] ?? attribute}
-                  </p>
-                  {metrics[0]?.note && (
-                    <p className="audit-execution-section__fairness-note">
-                      {metrics[0].note}
-                    </p>
-                  )}
-                  <div className="audit-execution-section__stat-grid">
-                    {metrics.map((metric) => (
-                      <div
-                        key={metric.metricCode}
-                        className="audit-execution-section__stat"
-                      >
-                        <p className="audit-execution-section__stat-label">
-                          {FAIRNESS_METRIC_LABEL[metric.metricCode]}
-                        </p>
-                        <div className="audit-execution-section__fairness-row">
-                          <p className="audit-execution-section__stat-value">
-                            {metric.value}
-                          </p>
-                          <span
-                            className={`audit-execution-section__fairness-status-text audit-execution-section__fairness-status-text--${FAIRNESS_STATUS_VARIANT[metric.status]}`}
-                          >
-                            {FAIRNESS_STATUS_LABEL[metric.status]}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </section>
-
-          <section className="audit-execution-section__result-card">
-            <h2 className="audit-execution-section__result-title">
-              STEP 4 결과 — RAG 법조문 매칭
-            </h2>
-
-            <div className="audit-execution-section__step4-grid">
-              <div className="audit-execution-section__self-check">
-                <div className="audit-execution-section__self-check-header">
-                  <h3 className="audit-execution-section__self-check-title">
-                    STEP 4 — 규제 자가점검 (5항목)
-                  </h3>
-                  <span className="audit-execution-section__self-check-count">
-                    {answeredCount}/{SELF_CHECK_ITEMS.length} 응답
-                  </span>
-                </div>
-
-                <p className="audit-execution-section__self-check-desc">
-                  응답 내용은 감사 보고서에 &apos;담당자 확인&apos; 근거로 반영됩니다.
-                  &apos;아니오&apos;로 답한 항목은 개선 권고와 함께 정리됩니다.
-                </p>
-
-                <ul className="audit-execution-section__self-check-list">
-                  {SELF_CHECK_ITEMS.map((item) => (
-                    <li key={item.id} className="audit-execution-section__self-check-item">
-                      <div className="audit-execution-section__self-check-item-text">
-                        <p className="audit-execution-section__self-check-question">
-                          {item.question}
-                        </p>
-                        <p className="audit-execution-section__self-check-location">
-                          {item.location}
-                        </p>
-                      </div>
-                      <div className="audit-execution-section__answer-group">
-                        <button
-                          type="button"
-                          className={`audit-execution-section__answer audit-execution-section__answer--yes${selfCheckAnswers[item.id] === 'yes' ? ' audit-execution-section__answer--selected-yes' : ''}`}
-                          onClick={() => handleSelfCheckAnswer(item.id, 'yes')}
-                        >
-                          예
-                        </button>
-                        <button
-                          type="button"
-                          className={`audit-execution-section__answer audit-execution-section__answer--no${selfCheckAnswers[item.id] === 'no' ? ' audit-execution-section__answer--selected-no' : ''}`}
-                          onClick={() => handleSelfCheckAnswer(item.id, 'no')}
-                        >
-                          아니오
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="audit-execution-section__self-check-footer">
-                  {isSelfCheckSubmitted ? (
-                    <span className="audit-execution-section__self-check-submitted">
-                      제출 완료
-                    </span>
-                  ) : (
-                    <span className="audit-execution-section__self-check-remaining">
-                      {unansweredCount > 0
-                        ? `${unansweredCount}개의 항목이 아직 미응답입니다.`
-                        : '모든 항목에 응답했습니다.'}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="audit-execution-section__submit-button"
-                    disabled={!isSelfCheckComplete || isSelfCheckSubmitted}
-                    onClick={() => setIsSelfCheckSubmitted(true)}
-                  >
-                    제출
-                  </button>
-                </div>
-              </div>
-
-              <div className="audit-execution-section__matched-articles">
-                <h3 className="audit-execution-section__self-check-title">
-                  STEP 4 — 매칭 조항 (실제 조항명·원문 인용)
-                </h3>
-                {MATCHED_ARTICLES.length === 0 ? (
-                  <p className="audit-execution-section__empty">
-                    RAG 법조문 매칭 API 연동 전이라 결과가 없습니다.
-                  </p>
-                ) : (
-                  <ul className="audit-execution-section__matched-list">
-                    {MATCHED_ARTICLES.map((article) => (
-                      <li key={article.id} className="audit-execution-section__matched-item">
-                        <p className="audit-execution-section__matched-title">
-                          {article.title}
-                        </p>
-                        <p className="audit-execution-section__matched-quote">
-                          「...원문 인용 표시 영역...」
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section className="audit-execution-section__deliverables">
-            <h2 className="audit-execution-section__result-title">산출물 선택</h2>
-
-            <div className="audit-execution-section__deliverable-grid">
-              {DELIVERABLES.map((deliverable) => {
-                const selected = selectedDeliverables.has(deliverable.id);
-
-                return (
-                  <button
-                    key={deliverable.id}
-                    type="button"
-                    className={`audit-execution-section__deliverable-card${selected ? ' audit-execution-section__deliverable-card--selected' : ''}`}
-                    onClick={() => toggleDeliverable(deliverable.id)}
-                  >
-                    <span
-                      className={`audit-execution-section__deliverable-file audit-execution-section__deliverable-file--${deliverable.fileType.toLowerCase()}`}
-                    >
-                      {deliverable.fileType}
-                    </span>
-                    <span className="audit-execution-section__deliverable-label">
-                      {deliverable.label}
-                    </span>
-                    <span
-                      className={`audit-execution-section__deliverable-check${selected ? ' audit-execution-section__deliverable-check--on' : ''}`}
-                      aria-hidden="true"
-                    >
-                      ✓
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="audit-execution-section__deliverable-summary">
-              <p className="audit-execution-section__deliverable-summary-count">
-                {selectedDeliverableCount}/{DELIVERABLES.length}개 선택하셨습니다.
-              </p>
-              <p className="audit-execution-section__deliverable-summary-note">
-                추후에 모니터링 페이지에서 재선택할 수 있습니다.
-              </p>
-            </div>
-
-            <div className="audit-execution-section__generate-bar">
-              <button
-                type="button"
-                className="audit-execution-section__generate-button"
-                disabled={selectedDeliverableCount === 0}
-              >
-                보고서 생성 →
-              </button>
-            </div>
-          </section>
-        </>
       )}
     </div>
   );

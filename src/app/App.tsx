@@ -36,10 +36,18 @@ function App() {
             {/* 고영향 AI 사전진단 */}
             <Route path="/pre-diagnosis" element={<PreDiagnosisPage />} />
 
-            {/* 모델 감사 실행 */}
-            <Route path="/audit" element={<AuditPage />} />
-            {/* 완료된 감사 결과 조회 */}
-            <Route path="/audit/:auditId" element={<AuditPage />} />
+            {/* 모델 감사 실행 — STEP2 모델 업로드 */}
+            <Route path="/audit" element={<AuditPage mode="upload" />} />
+            {/* STEP3 체크리스트 작성 (분석 진행 상황 확인 + 자가점검 동시 진행) */}
+            <Route
+              path="/audit/:auditId"
+              element={<AuditPage mode="checklist" />}
+            />
+            {/* STEP4 결과물 및 보고서 다운로드 */}
+            <Route
+              path="/audit/:auditId/results"
+              element={<AuditPage mode="results" />}
+            />
 
             {/* 게시판 */}
             <Route path="/board" element={<BoardListPage />} />
