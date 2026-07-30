@@ -10,6 +10,7 @@ import {
   hasInProgressAudit,
   useAuditsPolling,
 } from '../../../features/audit/model/useAuditsPolling';
+import AuditStartLink from '../../../features/audit/ui/AuditStartLink';
 import NotificationBell from './NotificationBell';
 
 import './Header.css';
@@ -93,16 +94,24 @@ function Header() {
             ? 'layout-header__nav-link layout-header__nav-link--active'
             : 'layout-header__nav-link';
 
-          if (item.to === AUDIT_START_PATH && isAuditRunning) {
+          if (item.to === AUDIT_START_PATH) {
+            if (isAuditRunning) {
+              return (
+                <span
+                  key={item.to}
+                  className={`${className} layout-header__nav-link--disabled`}
+                  aria-disabled="true"
+                  title="진행 중인 감사가 완료된 후 이용할 수 있습니다"
+                >
+                  {item.label}
+                </span>
+              );
+            }
+
             return (
-              <span
-                key={item.to}
-                className={`${className} layout-header__nav-link--disabled`}
-                aria-disabled="true"
-                title="진행 중인 감사가 완료된 후 이용할 수 있습니다"
-              >
+              <AuditStartLink key={item.to} className={className}>
                 {item.label}
-              </span>
+              </AuditStartLink>
             );
           }
 

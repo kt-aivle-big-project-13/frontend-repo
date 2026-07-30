@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 
 import { useAuthStore } from '../../../../entities/user/model/authStore';
-import AuthGatedLink from '../../../../entities/user/ui/AuthGatedLink';
 import {
   hasInProgressAudit,
   useAuditsPolling,
 } from '../../../../features/audit/model/useAuditsPolling';
+import AuditStartLink from '../../../../features/audit/ui/AuditStartLink';
 
 import './HeroSection.css';
 
@@ -41,9 +41,9 @@ function HeroSection() {
                 : '감사 시작'}
             </span>
           ) : (
-            <AuthGatedLink to="/pre-diagnosis" className="hero-section__cta">
+            <AuditStartLink className="hero-section__cta">
               감사 시작
-            </AuthGatedLink>
+            </AuditStartLink>
           )}
 
           <Link to="/features" className="hero-section__secondary-cta">
