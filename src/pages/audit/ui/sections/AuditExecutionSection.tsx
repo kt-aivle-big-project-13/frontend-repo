@@ -20,7 +20,9 @@ import {
   getFairness,
   getExplainability,
   saveSelfCheckAnswers,
+  getSelfCheckAnswers,
   waitForRegulationMappings,
+  getRegulationMappings,
   RegulationMappingTimeoutError,
   type FairlearnResultItem,
   type ShapMetricItem,
@@ -255,7 +257,9 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
   }, [isAnalyzing, runningAuditId]);
 
   // 알림/최근 감사 이력에서 특정 감사를 보러 온 경우, 새로 실행하는 대신
-  // 그 감사의 실제 SHAP/Fairlearn 결과를 조회해서 STEP2~4 결과 영역에 그대로 채운다.
+  // 그 감사의 실제 SHAP/Fairlearn 결과와 자가점검 응답·매핑 결과를 조회해서
+  // STEP2~4 결과 영역에 그대로 채운다. (자가점검 응답이 있으면 이미 제출된 것으로
+  // 표시해 view 모드에서 재제출하듯 보이지 않게 한다.)
   useEffect(() => {
     if (viewAuditId == null) return;
 
@@ -265,12 +269,22 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
     Promise.all([
       getExplainability(viewAuditId),
       getFairness(viewAuditId),
+      getSelfCheckAnswers(viewAuditId),
+      getRegulationMappings(viewAuditId),
     ])
-      .then(([explainability, fairness]) => {
+      .then(([explainability, fairness, selfCheck, regulationMappings]) => {
         if (cancelled) return;
         setShapMetrics(explainability.metrics);
         setFairnessResults(fairness.results);
         setIsAnalyzed(true);
+
+        const hydratedAnswers = { ...DEFAULT_SELF_CHECK };
+        selfCheck.answers.forEach((item) => {
+          hydratedAnswers[item.itemCode] = item.answer ? 'yes' : 'no';
+        });
+        setSelfCheckAnswers(hydratedAnswers);
+        setIsSelfCheckSubmitted(selfCheck.answers.length > 0);
+        setMatchedArticles(regulationMappings.mappings);
       })
       .catch(() => {
         if (!cancelled) setAnalysisError('감사 결과를 불러오지 못했습니다.');
@@ -1026,6 +1040,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
                         <button
                           type="button"
                           className={`audit-execution-section__answer audit-execution-section__answer--yes${selfCheckAnswers[item.id] === 'yes' ? ' audit-execution-section__answer--selected-yes' : ''}`}
+                          disabled={isViewMode}
                           onClick={() => handleSelfCheckAnswer(item.id, 'yes')}
                         >
                           예
@@ -1033,6 +1048,7 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
                         <button
                           type="button"
                           className={`audit-execution-section__answer audit-execution-section__answer--no${selfCheckAnswers[item.id] === 'no' ? ' audit-execution-section__answer--selected-no' : ''}`}
+                          disabled={isViewMode}
                           onClick={() => handleSelfCheckAnswer(item.id, 'no')}
                         >
                           아니오
@@ -1060,7 +1076,8 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
                     disabled={
                       !isSelfCheckComplete ||
                       isSelfCheckSubmitted ||
-                      isSelfCheckSubmitting
+                      isSelfCheckSubmitting ||
+                      isViewMode
                     }
                     onClick={handleSelfCheckSubmit}
                   >
