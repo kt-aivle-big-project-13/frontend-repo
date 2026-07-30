@@ -251,6 +251,7 @@
   align-items: center;
   gap: 14px;
   padding: 40px 16px;
+  margin-bottom: 20px;
   border: 1px dashed #d9dee6;
   border-radius: 10px;
   background-color: #f7f8fa;
@@ -815,6 +816,34 @@
   50% {
     box-shadow: 0 0 0 4px rgb(45 103 232 / 0%);
   }
+}
+
+.audit-execution-section__status-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #21a666;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.audit-execution-section__status-note {
+  margin: -4px 0 0;
+  color: #9099a8;
+  font-size: 12px;
+  text-align: center;
+}
+
+.audit-execution-section__proceed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 @media (max-width: 900px) {

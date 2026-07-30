@@ -7,6 +7,7 @@ import {
   type AuditSummary,
 } from '../../../../features/audit/api/auditApi';
 import { useAuditsPolling } from '../../../../features/audit/model/useAuditsPolling';
+import { getViewedAuditResultIds } from '../../../../features/audit/model/viewedAuditResults';
 
 import './AuditOverviewSection.css';
 
@@ -20,6 +21,7 @@ interface RecentAudit {
 }
 
 interface InProgressAudit {
+  auditId: number;
   step: number;
   totalSteps: number;
   label: string;
@@ -54,6 +56,7 @@ const DEMO_RECENT_AUDITS: RecentAudit[] = [
 ];
 
 const DEMO_IN_PROGRESS_AUDIT: InProgressAudit = {
+  auditId: -1,
   step: 3,
   totalSteps: TOTAL_STEPS,
   label: 'RAG 법조문 매칭 중',
@@ -81,8 +84,14 @@ function formatDate(value: string | null): string {
 const RECENT_AUDITS_LIMIT = 10;
 
 function toRecentAudits(audits: AuditSummary[]): RecentAudit[] {
+  // "결과 확인" 버튼을 한 번도 눌러보지 않은 감사는 아직 사용자가 결과를 확인하지
+  // 않은 것이므로 최근 이력에 노출하지 않는다.
+  const viewedIds = getViewedAuditResultIds();
+
   return audits
-    .filter((audit) => TERMINAL_STATUSES.includes(audit.status))
+    .filter(
+      (audit) => TERMINAL_STATUSES.includes(audit.status) && viewedIds.has(audit.auditId),
+    )
     .sort((a, b) => {
       const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
       const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
@@ -105,6 +114,7 @@ function toInProgressAudit(audits: AuditSummary[]): InProgressAudit | null {
   if (!inProgress) return null;
 
   return {
+    auditId: inProgress.auditId,
     step: inProgress.currentStep,
     totalSteps: TOTAL_STEPS,
     label: STEP_LABEL[inProgress.currentStep] ?? '분석 진행 중',
@@ -197,7 +207,7 @@ function AuditOverviewSection() {
                     <li key={audit.auditId}>
                       {isAuthenticated ? (
                         <AuthGatedLink
-                          to={`/audit/${audit.auditId}`}
+                          to={`/audit/${audit.auditId}/results`}
                           className="audit-overview-section__list-item"
                         >
                           {itemContent}
@@ -235,7 +245,10 @@ function AuditOverviewSection() {
                 진행중인 감사가 없습니다.
               </p>
             ) : (
-              <ProgressContent inProgressAudit={inProgressAudit} />
+              <ProgressContent
+                inProgressAudit={inProgressAudit}
+                isAuthenticated={isAuthenticated}
+              />
             )}
           </div>
 
@@ -257,13 +270,14 @@ function AuditOverviewSection() {
 
 interface ProgressContentProps {
   inProgressAudit: InProgressAudit;
+  isAuthenticated: boolean;
 }
 
-// 진행중인 감사를 이어보는 기능이 아직 없어(감사 실행 화면이 ID 기반 재개를
-// 지원하지 않음), 상태만 보여주고 클릭은 만들지 않는다.
-function ProgressContent({ inProgressAudit }: ProgressContentProps) {
-  return (
-    <div className="audit-overview-section__progress">
+// 진행중인 감사를 클릭하면 감사 진행 중 페이지(체크리스트/분석 진행 화면)로 이동한다.
+// 비로그인 데모 데이터는 실제 auditId가 아니므로 클릭 가능하게 만들지 않는다.
+function ProgressContent({ inProgressAudit, isAuthenticated }: ProgressContentProps) {
+  const body = (
+    <>
       <div className="audit-overview-section__progress-track">
         <div
           className="audit-overview-section__progress-bar"
@@ -277,7 +291,20 @@ function ProgressContent({ inProgressAudit }: ProgressContentProps) {
         STEP {inProgressAudit.step} / {inProgressAudit.totalSteps} —{' '}
         {inProgressAudit.label}
       </p>
-    </div>
+    </>
+  );
+
+  if (!isAuthenticated) {
+    return <div className="audit-overview-section__progress">{body}</div>;
+  }
+
+  return (
+    <AuthGatedLink
+      to={`/audit/${inProgressAudit.auditId}`}
+      className="audit-overview-section__progress"
+    >
+      {body}
+    </AuthGatedLink>
   );
 }
 

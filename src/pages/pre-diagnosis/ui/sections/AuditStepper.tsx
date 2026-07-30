@@ -1,9 +1,8 @@
 const AUDIT_STEPS = [
   '고영향 AI 사전진단',
-  'SHAP 설명가능성',
-  'Fairlearn 공정성',
-  'RAG 법조문 매칭',
-  'LLM 보고서',
+  '모델 업로드',
+  '감사 진행 및 자가 점검',
+  '결과물 및 보고서 다운로드',
 ] as const;
 
 function AuditStepper() {
