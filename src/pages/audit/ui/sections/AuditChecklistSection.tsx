@@ -369,6 +369,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                     <button
                       type="button"
                       className={`audit-execution-section__answer audit-execution-section__answer--yes${selfCheckAnswers[item.id] === 'yes' ? ' audit-execution-section__answer--selected-yes' : ''}`}
+                      disabled={skipSelfCheck}
                       onClick={() => handleSelfCheckAnswer(item.id, 'yes')}
                     >
                       예
@@ -376,6 +377,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                     <button
                       type="button"
                       className={`audit-execution-section__answer audit-execution-section__answer--no${selfCheckAnswers[item.id] === 'no' ? ' audit-execution-section__answer--selected-no' : ''}`}
+                      disabled={skipSelfCheck}
                       onClick={() => handleSelfCheckAnswer(item.id, 'no')}
                     >
                       아니오
@@ -400,7 +402,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               <button
                 type="button"
                 className="audit-execution-section__submit-button"
-                disabled={!isSelfCheckComplete || isSelfCheckSubmitted || isSelfCheckSubmitting}
+                disabled={skipSelfCheck || !isSelfCheckComplete || isSelfCheckSubmitted || isSelfCheckSubmitting}
                 onClick={handleSelfCheckSubmit}
               >
                 {isSelfCheckSubmitting ? '제출 중…' : '제출'}
