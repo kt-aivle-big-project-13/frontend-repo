@@ -224,8 +224,16 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
   const [runningStep, setRunningStep] = useState(2);
 
   // auditId는 새로 실행한 감사(runningAuditId) 또는 조회 중인 기존 감사(viewAuditId) 중
-  // 현재 화면에 결과가 떠 있는 쪽을 가리킨다 — 자율점검 제출/조회는 이 값을 기준으로 한다.
+  // 현재 화면에 결과가 떠 있는 쪽을 가리킨다 — 자가점검 제출/조회는 이 값을 기준으로 한다.
   const auditId = viewAuditId ?? runningAuditId;
+
+  // 자가점검 제출·매핑 폴링이 진행되는 동안 다른 감사로 전환되면(viewAuditId 변경) 리셋은
+  // 즉시 일어나지만 이미 날아간 요청은 취소되지 않는다. 뒤늦게 도착한 응답이 현재 화면에
+  // 반영되지 않도록, 요청 시작 시점의 auditId와 최신 auditId(ref)가 같을 때만 상태를 갱신한다.
+  const auditIdRef = useRef(auditId);
+  useEffect(() => {
+    auditIdRef.current = auditId;
+  }, [auditId]);
 
   // 분석 중(currentStep 3=SHAP 분석 중 → 4=Fairlearn 분석 중) 진행 상황을 보여주기
   // 위해 짧은 간격으로 currentStep을 조회한다. 이 값의 의미는
@@ -514,14 +522,19 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
 
   // 매핑 생성이 제한 시간 내에 안 끝나면(RegulationMappingTimeoutError) 실제로 매핑이
   // 없는 것("매칭된 조항이 없습니다")과 구분해 아직 생성 중인 상태로 보여주고, 재조회할 수 있게 한다.
+  // id는 이 요청을 시작한 시점의 auditId — 응답이 왔을 때 auditIdRef.current(최신 auditId)와
+  // 다르면 이미 다른 감사로 전환된 것이므로 상태를 건드리지 않고 버린다.
   const loadMatchedArticles = async (id: number) => {
     setIsLoadingMatches(true);
     setIsMappingPending(false);
 
     try {
       const mappings = await waitForRegulationMappings(id);
+      if (auditIdRef.current !== id) return;
       setMatchedArticles(mappings);
     } catch (error) {
+      if (auditIdRef.current !== id) return;
+
       if (error instanceof RegulationMappingTimeoutError) {
         setIsMappingPending(true);
       } else {
@@ -532,12 +545,16 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
         );
       }
     } finally {
-      setIsLoadingMatches(false);
+      if (auditIdRef.current === id) setIsLoadingMatches(false);
     }
   };
 
   const handleSelfCheckSubmit = async () => {
     if (!auditId || !isSelfCheckComplete || isSelfCheckSubmitting) return;
+
+    // 제출을 시작한 감사를 고정해둔다 — 폴링 도중 다른 감사로 전환돼도 이 값 기준으로
+    // 판단하므로, 뒤늦게 도착한 응답이 새로 전환된 화면을 덮어쓰지 않는다.
+    const submittedAuditId = auditId;
 
     setIsSelfCheckSubmitting(true);
     setSelfCheckError(null);
@@ -548,17 +565,21 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
         answer: selfCheckAnswers[item.id] === 'yes',
       }));
 
-      await saveSelfCheckAnswers(auditId, answers);
+      await saveSelfCheckAnswers(submittedAuditId, answers);
+      if (auditIdRef.current !== submittedAuditId) return;
+
       setIsSelfCheckSubmitted(true);
-      await loadMatchedArticles(auditId);
+      await loadMatchedArticles(submittedAuditId);
     } catch (error) {
-      setSelfCheckError(
-        error instanceof Error
-          ? error.message
-          : '규제 자가 점검 제출 중 오류가 발생했습니다.',
-      );
+      if (auditIdRef.current === submittedAuditId) {
+        setSelfCheckError(
+          error instanceof Error
+            ? error.message
+            : '규제 자가 점검 제출 중 오류가 발생했습니다.',
+        );
+      }
     } finally {
-      setIsSelfCheckSubmitting(false);
+      if (auditIdRef.current === submittedAuditId) setIsSelfCheckSubmitting(false);
     }
   };
 
