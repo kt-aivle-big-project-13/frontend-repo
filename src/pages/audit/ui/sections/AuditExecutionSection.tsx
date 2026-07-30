@@ -518,6 +518,8 @@ function AuditExecutionSection({ viewAuditId }: AuditExecutionSectionProps) {
   ) => {
     setIsSelfCheckSubmitted(false);
     setSelfCheckAnswers((prev) => ({ ...prev, [id]: answer }));
+    // 답변을 바꾸면 이전 제출 기준으로 나온 매칭 조항은 더 이상 유효하지 않으므로 같이 지운다.
+    setMatchedArticles([]);
   };
 
   // 매핑 생성이 제한 시간 내에 안 끝나면(RegulationMappingTimeoutError) 실제로 매핑이
