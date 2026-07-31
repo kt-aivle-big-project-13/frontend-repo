@@ -1,5 +1,3 @@
-import { message } from 'antd';
-
 import type { AuditSummary } from '../../../../features/audit/api/auditApi';
 
 import { formatAuditDate, STATUS_LABEL } from './auditStatusMeta';
@@ -9,11 +7,6 @@ interface AuditHistorySectionProps {
   audits: AuditSummary[];
   currentAuditId: number;
   isLoading: boolean;
-}
-
-function handleCompareClick() {
-  // TODO: 감사 이력 비교 기능 개발 후 실제 동작으로 교체 필요
-  message.info('비교 기능은 추후에 개발 예정입니다.');
 }
 
 function AuditHistorySection({ audits, currentAuditId, isLoading }: AuditHistorySectionProps) {
@@ -47,13 +40,6 @@ function AuditHistorySection({ audits, currentAuditId, isLoading }: AuditHistory
                   {STATUS_LABEL[audit.status]}
                   {isCurrent && ' · 현재'}
                 </span>
-                <button
-                  type="button"
-                  className="audit-history-section__link"
-                  onClick={handleCompareClick}
-                >
-                  비교 보기
-                </button>
               </li>
             );
           })}
