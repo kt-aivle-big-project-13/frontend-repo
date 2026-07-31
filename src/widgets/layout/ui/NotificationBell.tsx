@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Empty, Popover, Spin } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
+import { getViewedAuditResultIds } from '../../../features/audit/model/viewedAuditResults';
 
 import {
   clearAllNotifications,
@@ -82,7 +83,11 @@ function NotificationBell() {
 
     if (item.auditId !== null) {
       setIsOpen(false);
-      navigate(`/audit/${item.auditId}`);
+      // "결과 확인"을 이미 눌러본 감사면 STEP4(결과)로, 아직이면 STEP3(체크리스트)로 보낸다.
+      const destination = getViewedAuditResultIds().has(item.auditId)
+        ? `/audit/${item.auditId}/results`
+        : `/audit/${item.auditId}`;
+      navigate(destination);
     }
   };
 
