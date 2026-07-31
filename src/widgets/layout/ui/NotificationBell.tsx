@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Empty, Popover, Spin } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
-import { getViewedAuditResultIds } from '../../../features/audit/model/viewedAuditResults';
 
 import {
   clearAllNotifications,
@@ -12,6 +11,7 @@ import {
   markNotificationRead,
   type NotificationItem,
 } from '../../../features/notifications/api/notificationApi';
+import { getViewedAuditResultIds } from '../../../features/audit/model/viewedAuditResults';
 
 import './NotificationBell.css';
 
@@ -32,10 +32,19 @@ function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+
+  // 초기화(전체 삭제)로 로컬 상태를 비운 시점보다 먼저 나간 목록·안읽음 개수 조회가
+  // 늦게 도착해 방금 비운 상태를 다시 채우는 것을 막기 위한 세대 값이다. 조회 시작 시점의
+  // epoch을 캡처해두고, 응답이 왔을 때 그 사이에 초기화가 일어나지 않았는지 확인한다.
+  const dataEpochRef = useRef(0);
 
   const refreshUnreadCount = useCallback(() => {
+    const epoch = dataEpochRef.current;
     fetchUnreadNotificationCount()
-      .then(setUnreadCount)
+      .then((count) => {
+        if (dataEpochRef.current === epoch) setUnreadCount(count);
+      })
       .catch(() => {});
   }, []);
 
@@ -48,11 +57,18 @@ function NotificationBell() {
 
   const loadNotifications = useCallback(() => {
     setIsLoading(true);
+    const epoch = dataEpochRef.current;
 
     fetchNotifications(1, 10)
-      .then((response) => setNotifications(response.content))
-      .catch(() => setNotifications([]))
-      .finally(() => setIsLoading(false));
+      .then((response) => {
+        if (dataEpochRef.current === epoch) setNotifications(response.content);
+      })
+      .catch(() => {
+        if (dataEpochRef.current === epoch) setNotifications([]);
+      })
+      .finally(() => {
+        if (dataEpochRef.current === epoch) setIsLoading(false);
+      });
   }, []);
 
   const handleOpenChange = (open: boolean) => {
@@ -105,13 +121,21 @@ function NotificationBell() {
   };
 
   const handleClearAll = async () => {
+    if (isClearing) return;
+    setIsClearing(true);
+
     try {
       await clearAllNotifications();
 
+      // 진행 중이던(초기화 이전에 나간) 목록·안읽음 개수 조회 응답이 뒤늦게 도착해
+      // 방금 비운 상태를 덮어쓰지 않도록 세대를 올려 무효화한다.
+      dataEpochRef.current += 1;
       setNotifications([]);
       setUnreadCount(0);
     } catch {
       // no-op
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -132,7 +156,7 @@ function NotificationBell() {
             type="button"
             className="notification-bell__clear-all"
             onClick={handleClearAll}
-            disabled={notifications.length === 0}
+            disabled={notifications.length === 0 || isClearing}
           >
             초기화
           </button>
