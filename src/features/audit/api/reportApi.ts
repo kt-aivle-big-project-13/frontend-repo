@@ -57,23 +57,28 @@ export async function downloadDeliverable(
   saveBlob(response.data as Blob, filename);
 }
 
-// 설명가능성(SHAP)·편향진단(Fairlearn) 리포트는 생성 요청이 동기적으로 끝나서(폴링 불필요),
-// 생성 응답에 이미 포맷별 reportId가 담겨 온다 — 그중 원하는 포맷 하나를 골라 바로 다운로드한다.
-async function generateAndDownloadReport(options: {
+// 설명가능성(SHAP)·편향진단(Fairlearn) 리포트 생성 응답은 HTML 리포트 id 하나만 돌려준다
+// (호출 한 번으로 HTML·PDF·WORD가 서버에 다 같이 저장됨). 원하는 포맷의 reportId는 별도
+// 조회(getLatest?format=)로 받아와야 한다.
+interface ReportMetadataResponse {
+  reportId: number;
   auditId: number;
+  reportType: string;
   format: ReportFormat;
-  namePrefix: string;
-  generate: () => Promise<{ reports: GeneratedReportItem[] }>;
+  status: ReportStatus;
+  version: number;
+  generatedAt: string;
+}
+
+async function generateAndDownloadReport(options: {
+  format: ReportFormat;
+  generate: () => Promise<void>;
+  getLatest: (format: ReportFormat) => Promise<ReportMetadataResponse>;
   download: (reportId: number) => Promise<void>;
 }): Promise<void> {
-  const { reports } = await options.generate();
-  const target = reports.find((report) => report.format === options.format);
-
-  if (!target) {
-    throw new Error('요청한 형식의 보고서를 찾을 수 없습니다.');
-  }
-
-  await options.download(target.reportId);
+  await options.generate();
+  const metadata = await options.getLatest(options.format);
+  await options.download(metadata.reportId);
 }
 
 export async function generateAndDownloadExplainabilityReport(
@@ -81,12 +86,14 @@ export async function generateAndDownloadExplainabilityReport(
   format: ReportFormat,
 ): Promise<void> {
   await generateAndDownloadReport({
-    auditId,
     format,
-    namePrefix: '설명가능성_리포트',
     generate: async () => {
-      const { data } = await apiClient.post<{ reports: GeneratedReportItem[] }>(
+      await apiClient.post(`/audits/${auditId}/reports/explainability`);
+    },
+    getLatest: async (fmt) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
         `/audits/${auditId}/reports/explainability`,
+        { params: { format: fmt } },
       );
       return data;
     },
@@ -108,12 +115,14 @@ export async function generateAndDownloadBiasReport(
   format: ReportFormat,
 ): Promise<void> {
   await generateAndDownloadReport({
-    auditId,
     format,
-    namePrefix: '편향진단_보고서',
     generate: async () => {
-      const { data } = await apiClient.post<{ reports: GeneratedReportItem[] }>(
+      await apiClient.post(`/audits/${auditId}/reports/bias`);
+    },
+    getLatest: async (fmt) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
         `/audits/${auditId}/reports/bias`,
+        { params: { format: fmt } },
       );
       return data;
     },
@@ -125,6 +134,35 @@ export async function generateAndDownloadBiasReport(
       saveBlob(
         response.data as Blob,
         `편향진단_보고서_${auditId}.${FORMAT_EXTENSION[format]}`,
+      );
+    },
+  });
+}
+
+export async function generateAndDownloadComplianceReport(
+  auditId: number,
+  format: ReportFormat,
+): Promise<void> {
+  await generateAndDownloadReport({
+    format,
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/reports/compliance`);
+    },
+    getLatest: async (fmt) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/reports/compliance`,
+        { params: { format: fmt } },
+      );
+      return data;
+    },
+    download: async (reportId) => {
+      const response = await apiClient.get(
+        `/audits/${auditId}/reports/compliance/${reportId}/download`,
+        { responseType: 'blob' },
+      );
+      saveBlob(
+        response.data as Blob,
+        `규제준수_판정서_${auditId}.${FORMAT_EXTENSION[format]}`,
       );
     },
   });

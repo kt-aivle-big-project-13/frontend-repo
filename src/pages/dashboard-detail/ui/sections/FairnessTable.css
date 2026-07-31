@@ -158,10 +158,23 @@
 }
 
 .fairness-table__tooltip-desc {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   color: #4b5563;
   font-size: 12.5px;
   line-height: 1.6;
+}
+
+.fairness-table__tooltip-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background-color: #eef4ff;
+  color: #254a91;
+  font-size: 11.5px;
+  line-height: 1.5;
 }
 
 .fairness-table__tooltip-criteria {

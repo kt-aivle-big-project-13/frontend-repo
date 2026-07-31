@@ -288,7 +288,11 @@
 }
 
 .audit-execution-section__result-title {
+  display: block;
   margin: 0 0 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background-color: #f2f4f7;
   color: #202938;
   font-size: 15px;
   font-weight: 800;
@@ -727,7 +731,7 @@
 
 .audit-execution-section__deliverable-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-bottom: 16px;
 }
@@ -738,43 +742,41 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  padding: 16px;
+  min-width: 0;
+  padding: 18px;
   border: 1.5px solid #eef0f3;
-  border-radius: 10px;
+  border-radius: 12px;
   background-color: #ffffff;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.audit-execution-section__deliverable-card:hover {
+  border-color: #2d67e8;
 }
 
 .audit-execution-section__deliverable-card--selected {
   border-color: #2d67e8;
+  background-color: #f5f8ff;
 }
 
 .audit-execution-section__deliverable-file {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.audit-execution-section__deliverable-file--pdf {
-  background-color: #fef3f2;
-  color: #d92d20;
-}
-
-.audit-execution-section__deliverable-file--word {
-  background-color: #eef4ff;
-  color: #2d67e8;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background-color: #2d67e8;
 }
 
 .audit-execution-section__deliverable-label {
   color: #202938;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 

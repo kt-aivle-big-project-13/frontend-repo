@@ -11,6 +11,7 @@ import {
   type FeatureImportanceItem,
   type ShapMetricItem,
 } from '../../../features/audit/api/auditApi';
+import { selectRecentAudits } from '../../../features/audit/model/selectRecentAudits';
 import MainLayout from '../../../widgets/layout/ui/MainLayout';
 
 import AuditHistorySection from './sections/AuditHistorySection';
@@ -25,21 +26,6 @@ import VersionHistorySection from './sections/VersionHistorySection';
 import './DashboardDetailPage.css';
 
 const RECENT_HISTORY_LIMIT = 5;
-
-// 실패(FAILED)·아직 안 끝난(PENDING/IN_PROGRESS) 감사는 "이력"에서 제외하고,
-// 최근 완료된 순서대로 정렬해 최대 5건만 보여준다.
-function selectRecentHistory(audits: AuditSummary[]): AuditSummary[] {
-  return audits
-    .filter(
-      (audit) => TERMINAL_STATUSES.includes(audit.status) && audit.status !== 'FAILED',
-    )
-    .sort((a, b) => {
-      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-      return bTime - aTime;
-    })
-    .slice(0, RECENT_HISTORY_LIMIT);
-}
 
 // 같은 모델 계열(modelGroupId)의 완료된 감사들만 모아 버전끼리 비교할 수 있게 한다.
 // 감사 이력과 달리 최신 몇 건으로 자르지 않고 계열의 모든 버전을 보여준다.
@@ -189,6 +175,12 @@ function DashboardDetailPage() {
     setVersionHistory([]);
   }
 
+  // 감사 이력·버전 이력에서 다른 감사로 이동하면(같은 페이지 내 라우트 전환) 브라우저가
+  // 자동으로 스크롤을 올려주지 않으므로 직접 맨 위로 올려준다.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [auditId]);
+
   useEffect(() => {
     const idForFetch = Number(auditId);
     if (!auditId || Number.isNaN(idForFetch)) return;
@@ -207,7 +199,7 @@ function DashboardDetailPage() {
         // TODO: 단건 상세 조회 API가 생기면 이 목록 필터링 대신 그걸로 교체
         const currentAudit = audits.find((audit) => audit.auditId === idForFetch) ?? null;
         setAuditSummary(currentAudit);
-        setRecentHistory(selectRecentHistory(audits));
+        setRecentHistory(selectRecentAudits(audits, RECENT_HISTORY_LIMIT));
         setVersionHistory(selectVersionHistory(audits, currentAudit?.modelGroupId ?? null));
       })
       .catch(() => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   getFairness,
@@ -6,6 +7,11 @@ import {
   type FairlearnResultItem,
   type ShapMetricItem,
 } from '../../../../features/audit/api/auditApi';
+import {
+  getSelectedDeliverables,
+  setSelectedDeliverables as persistSelectedDeliverables,
+} from '../../../../features/audit/model/deliverableSelection';
+import { markAuditResultsViewed } from '../../../../features/audit/model/viewedAuditResults';
 import MetricHelpTooltip from '../../../../features/audit/ui/MetricHelpTooltip';
 import StepIndicator from '../StepIndicator';
 
@@ -14,18 +20,35 @@ import './AuditFlow.css';
 interface Deliverable {
   id: string;
   label: string;
-  fileType: 'PDF' | 'Word';
 }
 
 const DELIVERABLES: Deliverable[] = [
-  { id: 'high-impact-ai', label: '고영향 AI 사전진단', fileType: 'PDF' },
-  { id: 'shap-report', label: '설명가능성 리포트 (SHAP)', fileType: 'PDF' },
-  { id: 'fairness-report', label: '편향 진단 보고서 (Fairlearn)', fileType: 'PDF' },
-  { id: 'compliance-verdict', label: '규제준수 판정서', fileType: 'PDF' },
-  { id: 'improvement-guide', label: '개선 권고 가이드', fileType: 'Word' },
+  { id: 'high-impact-ai', label: '고영향 AI 사전진단' },
+  { id: 'shap-report', label: '설명가능성 리포트 (SHAP)' },
+  { id: 'fairness-report', label: '편향 진단 보고서 (Fairlearn)' },
+  { id: 'compliance-verdict', label: '규제준수 판정서' },
+  { id: 'improvement-guide', label: '개선 권고 가이드' },
 ];
 
-const DEFAULT_SELECTED_DELIVERABLES = new Set<string>();
+// 형식(PDF/Word)을 특정하지 않는 범용 문서 아이콘 — 대시보드 상세보기의
+// reports-section__card-icon과 같은 스타일을 쓴다.
+function DocumentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+      <path
+        d="M6 2.5h8l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 20V4A1.5 1.5 0 0 1 6 2.5Z"
+        stroke="#ffffff"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M14 2.5V7h4" stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M8 12h8M8 15.5h8M8 18.5h5" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// 기본값은 전체 선택 — 선택 해제한 산출물은 대시보드 상세보기에서도 보이지 않는다.
+const DEFAULT_SELECTED_DELIVERABLES = new Set(DELIVERABLES.map((deliverable) => deliverable.id));
 
 type ShapMetricCode = ShapMetricItem['metricCode'];
 type ShapStatus = ShapMetricItem['status'];
@@ -150,6 +173,7 @@ interface AuditResultsSectionProps {
 }
 
 function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [shapMetrics, setShapMetrics] = useState<ShapMetricItem[]>([]);
@@ -157,6 +181,10 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
 
   // auditId가 바뀌면(다른 감사의 결과 페이지로 바로 이동) 이전 감사의 결과가 잠시
   // 남아있지 않도록 렌더링 중에 바로 리셋한다.
+  const [selectedDeliverables, setSelectedDeliverables] = useState<Set<string>>(
+    () => getSelectedDeliverables(auditId) ?? new Set(DEFAULT_SELECTED_DELIVERABLES),
+  );
+
   const [prevAuditId, setPrevAuditId] = useState(auditId);
   if (auditId !== prevAuditId) {
     setPrevAuditId(auditId);
@@ -164,11 +192,8 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
     setLoadError(null);
     setShapMetrics([]);
     setFairnessResults([]);
+    setSelectedDeliverables(getSelectedDeliverables(auditId) ?? new Set(DEFAULT_SELECTED_DELIVERABLES));
   }
-
-  const [selectedDeliverables, setSelectedDeliverables] = useState<Set<string>>(
-    () => new Set(DEFAULT_SELECTED_DELIVERABLES),
-  );
 
   useEffect(() => {
     let cancelled = false;
@@ -176,7 +201,11 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
     Promise.all([getExplainability(auditId), getFairness(auditId)])
       .then(([explainability, fairness]) => {
         if (cancelled) return;
-        setShapMetrics(explainability.metrics);
+        // 민감변수 기여비율은 별도 화면(대시보드 상세보기의 TOP5 카드)에서 다루므로
+        // 이 페이지의 SHAP 지표 목록에서는 제외한다.
+        setShapMetrics(
+          explainability.metrics.filter((metric) => metric.metricCode !== 'SENSITIVE_CONTRIB'),
+        );
         setFairnessResults(fairness.results);
       })
       .catch(() => {
@@ -206,6 +235,7 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
       } else {
         next.add(id);
       }
+      persistSelectedDeliverables(auditId, next);
       return next;
     });
   };
@@ -319,10 +349,8 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
                     className={`audit-execution-section__deliverable-card${selected ? ' audit-execution-section__deliverable-card--selected' : ''}`}
                     onClick={() => toggleDeliverable(deliverable.id)}
                   >
-                    <span
-                      className={`audit-execution-section__deliverable-file audit-execution-section__deliverable-file--${deliverable.fileType.toLowerCase()}`}
-                    >
-                      {deliverable.fileType}
+                    <span className="audit-execution-section__deliverable-file" aria-hidden="true">
+                      <DocumentIcon />
                     </span>
                     <span className="audit-execution-section__deliverable-label">
                       {deliverable.label}
@@ -351,9 +379,14 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
               <button
                 type="button"
                 className="audit-execution-section__generate-button"
-                disabled={selectedDeliverableCount === 0}
+                onClick={() => {
+                  // 상세 페이지로 넘어가면 이 감사는 더 이상 "진행중"이 아니므로
+                  // 홈 화면 진행중 감사 목록에서도 빠진다.
+                  markAuditResultsViewed(auditId);
+                  navigate(`/dashboard/${auditId}`);
+                }}
               >
-                보고서 생성 →
+                감사 상세보기 →
               </button>
             </div>
           </section>

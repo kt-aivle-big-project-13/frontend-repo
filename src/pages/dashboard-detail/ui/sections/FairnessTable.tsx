@@ -49,6 +49,10 @@ function FairnessTable({ results, isLoading, error }: FairnessTableProps) {
                           <p className="fairness-table__tooltip-desc">
                             {COLUMN_TOOLTIP[code].description}
                           </p>
+                          <p className="fairness-table__tooltip-tip">
+                            <span aria-hidden="true">💡</span>
+                            <span>{COLUMN_TOOLTIP[code].tip}</span>
+                          </p>
                           <p className="fairness-table__tooltip-criteria">
                             {COLUMN_TOOLTIP[code].criteria}
                           </p>

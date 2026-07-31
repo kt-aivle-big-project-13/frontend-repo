@@ -1,8 +1,10 @@
 import { message } from 'antd';
+import type { MouseEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import type { AuditSummary } from '../../../../features/audit/api/auditApi';
 
-import { formatAuditDate, STATUS_LABEL } from './auditStatusMeta';
+import { formatAuditDate, STATUS_BG_COLOR, STATUS_LABEL, STATUS_TEXT_COLOR } from './auditStatusMeta';
 import './VersionHistorySection.css';
 
 interface VersionHistorySectionProps {
@@ -11,12 +13,16 @@ interface VersionHistorySectionProps {
   isLoading: boolean;
 }
 
-function handleCompareClick() {
+function handleCompareClick(event: MouseEvent) {
+  // 행 자체의 클릭(감사 상세 이동)으로 이벤트가 전파되지 않도록 막는다.
+  event.stopPropagation();
   // TODO: 버전 비교 기능 개발 후 실제 동작으로 교체 필요
   message.info('비교 기능은 추후에 개발 예정입니다.');
 }
 
 function VersionHistorySection({ audits, currentAuditId, isLoading }: VersionHistorySectionProps) {
+  const navigate = useNavigate();
+
   return (
     <section className="version-history-section">
       <h2 className="version-history-section__title">버전 이력</h2>
@@ -34,26 +40,48 @@ function VersionHistorySection({ audits, currentAuditId, isLoading }: VersionHis
               <li
                 key={audit.auditId}
                 className={`version-history-section__row${isCurrent ? ' version-history-section__row--current' : ''}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/dashboard/${audit.auditId}`)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    navigate(`/dashboard/${audit.auditId}`);
+                  }
+                }}
               >
                 <span
                   className={`version-history-section__version${isCurrent ? ' version-history-section__version--current' : ''}`}
                 >
-                  {audit.version ?? '—'}
+                  {audit.modelName}
+                  {audit.version && (
+                    <span className="version-history-section__version-tag"> {audit.version}</span>
+                  )}
                 </span>
                 <span className="version-history-section__date">
                   {formatAuditDate(audit.completedAt)}
                 </span>
                 <span className="version-history-section__summary">
-                  {STATUS_LABEL[audit.status]}
+                  <span
+                    className="version-history-section__status-badge"
+                    style={{
+                      backgroundColor: STATUS_BG_COLOR[audit.status],
+                      color: STATUS_TEXT_COLOR[audit.status],
+                    }}
+                  >
+                    {STATUS_LABEL[audit.status]}
+                  </span>
                   {isCurrent && ' · 현재'}
                 </span>
-                <button
-                  type="button"
-                  className="version-history-section__link"
-                  onClick={handleCompareClick}
-                >
-                  비교 보기
-                </button>
+                {!isCurrent && (
+                  <button
+                    type="button"
+                    className="version-history-section__link"
+                    onClick={handleCompareClick}
+                  >
+                    비교 보기
+                  </button>
+                )}
               </li>
             );
           })}

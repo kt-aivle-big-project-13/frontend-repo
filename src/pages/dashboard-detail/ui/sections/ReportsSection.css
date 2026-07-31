@@ -12,9 +12,20 @@
   font-weight: 800;
 }
 
+.reports-section__empty {
+  margin: 0 0 16px;
+  padding: 24px 16px;
+  border: 1px dashed #d9dee6;
+  border-radius: 10px;
+  background-color: #f7f8fa;
+  color: #9099a8;
+  font-size: 13px;
+  text-align: center;
+}
+
 .reports-section__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-bottom: 24px;
 }

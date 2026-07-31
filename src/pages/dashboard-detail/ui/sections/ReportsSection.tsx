@@ -3,18 +3,20 @@ import { useState } from 'react';
 
 import {
   generateAndDownloadBiasReport,
+  generateAndDownloadComplianceReport,
   generateAndDownloadExplainabilityReport,
   generateFinalReport,
   downloadDeliverable,
   type ReportFormat,
 } from '../../../../features/audit/api/reportApi';
+import { getSelectedDeliverables } from '../../../../features/audit/model/deliverableSelection';
 import './ReportsSection.css';
 
 interface ReportsSectionProps {
   auditId: number;
 }
 
-type ReportKind = 'shap' | 'bias' | 'unavailable';
+type ReportKind = 'shap' | 'bias' | 'compliance' | 'unavailable';
 
 interface ReportItem {
   id: string;
@@ -25,9 +27,11 @@ interface ReportItem {
 }
 
 const REPORTS: ReportItem[] = [
+  { id: 'high-impact-ai', label: '고영향 AI 사전진단', kind: 'unavailable', formats: [] },
   { id: 'shap-report', label: '설명가능성 리포트 (SHAP)', kind: 'shap', formats: ['PDF', 'WORD'] },
-  { id: 'fairness-report', label: '편향 진단 보고서 (Fairlearn)', kind: 'bias', formats: ['PDF'] },
-  { id: 'compliance-verdict', label: '규제준수 판정서', kind: 'unavailable', formats: [] },
+  { id: 'fairness-report', label: '편향 진단 보고서 (Fairlearn)', kind: 'bias', formats: ['PDF', 'WORD'] },
+  { id: 'compliance-verdict', label: '규제준수 판정서', kind: 'compliance', formats: ['PDF', 'WORD'] },
+  // 개선 권고 가이드는 백엔드 연동이 아직 develop에 머지되지 않아(진행 중, #190) 대기 상태로 둔다.
   { id: 'improvement-guide', label: '개선 권고 가이드', kind: 'unavailable', formats: [] },
 ];
 
@@ -60,6 +64,13 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
   // 카드/버튼별로 독립적으로 로딩 표시하기 위해 "리포트id:포맷"을 키로 관리
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
+  // STEP4 "산출물 선택"에서 고른 항목만 여기 보여준다. 선택 기록이 아예 없으면(아직
+  // STEP4를 거치지 않은 경우 등) 기본값인 전체 표시로 취급한다.
+  const selectedDeliverables = getSelectedDeliverables(auditId);
+  const visibleReports = selectedDeliverables
+    ? REPORTS.filter((report) => selectedDeliverables.has(report.id))
+    : REPORTS;
+
   const handleReportDownload = async (report: ReportItem, format: ReportFormat) => {
     const key = `${report.id}:${format}`;
     setPendingKey(key);
@@ -68,8 +79,10 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
     try {
       if (report.kind === 'shap') {
         await generateAndDownloadExplainabilityReport(auditId, format);
-      } else {
+      } else if (report.kind === 'bias') {
         await generateAndDownloadBiasReport(auditId, format);
+      } else {
+        await generateAndDownloadComplianceReport(auditId, format);
       }
       message.success(`${report.label} (${format}) 다운로드가 완료됐습니다.`);
     } catch {
@@ -128,10 +141,14 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
 
   return (
     <section className="reports-section">
-      <h2 className="reports-section__title">자동 생성 보고서 4종</h2>
+      <h2 className="reports-section__title">자동 생성 보고서 5종</h2>
+
+      {visibleReports.length === 0 && (
+        <p className="reports-section__empty">선택한 산출물이 없습니다.</p>
+      )}
 
       <div className="reports-section__grid">
-        {REPORTS.map((report) => {
+        {visibleReports.map((report) => {
           if (report.kind === 'unavailable') {
             return (
               <button
@@ -139,7 +156,7 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
                 type="button"
                 className="reports-section__card"
                 onClick={() =>
-                  // TODO: 규제준수 판정서·개선 권고 가이드는 개별 생성 API가 아직 없음(현재는 최종 종합 보고서에만 포함됨)
+                  // TODO: 고영향 AI 사전진단·개선 권고 가이드는 개별 생성 API가 아직 없음(개선 권고 가이드는 백엔드 연동 진행 중, #190)
                   message.info('이 보고서 종류는 개별 다운로드 기능을 추후에 개발할 예정입니다.')
                 }
               >

@@ -28,6 +28,7 @@
   padding: 16px 18px;
   border-radius: 8px;
   background-color: #f7f8fa;
+  cursor: pointer;
 }
 
 .audit-history-section__row--current {
@@ -60,6 +61,12 @@
   color: #2d67e8;
 }
 
+.audit-history-section__version-tag {
+  color: #9099a8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .audit-history-section__date {
   flex-shrink: 0;
   width: 100px;
@@ -72,6 +79,15 @@
   min-width: 0;
   color: #202938;
   font-size: 13.5px;
+}
+
+.audit-history-section__status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 @media (max-width: 700px) {
