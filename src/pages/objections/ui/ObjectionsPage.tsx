@@ -119,6 +119,9 @@ function ObjectionsPage() {
   const selectedObjection =
     objections.find((item) => item.objectionId === selectedObjectionId) ?? null;
 
+  // 상세 패널 표시 여부
+  const isDetailVisible = selectedObjection !== null;
+
   // 검색어 변경
   const handleSearchKeywordChange = (value: string) => {
     setSearchKeyword(value);
@@ -159,21 +162,24 @@ function ObjectionsPage() {
     }, DETAIL_ANIMATION_DURATION);
   };
 
-  // 대응문서 생성 페이지로 이동
+  // 대응문서 생성 또는 조회 페이지로 이동
   const handleCreateDocument = () => {
     if (!selectedObjection) {
       return;
     }
 
+    const selectedReviewResult =
+      selectedObjection.status === 'COMPLETED'
+        ? selectedObjection.completionInfo?.reviewResult ?? 'REJECTED'
+        : reviewResult;
+
     navigate(`/objections/${selectedObjection.objectionId}/document`, {
       state: {
-        reviewResult,
+        reviewResult: selectedReviewResult,
+        isCompleted: selectedObjection.status === 'COMPLETED',
       },
     });
   };
-
-  // 상세 패널 표시 여부
-  const isDetailVisible = selectedObjection !== null;
 
   return (
     <MainLayout>
@@ -192,8 +198,10 @@ function ObjectionsPage() {
                 </p>
               </div>
 
-              {/* 전체 이의제기 건수 */}
-              <strong>{objections.length}건</strong>
+              {/* 상세 패널이 닫혀 있을 때만 상단에 전체 건수 표시 */}
+              {!isDetailVisible && (
+                <strong>{objections.length}건</strong>
+              )}
             </div>
           </header>
 
@@ -220,6 +228,7 @@ function ObjectionsPage() {
               {/* 이의제기 목록 */}
               <ObjectionList
                 objections={visibleObjections}
+                totalCount={objections.length}
                 selectedObjectionId={selectedObjectionId}
                 compact={isDetailVisible}
                 searchKeyword={searchKeyword}

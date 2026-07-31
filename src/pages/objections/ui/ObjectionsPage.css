@@ -130,6 +130,23 @@
     margin 0.3s ease;
 }
 
+/* 건수와 정렬 버튼을 감싸는 영역 */
+.objection-list__toolbar-bottom {
+  display: contents;
+}
+
+/* 상세 화면의 전체 이의제기 건수 */
+.objection-list__total-count {
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: #edf4ff;
+  color: #2d67e8;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 /* 검색창 전체 영역 */
 .objection-list__search {
   display: flex;
@@ -403,10 +420,18 @@
   align-items: stretch;
 }
 
+/* 축소 목록의 건수와 정렬 버튼 영역 */
+.objection-list--compact .objection-list__toolbar-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 /* 축소 목록 정렬 버튼 */
 .objection-list--compact .objection-list__sort-wrapper {
   width: 110px;
-  justify-self: end;
+  flex-shrink: 0;
 }
 
 /* 축소된 이의제기 목록 행 */
@@ -665,31 +690,19 @@
   font-weight: 700;
 }
 
-/* 고객 제목과 내용 박스 공통 */
+/* 고객 이의제기 제목과 내용 박스 공통 */
 .objection-detail__title-box,
 .objection-detail__content-box {
+  min-height: 52px;
   padding: 13px 14px;
   border: 1px solid #dde2ea;
   border-radius: 8px;
   background-color: #f9fafb;
-}
 
-/* 고객 제기 제목 박스 */
-.objection-detail__title-box {
-  min-height: 52px;
-  color: #202938;
-  font-size: 13.5px;
-  font-weight: 700;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-/* 고객 제기 내용 박스 */
-.objection-detail__content-box {
-  min-height: 52px;
+  /* 제목과 내용 글자 스타일 통일 */
   color: #4d5765;
   font-size: 13px;
+  font-weight: 400;
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -935,6 +948,129 @@
   cursor: not-allowed;
 }
 
+/* 답변완료 안내 */
+.objection-detail__completed-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #b7ebc8;
+  border-radius: 8px;
+  background-color: #effcf4;
+  color: #16a05d;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* 답변완료 처리 결과 영역 */
+.objection-detail__completed {
+  margin-top: 16px;
+}
+
+/* 최종 처리 결과 제목 */
+.objection-detail__completed-title {
+  margin: 0 0 8px;
+  color: #6b7684;
+  font-size: 12px;
+}
+
+/* 최종 처리 결과 카드 */
+.objection-detail__completed-result {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #f0c7c2;
+  border-radius: 8px;
+  background-color: #fff7f6;
+}
+
+/* 최종 처리 결과 값 */
+.objection-detail__completed-result strong {
+  color: #d92d20;
+  font-size: 14px;
+}
+
+/* 이메일 발송 완료 문구 */
+.objection-detail__completed-result span {
+  color: #6b7684;
+  font-size: 12px;
+}
+
+/* 이메일 발송 정보 */
+.objection-detail__dispatch-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 18px;
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #f9fafb;
+}
+
+/* 이메일 발송 정보 한 항목 */
+.objection-detail__dispatch-info > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 이메일 발송 정보 항목명 */
+.objection-detail__dispatch-info dt {
+  min-width: 64px;
+  color: #9099a8;
+  font-size: 11.5px;
+}
+
+/* 이메일 발송 정보 값 */
+.objection-detail__dispatch-info dd {
+  margin: 0;
+  color: #4d5765;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 이메일 발송 정보 없음 */
+.objection-detail__completed-empty {
+  padding: 18px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  color: #9099a8;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* 발송된 대응문서 보기 버튼 */
+.objection-detail__view-button {
+  display: flex;
+  width: 100%;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  border: 1px solid #2d67e8;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #2d67e8;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* 대응문서 보기 버튼 마우스 오버 */
+.objection-detail__view-button:hover {
+  background-color: #2d67e8;
+  color: #ffffff;
+}
+
 /* 사용자 모션 최소화 설정 */
 @media (prefers-reduced-motion: reduce) {
   .objections-page__workspace,
@@ -1012,6 +1148,11 @@
 
   /* 모바일 처리 결과 버튼 */
   .objection-detail__decision-options {
+    grid-template-columns: 1fr;
+  }
+
+  /* 모바일 이메일 발송 정보 */
+  .objection-detail__dispatch-info {
     grid-template-columns: 1fr;
   }
 }

@@ -1,4 +1,5 @@
 import {
+  CheckOutlined,
   CloseOutlined,
   FileTextOutlined,
   StarFilled,
@@ -32,6 +33,15 @@ function formatDateTime(value: string): string {
     .replaceAll(' ', '');
 }
 
+// 최종 처리 결과 한글 변환
+function getReviewResultLabel(
+  value: ObjectionReviewResult,
+): string {
+  return value === 'REJECTED'
+    ? '거절 유지'
+    : '재심사';
+}
+
 function ObjectionDetailPanel({
   objection,
   reviewResult,
@@ -39,6 +49,9 @@ function ObjectionDetailPanel({
   onClose,
   onCreateDocument,
 }: ObjectionDetailPanelProps) {
+  // 답변완료 상태 확인
+  const isCompleted = objection.status === 'COMPLETED';
+
   return (
     <section className="objection-detail">
       {/* 상세 패널 상단 정보 */}
@@ -67,7 +80,8 @@ function ObjectionDetailPanel({
           </p>
 
           <p>
-            작성일시 <time>{formatDateTime(objection.createdAt)}</time>
+            작성일시{' '}
+            <time>{formatDateTime(objection.createdAt)}</time>
           </p>
         </div>
 
@@ -172,51 +186,123 @@ function ObjectionDetailPanel({
         </div>
       </section>
 
-      {/* 최종 처리 결과 선택 */}
-      <section className="objection-detail__decision">
-        <p>거절 유지를 할지 재심사 할지 선택해주세요</p>
+      {isCompleted ? (
+        <>
+          {/* 답변완료 안내 */}
+          <div className="objection-detail__completed-notice">
+            <CheckOutlined />
+            <span>이미 답변이 발송된 이의제기입니다.</span>
+          </div>
 
-        <div className="objection-detail__decision-options">
-          {/* 거절 유지 버튼 */}
+          {/* 완료된 처리 결과 및 이메일 발송 정보 */}
+          <section className="objection-detail__completed">
+            <p className="objection-detail__completed-title">
+              최종 처리 결과
+            </p>
+
+            {objection.completionInfo ? (
+              <>
+                <div className="objection-detail__completed-result">
+                  <strong>
+                    {getReviewResultLabel(
+                      objection.completionInfo.reviewResult,
+                    )}
+                  </strong>
+
+                  <span>고객 안내문 이메일 발송 완료</span>
+                </div>
+
+                <dl className="objection-detail__dispatch-info">
+                  <div>
+                    <dt>발송일시</dt>
+                    <dd>
+                      {formatDateTime(
+                        objection.completionInfo.dispatchedAt,
+                      )}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>승인자</dt>
+                    <dd>
+                      {objection.completionInfo.reviewerName}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>수신 이메일</dt>
+                    <dd>
+                      {objection.completionInfo.recipientEmail}
+                    </dd>
+                  </div>
+                </dl>
+              </>
+            ) : (
+              <div className="objection-detail__completed-empty">
+                이메일 발송 정보를 확인할 수 없습니다.
+              </div>
+            )}
+          </section>
+
+          {/* 발송된 대응문서 확인 버튼 */}
           <button
             type="button"
-            className={`objection-detail__decision-button objection-detail__decision-button--reject ${
-              reviewResult === 'REJECTED'
-                ? 'objection-detail__decision-button--selected'
-                : ''
-            }`}
-            onClick={() => onReviewResultChange('REJECTED')}
+            className="objection-detail__view-button"
+            onClick={onCreateDocument}
           >
-            <strong>거절 유지</strong>
-            <span>현재 판정 근거로 대응문서 생성</span>
+            <FileTextOutlined />
+            발송된 대응문서 보기
           </button>
+        </>
+      ) : (
+        <>
+          {/* 심사대기 건의 최종 처리 결과 선택 */}
+          <section className="objection-detail__decision">
+            <p>거절 유지를 할지 재심사 할지 선택해주세요</p>
 
-          {/* 재심사 버튼 */}
+            <div className="objection-detail__decision-options">
+              {/* 거절 유지 버튼 */}
+              <button
+                type="button"
+                className={`objection-detail__decision-button objection-detail__decision-button--reject ${
+                  reviewResult === 'REJECTED'
+                    ? 'objection-detail__decision-button--selected'
+                    : ''
+                }`}
+                onClick={() => onReviewResultChange('REJECTED')}
+              >
+                <strong>거절 유지</strong>
+                <span>현재 판정 근거로 대응문서 생성</span>
+              </button>
+
+              {/* 재심사 버튼 */}
+              <button
+                type="button"
+                className={`objection-detail__decision-button objection-detail__decision-button--review ${
+                  reviewResult === 'RE_REVIEW'
+                    ? 'objection-detail__decision-button--selected'
+                    : ''
+                }`}
+                onClick={() => onReviewResultChange('RE_REVIEW')}
+              >
+                <strong>재심사</strong>
+                <span>추가 자료 요청 후 재판정</span>
+              </button>
+            </div>
+          </section>
+
+          {/* 대응문서 생성 버튼 */}
           <button
             type="button"
-            className={`objection-detail__decision-button objection-detail__decision-button--review ${
-              reviewResult === 'RE_REVIEW'
-                ? 'objection-detail__decision-button--selected'
-                : ''
-            }`}
-            onClick={() => onReviewResultChange('RE_REVIEW')}
+            className="objection-detail__create-button"
+            disabled={!objection.title}
+            onClick={onCreateDocument}
           >
-            <strong>재심사</strong>
-            <span>추가 자료 요청 후 재판정</span>
+            <FileTextOutlined />
+            문서 생성하기
           </button>
-        </div>
-      </section>
-
-      {/* 대응문서 생성 버튼 */}
-      <button
-        type="button"
-        className="objection-detail__create-button"
-        disabled={!objection.title}
-        onClick={onCreateDocument}
-      >
-        <FileTextOutlined />
-        문서 생성하기
-      </button>
+        </>
+      )}
     </section>
   );
 }

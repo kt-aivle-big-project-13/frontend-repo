@@ -112,6 +112,12 @@ export const objectionMockData: ObjectionDetail[] = [
     ],
     reviewBasis:
       '연소득은 기준을 충족하였으나 원리금 상환비율과 기존 대출 잔액이 반영되어 승인 한도가 조정되었습니다.',
+    completionInfo: {
+      reviewResult: 'REJECTED',
+      dispatchedAt: '2026-07-28T14:30:00',
+      reviewerName: '김담당',
+      recipientEmail: 'ki***@example.com',
+    },
   },
   {
     objectionId: 409,
@@ -142,6 +148,12 @@ export const objectionMockData: ObjectionDetail[] = [
     ],
     reviewBasis:
       '제출된 소득 증빙 자료 중 일부 항목이 누락된 것으로 확인되어 추가 서류 검토가 필요합니다.',
+    completionInfo: {
+      reviewResult: 'RE_REVIEW',
+      dispatchedAt: '2026-07-26T17:20:00',
+      reviewerName: '김담당',
+      recipientEmail: 'kd***@example.com',
+    },
   },
   {
     objectionId: 408,
@@ -207,28 +219,51 @@ export const objectionDocumentMockData: Record<
     letterBody:
       '안녕하세요, 고객님. 접수하신 이의제기 내용을 검토한 결과 추가 자료를 바탕으로 재심사를 진행할 예정입니다.',
   },
+  410: {
+    objectionId: 410,
+    objectionNo: '2026-0410',
+    customerName: '김다',
+    reviewResult: 'REJECTED',
+    explanation:
+      '연소득은 기준을 충족하였으나 원리금 상환비율과 기존 대출 잔액이 반영되어 승인 한도가 조정되었습니다.',
+    letterTitle: '대출 한도 이의제기 회신 안내',
+    letterBody:
+      '안녕하세요, 고객님. 접수하신 대출 한도 관련 이의제기 검토 결과를 안내드립니다.\n\n연소득은 기준을 충족하였으나 원리금 상환비율과 기존 대출 잔액이 반영되어 승인 한도가 조정되었습니다.\n\n검토 결과 기존 한도 산정 결과를 유지하기로 결정했습니다. 감사합니다.',
+  },
+  409: {
+    objectionId: 409,
+    objectionNo: '2026-0409',
+    customerName: '김다',
+    reviewResult: 'RE_REVIEW',
+    explanation:
+      '제출된 소득 증빙 자료 중 일부 항목이 누락된 것으로 확인되어 추가 서류 검토가 필요합니다.',
+    letterTitle: '소득 증빙 서류 재검토 안내',
+    letterBody:
+      '안녕하세요, 고객님. 제출하신 소득 증빙 서류를 확인한 결과 일부 항목의 추가 확인이 필요합니다.\n\n필요한 자료를 다시 확인한 후 재심사를 진행하겠습니다. 감사합니다.',
+  },
 };
 
-export const objectionDispatchHistoryMockData: ObjectionDispatchHistory[] =
-  [
-    {
-      dispatchId: 1,
-      objectionId: 410,
-      customerName: '김다',
-      objectionNo: '2026-0388',
-      dispatchedAt: '2026-07-28T09:52:00',
-      reviewerName: '김담당',
-      reviewResult: 'REJECTED',
-      status: 'DISPATCHED',
-    },
-    {
-      dispatchId: 2,
-      objectionId: 409,
-      customerName: '김다',
-      objectionNo: '2026-0379',
-      dispatchedAt: '2026-07-26T16:10:00',
-      reviewerName: '김담당',
-      reviewResult: 'RE_REVIEW',
-      status: 'DISPATCHED',
-    },
-  ];
+export const objectionDispatchHistoryMockData: ObjectionDispatchHistory[] = [
+  {
+    dispatchId: 1,
+    objectionId: 410,
+    customerName: '김다',
+    objectionNo: '2026-0410',
+    dispatchedAt: '2026-07-28T14:30:00',
+    reviewerName: '김담당',
+    reviewResult: 'REJECTED',
+    recipientEmail: 'ki***@example.com',
+    status: 'DISPATCHED',
+  },
+  {
+    dispatchId: 2,
+    objectionId: 409,
+    customerName: '김다',
+    objectionNo: '2026-0409',
+    dispatchedAt: '2026-07-26T17:20:00',
+    reviewerName: '김담당',
+    reviewResult: 'RE_REVIEW',
+    recipientEmail: 'kd***@example.com',
+    status: 'DISPATCHED',
+  },
+];

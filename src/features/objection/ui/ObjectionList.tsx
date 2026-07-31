@@ -13,6 +13,7 @@ import type {
 // 이의제기 목록에서 전달받는 값과 이벤트
 interface ObjectionListProps {
   objections: ObjectionSummary[];
+  totalCount: number;
   selectedObjectionId: number | null;
   compact: boolean;
   searchKeyword: string;
@@ -38,11 +39,12 @@ function formatDate(value: string): string {
 
 // 이의제기 상태를 한글 문구로 변환
 function getStatusLabel(status: ObjectionStatus): string {
-  return status === 'WAITING' ? '심사대기' : '답변완료';
+  return status === 'WAITING' ? '답변대기' : '답변완료';
 }
 
 function ObjectionList({
   objections,
+  totalCount,
   selectedObjectionId,
   compact,
   searchKeyword,
@@ -80,24 +82,34 @@ function ObjectionList({
           />
         </label>
 
-        {/* 최신순 및 오래된순 정렬 */}
-        <div className="objection-list__sort-wrapper">
-          <select
-            className="objection-list__sort-select"
-            aria-label="이의제기 정렬 방식"
-            value={sortDescending ? 'latest' : 'oldest'}
-            onChange={(event) =>
-              onSortChange(event.target.value === 'latest')
-            }
-          >
-            <option value="latest">최신순</option>
-            <option value="oldest">오래된순</option>
-          </select>
+        {/* 건수 및 정렬 버튼 영역 */}
+        <div className="objection-list__toolbar-bottom">
+          {/* 상세 패널이 열렸을 때만 목록 카드 안에 건수 표시 */}
+          {compact && (
+            <strong className="objection-list__total-count">
+              {totalCount}건
+            </strong>
+          )}
 
-          <DownOutlined
-            className="objection-list__sort-arrow"
-            aria-hidden="true"
-          />
+          {/* 최신순 및 오래된순 정렬 */}
+          <div className="objection-list__sort-wrapper">
+            <select
+              className="objection-list__sort-select"
+              aria-label="이의제기 정렬 방식"
+              value={sortDescending ? 'latest' : 'oldest'}
+              onChange={(event) =>
+                onSortChange(event.target.value === 'latest')
+              }
+            >
+              <option value="latest">최신순</option>
+              <option value="oldest">오래된순</option>
+            </select>
+
+            <DownOutlined
+              className="objection-list__sort-arrow"
+              aria-hidden="true"
+            />
+          </div>
         </div>
       </div>
 
