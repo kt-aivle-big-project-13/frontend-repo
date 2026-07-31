@@ -51,6 +51,8 @@ export interface AuditSummary {
   modelName: string;
   modelFileName: string | null;
   datasetFileName: string | null;
+  modelGroupId: string | null;
+  version: string | null;
   completedAt: string | null;
   status: AuditStatus;
   currentStep: number;

@@ -21,6 +21,7 @@ import FairnessTable from './sections/FairnessTable';
 import ReportsSection from './sections/ReportsSection';
 import { getShapStatusCounts } from './sections/shapData';
 import TopFeaturesCard from './sections/TopFeaturesCard';
+import VersionHistorySection from './sections/VersionHistorySection';
 import './DashboardDetailPage.css';
 
 const RECENT_HISTORY_LIMIT = 5;
@@ -38,6 +39,25 @@ function selectRecentHistory(audits: AuditSummary[]): AuditSummary[] {
       return bTime - aTime;
     })
     .slice(0, RECENT_HISTORY_LIMIT);
+}
+
+// 같은 모델 계열(modelGroupId)의 완료된 감사들만 모아 버전끼리 비교할 수 있게 한다.
+// 감사 이력과 달리 최신 몇 건으로 자르지 않고 계열의 모든 버전을 보여준다.
+function selectVersionHistory(audits: AuditSummary[], modelGroupId: string | null): AuditSummary[] {
+  if (!modelGroupId) return [];
+
+  return audits
+    .filter(
+      (audit) =>
+        audit.modelGroupId === modelGroupId &&
+        TERMINAL_STATUSES.includes(audit.status) &&
+        audit.status !== 'FAILED',
+    )
+    .sort((a, b) => {
+      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      return bTime - aTime;
+    });
 }
 
 interface StatusSegment {
@@ -148,6 +168,7 @@ function DashboardDetailPage() {
   const [topFeatures, setTopFeatures] = useState<FeatureImportanceItem[]>([]);
   const [auditSummary, setAuditSummary] = useState<AuditSummary | null>(null);
   const [recentHistory, setRecentHistory] = useState<AuditSummary[]>([]);
+  const [versionHistory, setVersionHistory] = useState<AuditSummary[]>([]);
   const [isLoading, setIsLoading] = useState(isValidAuditId);
   const [loadError, setLoadError] = useState<string | null>(
     isValidAuditId ? null : '잘못된 감사 ID입니다.',
@@ -165,6 +186,7 @@ function DashboardDetailPage() {
     setTopFeatures([]);
     setAuditSummary(null);
     setRecentHistory([]);
+    setVersionHistory([]);
   }
 
   useEffect(() => {
@@ -183,8 +205,10 @@ function DashboardDetailPage() {
         setTopFeatures(explainability.topFeatures ?? []);
         setFairnessResults(fairness.results);
         // TODO: 단건 상세 조회 API가 생기면 이 목록 필터링 대신 그걸로 교체
-        setAuditSummary(audits.find((audit) => audit.auditId === idForFetch) ?? null);
+        const currentAudit = audits.find((audit) => audit.auditId === idForFetch) ?? null;
+        setAuditSummary(currentAudit);
         setRecentHistory(selectRecentHistory(audits));
+        setVersionHistory(selectVersionHistory(audits, currentAudit?.modelGroupId ?? null));
       })
       .catch(() => {
         if (cancelled) return;
@@ -209,6 +233,9 @@ function DashboardDetailPage() {
           <div className="dashboard-detail-page__title-area">
             <h1 className="dashboard-detail-page__title">
               {auditSummary?.modelName ?? '모델'}
+              {auditSummary?.version && (
+                <span className="dashboard-detail-page__title-version"> {auditSummary.version}</span>
+              )}
               <span className="dashboard-detail-page__title-suffix"> 감사 세부정보</span>
             </h1>
 
@@ -268,6 +295,11 @@ function DashboardDetailPage() {
 
         <FairnessTable results={fairnessResults} isLoading={isLoading} error={loadError} />
         <ReportsSection auditId={Number(auditId)} />
+        <VersionHistorySection
+          audits={versionHistory}
+          currentAuditId={numericAuditId}
+          isLoading={isLoading}
+        />
         <AuditHistorySection
           audits={recentHistory}
           currentAuditId={numericAuditId}

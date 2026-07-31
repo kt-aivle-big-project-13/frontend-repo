@@ -27,6 +27,12 @@
   font-weight: 800;
 }
 
+.dashboard-detail-page__title-version {
+  color: #9099a8;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .dashboard-detail-page__title-suffix {
   color: #202938;
   font-size: 20px;
