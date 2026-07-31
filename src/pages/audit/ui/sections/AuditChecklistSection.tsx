@@ -192,6 +192,17 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     setMatchedArticles([]);
   };
 
+  // 자가점검 건너뛰기를 체크하면 더 이상 응답을 사용하지 않으므로, 이미 선택해둔 예/아니오
+  // 버튼의 강조 표시도 함께 해제한다(체크 후에도 이전 선택이 눌린 채로 보이던 버그 수정).
+  const handleSkipSelfCheckChange = (checked: boolean) => {
+    setSkipSelfCheck(checked);
+    if (checked) {
+      setSelfCheckAnswers(DEFAULT_SELF_CHECK);
+      setIsSelfCheckSubmitted(false);
+      setMatchedArticles([]);
+    }
+  };
+
   // 매핑 생성이 제한 시간 내에 안 끝나면(RegulationMappingTimeoutError) 실제로 매핑이
   // 없는 것("매칭된 조항이 없습니다")과 구분해 아직 생성 중인 상태로 보여주고, 재조회할 수 있게 한다.
   const loadMatchedArticles = async (id: number) => {
@@ -475,7 +486,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
           <input
             type="checkbox"
             checked={skipSelfCheck}
-            onChange={(event) => setSkipSelfCheck(event.target.checked)}
+            onChange={(event) => handleSkipSelfCheckChange(event.target.checked)}
           />
           자가점검을 건너뛰실 거면 체크해주세요
         </label>
