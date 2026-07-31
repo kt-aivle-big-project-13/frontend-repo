@@ -10,6 +10,7 @@ import AuditPage from '../pages/audit/ui/AuditPage';
 import BoardDetailPage from '../pages/board/ui/BoardDetailPage';
 import BoardFormPage from '../pages/board/ui/BoardFormPage';
 import BoardListPage from '../pages/board/ui/BoardListPage';
+import DashboardDetailPage from '../pages/dashboard-detail/ui/DashboardDetailPage';
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import HomePage from '../pages/home/ui/HomePage';
@@ -47,6 +48,9 @@ function App() {
               path="/audit/:auditId/results"
               element={<AuditPage mode="results" />}
             />
+
+            {/* 대시보드 — 감사 세부정보 상세보기 (목록 페이지는 별도 작업 중) */}
+            <Route path="/dashboard/:auditId" element={<DashboardDetailPage />} />
 
             {/* 게시판 */}
             <Route path="/board" element={<BoardListPage />} />
