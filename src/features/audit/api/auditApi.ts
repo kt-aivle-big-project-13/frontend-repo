@@ -3,13 +3,7 @@ import { apiClient } from '../../../shared/api/client';
 export type ThresholdMethod = 'VALIDATION_DATASET' | 'MANUAL';
 
 export type AuditStatus =
-  | 'PENDING'
-  | 'IN_PROGRESS'
-  | 'COMPLIANT'
-  | 'WARNING'
-  | 'NON_COMPLIANT'
-  | 'UNCONFIRMED'
-  | 'FAILED';
+  'PENDING' | 'IN_PROGRESS' | 'COMPLIANT' | 'WARNING' | 'NON_COMPLIANT' | 'UNCONFIRMED' | 'FAILED';
 
 export const TERMINAL_STATUSES: AuditStatus[] = [
   'COMPLIANT',
@@ -35,13 +29,8 @@ export interface StartAuditResponse {
   startedAt: string;
 }
 
-export async function startAudit(
-  request: StartAuditRequest,
-): Promise<StartAuditResponse> {
-  const { data } = await apiClient.post<StartAuditResponse>(
-    '/audits',
-    request,
-  );
+export async function startAudit(request: StartAuditRequest): Promise<StartAuditResponse> {
+  const { data } = await apiClient.post<StartAuditResponse>('/audits', request);
 
   return data;
 }
@@ -105,20 +94,13 @@ export interface FairnessResponse {
   results: FairlearnResultItem[];
 }
 
-export async function getFairness(
-  auditId: number,
-): Promise<FairnessResponse> {
-  const { data } = await apiClient.get<FairnessResponse>(
-    `/audits/${auditId}/fairness`,
-  );
+export async function getFairness(auditId: number): Promise<FairnessResponse> {
+  const { data } = await apiClient.get<FairnessResponse>(`/audits/${auditId}/fairness`);
 
   return data;
 }
 
-export type ShapMetricCode =
-  | 'SENSITIVE_CONTRIB'
-  | 'GLOBAL_STABILITY'
-  | 'FIDELITY';
+export type ShapMetricCode = 'SENSITIVE_CONTRIB' | 'GLOBAL_STABILITY' | 'FIDELITY';
 export type ShapStatus = 'PASS' | 'WARNING' | 'REVIEW';
 
 export interface ShapMetricItem {
@@ -134,22 +116,14 @@ export interface ExplainabilityResponse {
   metrics: ShapMetricItem[];
 }
 
-export async function getExplainability(
-  auditId: number,
-): Promise<ExplainabilityResponse> {
-  const { data } = await apiClient.get<ExplainabilityResponse>(
-    `/audits/${auditId}/explainability`,
-  );
+export async function getExplainability(auditId: number): Promise<ExplainabilityResponse> {
+  const { data } = await apiClient.get<ExplainabilityResponse>(`/audits/${auditId}/explainability`);
 
   return data;
 }
 
 export type SelfCheckItemCode =
-  | 'NOTICE'
-  | 'OBJECTION'
-  | 'OVERSIGHT'
-  | 'RISK_MANAGEMENT'
-  | 'DOCUMENTATION';
+  'NOTICE' | 'OBJECTION' | 'OVERSIGHT' | 'RISK_MANAGEMENT' | 'DOCUMENTATION';
 
 export interface SelfCheckAnswerItem {
   itemCode: SelfCheckItemCode;
@@ -174,9 +148,7 @@ export async function saveSelfCheckAnswers(
   return data;
 }
 
-export async function getSelfCheckAnswers(
-  auditId: number,
-): Promise<SelfCheckAnswerResponse> {
+export async function getSelfCheckAnswers(auditId: number): Promise<SelfCheckAnswerResponse> {
   const { data } = await apiClient.get<SelfCheckAnswerResponse>(
     `/audits/${auditId}/self-check-answers`,
   );
@@ -186,13 +158,25 @@ export async function getSelfCheckAnswers(
 
 export type RegulationComplianceStatus = 'COMPLIANT' | 'NON_COMPLIANT';
 
+// 조항 하나가 여러 자가점검 문항에, 문항마다 다른 항으로 걸릴 수 있어(예: 제34조는 위험관리
+// 문항엔 "①1호", 관리감독 문항엔 "①4호") 문항·항을 쌍으로 묶어서 받는다.
+// note는 그 문항·항이 왜 매칭됐는지에 대한 화면 표시용 요약 문구다(조 전체 요약인 summary와 달리
+// 항 단위로 정확하다).
+export interface MatchedChecklistItem {
+  itemCode: SelfCheckItemCode;
+  clauseNo: string | null;
+  note: string;
+}
+
 export interface RegulationMappingItem {
   mappingId: number;
   regulation: string;
   article: string;
   content: string;
+  summary: string;
   compliance: RegulationComplianceStatus;
   evidence: string;
+  matchedItems: MatchedChecklistItem[];
 }
 
 export interface RegulationMappingResponse {
@@ -200,9 +184,7 @@ export interface RegulationMappingResponse {
   mappings: RegulationMappingItem[];
 }
 
-export async function getRegulationMappings(
-  auditId: number,
-): Promise<RegulationMappingResponse> {
+export async function getRegulationMappings(auditId: number): Promise<RegulationMappingResponse> {
   const { data } = await apiClient.get<RegulationMappingResponse>(
     `/audits/${auditId}/regulation-mappings`,
   );
