@@ -1,582 +1,262 @@
-import { useEffect, useState } from 'react';
-import {
-  Button,
-  Checkbox,
-  Input,
-  Modal,
-  Radio,
-  message,
-} from 'antd';
-import axios from 'axios';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { message } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
-import {
-  getAudits,
-  type AuditSummary,
-} from '../../../features/audit/api/auditApi';
+import { fetchObjections } from '../../../features/objection/api/objectionApi';
 
-import {
-  createObjection,
-  dispatchObjection,
-  generateObjectionExplanation,
-  generateObjectionLetter,
-  type DispatchChannel,
-  type GenerateExplanationResponse,
-  type GenerateLetterResponse,
-} from '../../../features/objection/api/objectionApi';
+import type {
+  ObjectionDetail,
+  ObjectionReviewResult,
+} from '../../../features/objection/model/objectionTypes';
 
-import type { ObjectionFormValues } from '../../../features/objection/model/objectionSchema';
+import ObjectionDetailPanel from '../../../features/objection/ui/ObjectionDetailPanel';
+import ObjectionList from '../../../features/objection/ui/ObjectionList';
 
-import ObjectionForm from '../../../features/objection/ui/ObjectionForm';
 import MainLayout from '../../../widgets/layout/ui/MainLayout';
 
 import './ObjectionsPage.css';
 
-interface DispatchHistoryItem {
-  objectionId: number;
-  customerCaseNo: string;
-  dispatchedAt: string;
-  channels: DispatchChannel[];
-}
+// 한 페이지에 표시할 최대 이의제기 건수
+const ITEMS_PER_PAGE = 10;
 
-interface ErrorResponse {
-  message?: string;
-}
-
-function getErrorMessage(
-  error: unknown,
-  fallback: string,
-): string {
-  if (axios.isAxiosError<ErrorResponse>(error)) {
-    return error.response?.data?.message ?? fallback;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-}
+// 상세 패널 닫기 애니메이션 시간
+const DETAIL_ANIMATION_DURATION = 300;
 
 function ObjectionsPage() {
-  const [audits, setAudits] = useState<AuditSummary[]>(
-    [],
-  );
+  // 페이지 이동
+  const navigate = useNavigate();
 
-  const [isLoadingAudits, setIsLoadingAudits] =
-    useState(false);
+  // 상세 패널 닫기 타이머
+  const closeTimerRef = useRef<number | null>(null);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  // 전체 이의제기 목록
+  const [objections, setObjections] = useState<ObjectionDetail[]>([]);
 
-  const [
-    isGeneratingLetter,
-    setIsGeneratingLetter,
-  ] = useState(false);
+  // 현재 선택된 이의제기 ID
+  const [selectedObjectionId, setSelectedObjectionId] =
+    useState<number | null>(null);
 
-  const [isDispatching, setIsDispatching] =
-    useState(false);
+  // 담당자가 선택한 처리 결과
+  const [reviewResult, setReviewResult] =
+    useState<ObjectionReviewResult>('REJECTED');
 
-  const [objectionId, setObjectionId] = useState<
-    number | null
-  >(null);
+  // 상세 패널 닫기 애니메이션 상태
+  const [isDetailClosing, setIsDetailClosing] = useState(false);
 
-  const [customerCaseNo, setCustomerCaseNo] =
-    useState('');
+  // 검색어
+  const [searchKeyword, setSearchKeyword] = useState('');
 
-  const [explanation, setExplanation] =
-    useState<GenerateExplanationResponse | null>(null);
+  // true: 최신순, false: 오래된순
+  const [sortDescending, setSortDescending] = useState(true);
 
-  const [letter, setLetter] =
-    useState<GenerateLetterResponse | null>(null);
+  // 현재 페이지 번호
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const [letterBody, setLetterBody] = useState('');
+  // 목록 로딩 상태
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [agreed, setAgreed] = useState(false);
-
-  const [
-    isDispatchModalOpen,
-    setIsDispatchModalOpen,
-  ] = useState(false);
-
-  const [recipientContact, setRecipientContact] =
-    useState('');
-
-  const [channels, setChannels] = useState<
-    DispatchChannel[]
-  >(['EMAIL']);
-
-  const [history, setHistory] = useState<
-    DispatchHistoryItem[]
-  >([]);
-
+  // 이의제기 목록 조회
   useEffect(() => {
-    const loadAudits = async () => {
-      try {
-        setIsLoadingAudits(true);
+    fetchObjections()
+      .then(setObjections)
+      .catch((error: unknown) => {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : '이의제기 목록을 불러오지 못했습니다.';
 
-        const result = await getAudits();
-
-        setAudits(result);
-      } catch (error: unknown) {
-        message.error(
-          getErrorMessage(
-            error,
-            '감사 목록을 불러오지 못했습니다.',
-          ),
-        );
-      } finally {
-        setIsLoadingAudits(false);
-      }
-    };
-
-    void loadAudits();
+        message.error(errorMessage);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
-  const handleSubmit = async (
-    values: ObjectionFormValues,
-  ) => {
-    try {
-      setIsSubmitting(true);
+  // 컴포넌트 종료 시 타이머 제거
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
-      setExplanation(null);
-      setLetter(null);
-      setLetterBody('');
-      setAgreed(false);
+  // 검색 및 정렬된 이의제기 목록
+  const filteredObjections = useMemo(() => {
+    const normalizedKeyword = searchKeyword.trim().toLowerCase();
 
-      /**
-       * 1. 이의제기 등록
-       */
-      const created = await createObjection({
-        auditId: values.auditId,
-        customerCaseNo:
-          values.customerCaseNo.trim(),
-        reviewResult: values.reviewResult,
-        reviewBasis: values.reviewBasis.trim(),
-      });
+    const filtered = normalizedKeyword
+      ? objections.filter(
+          (item) =>
+            item.customerName.toLowerCase().includes(normalizedKeyword) ||
+            item.title.toLowerCase().includes(normalizedKeyword),
+        )
+      : objections;
 
-      setObjectionId(created.objectionId);
-      setCustomerCaseNo(created.customerCaseNo);
+    return [...filtered].sort((first, second) => {
+      const firstTime = new Date(first.createdAt).getTime();
+      const secondTime = new Date(second.createdAt).getTime();
 
-      /**
-       * 2. SHAP 및 If-Then 판단 근거 설명 생성
-       */
-      const explanationResult =
-        await generateObjectionExplanation(
-          created.objectionId,
-        );
+      return sortDescending
+        ? secondTime - firstTime
+        : firstTime - secondTime;
+    });
+  }, [objections, searchKeyword, sortDescending]);
 
-      setExplanation(explanationResult);
+  // 전체 페이지 수
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredObjections.length / ITEMS_PER_PAGE),
+  );
 
-      /**
-       * 3. 고객 안내문 초안 생성
-       */
-      const letterResult =
-        await generateObjectionLetter(
-          created.objectionId,
-          {
-            tone: 'FORMAL',
-          },
-        );
+  // 현재 페이지에 표시할 목록
+  const visibleObjections = filteredObjections.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
 
-      setLetter(letterResult);
-      setLetterBody(letterResult.body);
+  // 현재 선택된 이의제기 정보
+  const selectedObjection =
+    objections.find((item) => item.objectionId === selectedObjectionId) ?? null;
 
-      message.success(
-        '이의제기 등록과 초안 생성이 완료되었습니다.',
-      );
-    } catch (error: unknown) {
-      message.error(
-        getErrorMessage(
-          error,
-          '이의제기 등록 또는 초안 생성에 실패했습니다.',
-        ),
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+  // 검색어 변경
+  const handleSearchKeywordChange = (value: string) => {
+    setSearchKeyword(value);
+    setCurrentPage(1);
   };
 
-  const handleRegenerateLetter = async () => {
-    if (objectionId === null) {
-      message.warning(
-        '먼저 이의제기 건을 등록해 주세요.',
-      );
-      return;
-    }
-
-    try {
-      setIsGeneratingLetter(true);
-
-      const result =
-        await generateObjectionLetter(
-          objectionId,
-          {
-            tone: 'FORMAL',
-          },
-        );
-
-      setLetter(result);
-      setLetterBody(result.body);
-      setAgreed(false);
-
-      message.success(
-        '고객 안내문을 다시 생성했습니다.',
-      );
-    } catch (error: unknown) {
-      message.error(
-        getErrorMessage(
-          error,
-          '고객 안내문 재생성에 실패했습니다.',
-        ),
-      );
-    } finally {
-      setIsGeneratingLetter(false);
-    }
+  // 정렬 방식 변경
+  const handleSortChange = (nextSortDescending: boolean) => {
+    setSortDescending(nextSortDescending);
+    setCurrentPage(1);
   };
 
-  const handleOpenDispatchModal = () => {
-    if (!letter) {
-      message.warning(
-        '먼저 고객 안내문을 생성해 주세요.',
-      );
-      return;
+  // 이의제기 선택
+  const handleSelect = (objectionId: number) => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
     }
 
-    if (!letterBody.trim()) {
-      message.warning(
-        '발송할 고객 안내문 내용을 입력해 주세요.',
-      );
-      return;
-    }
-
-    if (!agreed) {
-      message.warning(
-        '내용 검토 및 발송 동의가 필요합니다.',
-      );
-      return;
-    }
-
-    setIsDispatchModalOpen(true);
+    setIsDetailClosing(false);
+    setSelectedObjectionId(objectionId);
+    setReviewResult('REJECTED');
   };
 
-  const handleCloseDispatchModal = () => {
-    if (isDispatching) {
+  // 상세 패널 닫기
+  const handleCloseDetail = () => {
+    if (!selectedObjection || isDetailClosing) {
       return;
     }
 
-    setIsDispatchModalOpen(false);
+    setIsDetailClosing(true);
+
+    closeTimerRef.current = window.setTimeout(() => {
+      setSelectedObjectionId(null);
+      setReviewResult('REJECTED');
+      setIsDetailClosing(false);
+      closeTimerRef.current = null;
+    }, DETAIL_ANIMATION_DURATION);
   };
 
-  const handleDispatch = async () => {
-    if (objectionId === null) {
-      message.warning(
-        '이의제기 정보가 존재하지 않습니다.',
-      );
+  // 대응문서 생성 페이지로 이동
+  const handleCreateDocument = () => {
+    if (!selectedObjection) {
       return;
     }
 
-    if (!recipientContact.trim()) {
-      message.warning(
-        '고객 연락처 또는 이메일을 입력해 주세요.',
-      );
-      return;
-    }
-
-    if (channels.length === 0) {
-      message.warning(
-        '발송 채널을 선택해 주세요.',
-      );
-      return;
-    }
-
-    try {
-      setIsDispatching(true);
-
-      const result = await dispatchObjection(
-        objectionId,
-        {
-          approved: true,
-          channels,
-          recipientContact:
-            recipientContact.trim(),
-        },
-      );
-
-      setHistory((previous) => [
-        {
-          objectionId,
-          customerCaseNo,
-          dispatchedAt: result.dispatchedAt,
-          channels: result.channels,
-        },
-        ...previous,
-      ]);
-
-      setIsDispatchModalOpen(false);
-      setRecipientContact('');
-      setChannels(['EMAIL']);
-      setAgreed(false);
-
-      message.success(
-        '고객 안내문 발송이 완료되었습니다.',
-      );
-    } catch (error: unknown) {
-      message.error(
-        getErrorMessage(
-          error,
-          '고객 안내문 발송에 실패했습니다.',
-        ),
-      );
-    } finally {
-      setIsDispatching(false);
-    }
+    navigate(`/objections/${selectedObjection.objectionId}/document`, {
+      state: {
+        reviewResult,
+      },
+    });
   };
 
-  const handleChannelChange = (
-    channel: DispatchChannel,
-  ) => {
-    setChannels([channel]);
-  };
+  // 상세 패널 표시 여부
+  const isDetailVisible = selectedObjection !== null;
 
   return (
     <MainLayout>
-      <section className="objections-page">
+      <div className="objections-page">
         <div className="objections-page__inner">
-          <header className="objections-page__header">
-            <h1>
-              고객 이의제기 대응문서 생성
-            </h1>
+          {/* 페이지 상단 제목 */}
+          <header className="objections-page__page-header">
+            <span>이의제기</span>
 
-            <p>
-              신용정보법 제36조의2에 따라 심사
-              결과와 판단 근거를 검토하고 고객
-              안내문 초안을 생성합니다.
-            </p>
+            <div className="objections-page__title-row">
+              <div>
+                <h1>고객 이의제기 목록</h1>
+
+                <p>
+                  접수된 이의제기를 확인하고 대응문서를 생성하세요
+                </p>
+              </div>
+
+              {/* 전체 이의제기 건수 */}
+              <strong>{objections.length}건</strong>
+            </div>
           </header>
 
-          <div className="objections-page__workspace">
-            <section className="objections-page__card">
-              <div className="objections-page__card-heading">
-                <span>① 이의제기 등록</span>
-
-                {objectionId !== null && (
-                  <small>
-                    이의제기 #{objectionId}
-                  </small>
-                )}
-              </div>
-
-              <ObjectionForm
-                audits={audits}
-                isLoadingAudits={
-                  isLoadingAudits
-                }
-                isSubmitting={isSubmitting}
-                onSubmit={handleSubmit}
-              />
-            </section>
-
-            <section className="objections-page__card">
-              <div className="objections-page__card-heading">
-                <span>
-                  ② 설명문 초안 · 담당자 검토
-                </span>
-              </div>
-
-              <div className="objections-page__output-group">
-                <label>
-                  판단 근거 설명 (SHAP, If-Then)
-                </label>
-
-                <div className="objections-page__output-box">
-                  {explanation?.explanation ??
-                    '이의제기를 등록하면 SHAP 및 규칙 기반 설명이 표시됩니다.'}
-                </div>
-
-                {explanation &&
-                  explanation.rules.length > 0 && (
-                    <ul className="objections-page__rules">
-                      {explanation.rules.map(
-                        (rule) => (
-                          <li key={rule}>
-                            {rule}
-                          </li>
-                        ),
-                      )}
-                    </ul>
-                  )}
-              </div>
-
-              <div className="objections-page__output-group">
-                <div className="objections-page__output-label-row">
-                  <label>
-                    고객 안내문 초안 (LLM)
-                  </label>
-
-                  <Button
-                    size="small"
-                    loading={isGeneratingLetter}
-                    disabled={
-                      objectionId === null ||
-                      isSubmitting
-                    }
-                    onClick={() =>
-                      void handleRegenerateLetter()
-                    }
-                  >
-                    재생성
-                  </Button>
-                </div>
-
-                {letter?.title && (
-                  <Input
-                    className="objections-page__letter-title"
-                    value={letter.title}
-                    readOnly
-                  />
-                )}
-
-                <Input.TextArea
-                  className="objections-page__letter"
-                  value={letterBody}
-                  placeholder="생성된 고객 안내문 초안이 표시됩니다."
-                  onChange={(event) => {
-                    setLetterBody(
-                      event.target.value,
-                    );
-                    setAgreed(false);
-                  }}
-                />
-              </div>
-
-              <div className="objections-page__actions">
-                <Checkbox
-                  checked={agreed}
-                  disabled={!letterBody.trim()}
-                  onChange={(event) =>
-                    setAgreed(
-                      event.target.checked,
-                    )
-                  }
-                >
-                  내용을 검토했으며 발송에
-                  동의합니다.
-                </Checkbox>
-
-                <Button
-                  type="primary"
-                  disabled={
-                    !letter ||
-                    !agreed ||
-                    !letterBody.trim()
-                  }
-                  onClick={
-                    handleOpenDispatchModal
-                  }
-                >
-                  승인 및 발송
-                </Button>
-              </div>
-            </section>
-          </div>
-
-          <section className="objections-page__history">
-            <h2>발송 이력</h2>
-
-            <div className="objections-page__history-head">
-              <span>심사 대상</span>
-              <span>발송 일시</span>
-              <span>발송 채널</span>
-              <span>심사 결과</span>
+          {isLoading ? (
+            // 목록 로딩 화면
+            <div className="objections-page__loading">
+              이의제기 목록을 불러오는 중입니다.
             </div>
+          ) : (
+            // 목록과 상세 패널 영역
+            <div
+              className={[
+                'objections-page__workspace',
+                isDetailVisible
+                  ? 'objections-page__workspace--detail-open'
+                  : '',
+                isDetailClosing
+                  ? 'objections-page__workspace--detail-closing'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {/* 이의제기 목록 */}
+              <ObjectionList
+                objections={visibleObjections}
+                selectedObjectionId={selectedObjectionId}
+                compact={isDetailVisible}
+                searchKeyword={searchKeyword}
+                sortDescending={sortDescending}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onSearchKeywordChange={handleSearchKeywordChange}
+                onSortChange={handleSortChange}
+                onSelect={handleSelect}
+                onPageChange={setCurrentPage}
+              />
 
-            {history.length === 0 ? (
-              <div className="objections-page__empty">
-                현재 화면에서 발송한 이력이
-                없습니다.
-              </div>
-            ) : (
-              history.map((item) => (
+              {/* 선택된 이의제기 상세 패널 */}
+              {selectedObjection && (
                 <div
-                  className="objections-page__history-row"
-                  key={`${item.objectionId}-${item.dispatchedAt}`}
+                  className={[
+                    'objections-page__detail-wrapper',
+                    isDetailClosing
+                      ? 'objections-page__detail-wrapper--closing'
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
-                  <span>
-                    {item.customerCaseNo}
-                  </span>
-
-                  <span>
-                    {new Date(
-                      item.dispatchedAt,
-                    ).toLocaleString('ko-KR')}
-                  </span>
-
-                  <span>
-                    {item.channels.join(', ')}
-                  </span>
-
-                  <span className="objections-page__badge">
-                    발송완료
-                  </span>
+                  <ObjectionDetailPanel
+                    objection={selectedObjection}
+                    reviewResult={reviewResult}
+                    onReviewResultChange={setReviewResult}
+                    onClose={handleCloseDetail}
+                    onCreateDocument={handleCreateDocument}
+                  />
                 </div>
-              ))
-            )}
-          </section>
+              )}
+            </div>
+          )}
         </div>
-      </section>
-
-      <Modal
-        title="고객 안내문 발송"
-        open={isDispatchModalOpen}
-        okText="승인 및 발송"
-        cancelText="취소"
-        confirmLoading={isDispatching}
-        onCancel={handleCloseDispatchModal}
-        onOk={() => void handleDispatch()}
-        maskClosable={!isDispatching}
-        closable={!isDispatching}
-      >
-        <div className="objections-page__modal-field">
-          <label htmlFor="recipientContact">
-            고객 연락처 또는 이메일
-          </label>
-
-          <Input
-            id="recipientContact"
-            value={recipientContact}
-            placeholder="example@email.com 또는 010-0000-0000"
-            disabled={isDispatching}
-            onChange={(event) =>
-              setRecipientContact(
-                event.target.value,
-              )
-            }
-          />
-        </div>
-
-        <div className="objections-page__modal-field">
-          <span>발송 채널</span>
-
-          <Radio.Group
-            value={channels[0]}
-            disabled={isDispatching}
-            onChange={(event) =>
-              handleChannelChange(
-                event.target
-                  .value as DispatchChannel,
-              )
-            }
-          >
-            <Radio value="EMAIL">
-              이메일
-            </Radio>
-
-            <Radio value="SMS">
-              SMS
-            </Radio>
-          </Radio.Group>
-        </div>
-      </Modal>
+      </div>
     </MainLayout>
   );
 }
