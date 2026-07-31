@@ -24,7 +24,7 @@ function AuditStartLink({ className, children }: AuditStartLinkProps) {
     }
 
     Modal.confirm({
-      title: '고영향 AI 모델이 확실한가요?',
+      title: '고영향 AI 모델',
       content: (
         <>
           여기서 테스트하고자 하는 모델이 고영향 AI 모델인가요?
