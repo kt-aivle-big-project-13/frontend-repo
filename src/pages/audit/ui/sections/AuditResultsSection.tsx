@@ -6,6 +6,7 @@ import {
   type FairlearnResultItem,
   type ShapMetricItem,
 } from '../../../../features/audit/api/auditApi';
+import MetricHelpTooltip from '../../../../features/audit/ui/MetricHelpTooltip';
 import StepIndicator from '../StepIndicator';
 
 import './AuditFlow.css';
@@ -33,6 +34,26 @@ const SHAP_METRIC_LABEL: Record<ShapMetricCode, string> = {
   SENSITIVE_CONTRIB: '민감변수 기여비율 (SENSITIVE_CONTRIB)',
   GLOBAL_STABILITY: '설명 일관성 (GLOBAL_STABILITY)',
   FIDELITY: '설명 충실성 (FIDELITY)',
+};
+
+const SHAP_METRIC_HELP: Record<ShapMetricCode, string> = {
+  SENSITIVE_CONTRIB:
+    '모델의 판단에 영향을 준 전체 요인 중에서 성별·연령과 같은 민감정보가 직접 차지한 영향의 비율을 보여주는 지표입니다.',
+
+  GLOBAL_STABILITY:
+    '분석에 사용하는 고객이나 표본이 조금 달라져도 모델이 중요하다고 설명하는 변수와 그 순서가 비슷하게 유지되는지를 보여주는 지표입니다.',
+
+  FIDELITY:
+    'SHAP이 제시한 여러 판단 이유를 종합했을 때 실제 모델의 예측 결과를 얼마나 정확하게 설명하는지를 보여주는 지표입니다.',
+};
+
+const SHAP_METRIC_TIP: Record<ShapMetricCode, string> = {
+  SENSITIVE_CONTRIB:
+    '값이 낮을수록 민감변수의 직접적인 영향이 작습니다. 다만 이 지표만으로 전체 공정성을 판단할 수는 없습니다.',
+
+  GLOBAL_STABILITY: '값이 1에 가까울수록 표본 변화에도 설명이 안정적으로 유지됩니다.',
+
+  FIDELITY: '값이 1에 가까울수록 SHAP 설명이 실제 모델 예측을 충실하게 반영합니다.',
 };
 
 const SHAP_STATUS_LABEL: Record<ShapStatus, string> = {
@@ -76,6 +97,40 @@ const FAIRNESS_METRIC_LABEL: Record<FairlearnMetricCode, string> = {
   FPR_PARITY: '거짓 양성률 패리티 (FPR Parity)',
   FDR_PARITY: '거짓 발견율 패리티 (FDR Parity)',
   FOR_PARITY: '거짓 누락률 패리티 (FOR Parity)',
+};
+
+const FAIRNESS_METRIC_HELP: Record<FairlearnMetricCode, string> = {
+  DEMOGRAPHIC_PARITY:
+    '성별이나 연령대 같은 집단별로 긍정적인 결과를 받은 비율이 얼마나 차이 나는지 보여주는 지표입니다. 긍정적인 결과는 업무에 따라 승인이나 합격 등을 의미할 수 있습니다.',
+
+  PROPORTIONAL_PARITY:
+    '긍정적인 결과를 가장 적게 받은 집단의 비율을 가장 많이 받은 집단과 비교해, 두 집단의 결과 비율이 어느 정도 비슷한지 보여주는 지표입니다.',
+
+  EQUAL_OPPORTUNITY:
+    '실제로 긍정적인 결과를 받을 조건을 갖춘 대상이 모델에서도 긍정적으로 판단될 기회가 집단별로 얼마나 차이 나는지 보여주는 지표입니다.',
+
+  EQUALIZED_ODDS:
+    '모델이 정답을 맞히거나 잘못 판단하는 비율이 특정 집단에서 더 높거나 낮지 않은지 종합적으로 확인하는 지표입니다.',
+
+  FPR_PARITY:
+    '실제로는 부정적인 대상인데 모델이 긍정적으로 잘못 판단한 비율이 집단별로 얼마나 차이 나는지 보여주는 지표입니다.',
+
+  FDR_PARITY:
+    '모델이 긍정적으로 판단한 대상 중 실제로는 부정적인 대상이 포함된 비율이 집단별로 얼마나 차이 나는지 보여주는 지표입니다.',
+
+  FOR_PARITY:
+    '모델이 부정적으로 판단한 대상 중 실제로는 긍정적인 대상이 포함된 비율이 집단별로 얼마나 차이 나는지 보여주는 지표입니다.',
+};
+
+const FAIRNESS_METRIC_TIP: Record<FairlearnMetricCode, string> = {
+  DEMOGRAPHIC_PARITY: '값이 0에 가까울수록 집단별 긍정 예측 비율의 차이가 작습니다.',
+  PROPORTIONAL_PARITY:
+    '값이 1에 가까울수록 집단별 긍정 예측 비율이 유사합니다. 0.8은 참고 기준입니다.',
+  EQUAL_OPPORTUNITY: '값이 0에 가까울수록 실제 긍정 대상을 발견할 기회가 집단 간 유사합니다.',
+  EQUALIZED_ODDS: '값이 0에 가까울수록 집단 간 정답 및 오류 패턴이 유사합니다.',
+  FPR_PARITY: '값이 0에 가까울수록 집단별 거짓 양성, 즉 오탐 수준이 유사합니다.',
+  FDR_PARITY: '값이 0에 가까울수록 집단별 긍정 예측의 오류 비율이 유사합니다.',
+  FOR_PARITY: '값이 0에 가까울수록 실제 긍정 대상을 놓치는 비율이 집단 간 유사합니다.',
 };
 
 const FAIRNESS_STATUS_LABEL: Record<FairlearnStatus, string> = {
@@ -160,11 +215,7 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
       <StepIndicator doneSteps={[1, 2, 3]} activeSteps={[4]} />
 
       {isLoading ? (
-        <div
-          className="audit-execution-section__loading"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="audit-execution-section__loading" role="status" aria-live="polite">
           <span className="audit-execution-section__spinner" aria-hidden="true" />
           <p className="audit-execution-section__loading-text">
             감사 결과를 불러오고 있습니다. 잠시만 기다려주세요.
@@ -182,15 +233,18 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
             </h2>
 
             {shapMetrics.length === 0 ? (
-              <p className="audit-execution-section__empty">
-                SHAP 분석 결과가 없습니다.
-              </p>
+              <p className="audit-execution-section__empty">SHAP 분석 결과가 없습니다.</p>
             ) : (
               <div className="audit-execution-section__stat-grid">
                 {shapMetrics.map((metric) => (
                   <div key={metric.metricCode} className="audit-execution-section__stat">
                     <p className="audit-execution-section__stat-label">
                       {SHAP_METRIC_LABEL[metric.metricCode]}
+                      <MetricHelpTooltip
+                        label={SHAP_METRIC_LABEL[metric.metricCode]}
+                        description={SHAP_METRIC_HELP[metric.metricCode]}
+                        tip={SHAP_METRIC_TIP[metric.metricCode]}
+                      />
                     </p>
                     <div className="audit-execution-section__fairness-row">
                       <p className="audit-execution-section__stat-value">{metric.value}</p>
@@ -214,9 +268,7 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
               </span>
             </h2>
             {fairnessGroups.length === 0 ? (
-              <p className="audit-execution-section__empty">
-                Fairlearn 감사 결과가 없습니다.
-              </p>
+              <p className="audit-execution-section__empty">Fairlearn 감사 결과가 없습니다.</p>
             ) : (
               fairnessGroups.map(([attribute, metrics]) => (
                 <div key={attribute} className="audit-execution-section__fairness-group">
@@ -224,23 +276,21 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
                     {FAIRNESS_ATTRIBUTE_LABEL[attribute] ?? attribute}
                   </p>
                   {metrics[0]?.note && (
-                    <p className="audit-execution-section__fairness-note">
-                      {metrics[0].note}
-                    </p>
+                    <p className="audit-execution-section__fairness-note">{metrics[0].note}</p>
                   )}
                   <div className="audit-execution-section__stat-grid">
                     {metrics.map((metric) => (
-                      <div
-                        key={metric.metricCode}
-                        className="audit-execution-section__stat"
-                      >
+                      <div key={metric.metricCode} className="audit-execution-section__stat">
                         <p className="audit-execution-section__stat-label">
                           {FAIRNESS_METRIC_LABEL[metric.metricCode]}
+                          <MetricHelpTooltip
+                            label={FAIRNESS_METRIC_LABEL[metric.metricCode]}
+                            description={FAIRNESS_METRIC_HELP[metric.metricCode]}
+                            tip={FAIRNESS_METRIC_TIP[metric.metricCode]}
+                          />
                         </p>
                         <div className="audit-execution-section__fairness-row">
-                          <p className="audit-execution-section__stat-value">
-                            {metric.value}
-                          </p>
+                          <p className="audit-execution-section__stat-value">{metric.value}</p>
                           <span
                             className={`audit-execution-section__fairness-status-text audit-execution-section__fairness-status-text--${FAIRNESS_STATUS_VARIANT[metric.status]}`}
                           >

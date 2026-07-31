@@ -320,6 +320,148 @@
   font-weight: 600;
 }
 
+.metric-help-tooltip {
+  position: relative;
+  display: inline-flex;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.metric-help-tooltip__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1.5px solid #8b98aa;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #697586;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.metric-help-tooltip__trigger:hover,
+.metric-help-tooltip__trigger:focus-visible {
+  border-color: #2563eb;
+  color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.metric-help-tooltip__content {
+  position: absolute;
+  top: calc(100% + 13px);
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  width: min(370px, calc(100vw - 48px));
+  padding: 15px;
+  border: 1px solid #ccd6e5;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 12px 32px rgb(31 50 81 / 18%);
+  color: #344054;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+  text-align: left;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -5px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s ease;
+  flex-direction: column;
+}
+
+.metric-help-tooltip__content::before {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid #ccd6e5;
+  border-left: 1px solid #ccd6e5;
+  background-color: #ffffff;
+  content: '';
+  transform: translate(-50%, 6px) rotate(45deg);
+}
+
+.metric-help-tooltip__title {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1f5ed7;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.metric-help-tooltip__info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.metric-help-tooltip__description {
+  display: block;
+  margin-top: 12px;
+  color: #344054;
+  font-size: 13px;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.metric-help-tooltip__tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 13px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background-color: #eef4ff;
+  color: #254a91;
+  font-size: 12.5px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.metric-help-tooltip__tip-icon {
+  font-size: 17px;
+  line-height: 1.2;
+  flex: 0 0 auto;
+}
+
+.metric-help-tooltip:hover .metric-help-tooltip__content,
+.metric-help-tooltip:focus-within .metric-help-tooltip__content {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
 .audit-execution-section__stat-value {
   margin: 0 0 10px;
   color: #202938;
@@ -810,7 +952,8 @@
 }
 
 @keyframes audit-execution-section-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgb(45 103 232 / 35%);
   }
   50% {
