@@ -21,15 +21,28 @@ export interface ModelUploadResponse {
   uploadedAt: string;
 }
 
+export interface ModelUploadOptions {
+  // 기존 모델의 새 버전으로 등록할 때만 지정한다 — 지정하면 그 모델의 계열(modelGroupId)을 이어받는다.
+  version?: string;
+  previousModelId?: number;
+}
+
+// file을 생략하면(버전업 시 이전 모델 파일 재사용) previousModelId가 반드시 있어야 하고,
+// 백엔드가 그 모델의 아티팩트를 그대로 새 버전에 이어붙인다.
 export async function uploadModel(
-  file: File,
+  file: File | null,
   modelName: string,
   modelType: ModelType,
+  options?: ModelUploadOptions,
 ): Promise<ModelUploadResponse> {
   const formData = new FormData();
-  formData.append('file', file);
+  if (file) formData.append('file', file);
   formData.append('modelName', modelName);
   formData.append('modelType', modelType);
+  if (options?.version) formData.append('version', options.version);
+  if (options?.previousModelId != null) {
+    formData.append('previousModelId', String(options.previousModelId));
+  }
 
   const { data } = await apiClient.post<ModelUploadResponse>(
     createModelsUrl(''),
@@ -37,6 +50,22 @@ export async function uploadModel(
     { headers: { 'Content-Type': 'multipart/form-data' } },
   );
 
+  return data;
+}
+
+export interface ModelSummaryResponse {
+  modelId: number;
+  modelName: string;
+  currentVersion: string;
+  modelType: ModelType;
+  originalFileName: string | null;
+  highImpact: boolean | null;
+  uploadedAt: string;
+}
+
+// 계열(modelGroupId)당 최신 버전 하나만 돌려준다 — 버전업 시 "이전 모델" 선택 목록으로 쓴다.
+export async function getModels(): Promise<ModelSummaryResponse[]> {
+  const { data } = await apiClient.get<ModelSummaryResponse[]>(createModelsUrl(''));
   return data;
 }
 
@@ -62,6 +91,31 @@ export async function uploadDataset(
     createModelsUrl(`/${modelId}/datasets`),
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+
+  return data;
+}
+
+export interface DatasetSummaryResponse {
+  datasetId: number;
+  modelId: number;
+  modelVersion: string;
+  purpose: string;
+  columns: string[];
+  audited: boolean;
+  createdAt: string;
+  sensitiveAttributes: string[];
+}
+
+// 모델이 속한 계열(같은 modelGroupId) 전체의 데이터셋 목록 — 버전업 시 이전 버전이 쓰던
+// 데이터셋을 재사용 후보로 보여줄 때 쓴다. 최신순으로 내려온다.
+export async function getModelDatasets(
+  modelId: number,
+  purpose?: DatasetPurpose,
+): Promise<DatasetSummaryResponse[]> {
+  const { data } = await apiClient.get<DatasetSummaryResponse[]>(
+    createModelsUrl(`/${modelId}/datasets`),
+    { params: purpose ? { purpose } : undefined },
   );
 
   return data;
