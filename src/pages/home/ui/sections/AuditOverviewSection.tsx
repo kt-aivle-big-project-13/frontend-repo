@@ -6,6 +6,7 @@ import {
   type AuditStatus,
   type AuditSummary,
 } from '../../../../features/audit/api/auditApi';
+import { selectRecentAudits } from '../../../../features/audit/model/selectRecentAudits';
 import { useAuditsPolling } from '../../../../features/audit/model/useAuditsPolling';
 import { getViewedAuditResultIds } from '../../../../features/audit/model/viewedAuditResults';
 
@@ -16,24 +17,29 @@ type DisplayStatus = '준수' | '주의' | '미충족' | '분석 오류';
 interface RecentAudit {
   auditId: number;
   name: string;
+  version: string | null;
   date: string;
   status: DisplayStatus;
 }
 
 interface InProgressAudit {
   auditId: number;
-  step: number;
-  totalSteps: number;
+  modelName: string;
+  version: string | null;
+  modelFileName: string | null;
+  datasetFileName: string | null;
+  createdAt: string;
+  isAwaitingSelfCheck: boolean;
   label: string;
 }
 
-const TOTAL_STEPS = 4;
-
-const STEP_LABEL: Record<number, string> = {
-  1: '모델·데이터셋 등록',
-  2: '민감정보 지정',
-  3: '설명가능성(SHAP) 분석 중',
-  4: '공정성(Fairlearn) 분석 중',
+// 진행 단계별 이름 — SHAP/Fairlearn 같은 기술 용어 대신 사용자가 이해하기 쉬운 말로
+// "Step{N} - {이름}" 형태로 버튼 자리에 그대로 보여준다.
+const STEP_SHORT_LABEL: Record<number, string> = {
+  1: '등록중',
+  2: '지정중',
+  3: '감사중',
+  4: '감사중',
 };
 
 const STATUS_DISPLAY: Record<AuditStatus, DisplayStatus | null> = {
@@ -50,18 +56,25 @@ const STATUS_DISPLAY: Record<AuditStatus, DisplayStatus | null> = {
 
 // 비로그인 시 데모 미리보기용 더미 데이터.
 const DEMO_RECENT_AUDITS: RecentAudit[] = [
-  { auditId: -1, name: 'A모델 v2 감사', date: '2026.07.06', status: '준수' },
-  { auditId: -2, name: 'B모델 v1 감사', date: '2026.07.02', status: '주의' },
-  { auditId: -3, name: 'A모델 v1 감사', date: '2026.06.28', status: '미충족' },
+  { auditId: -1, name: 'A모델 감사', version: 'V2', date: '2026.07.06 14:32', status: '준수' },
+  { auditId: -2, name: 'B모델 감사', version: 'V1', date: '2026.07.02 09:05', status: '주의' },
+  { auditId: -3, name: 'C모델 감사', version: 'V1', date: '2026.06.28 18:47', status: '미충족' },
 ];
 
-const DEMO_IN_PROGRESS_AUDIT: InProgressAudit = {
-  auditId: -1,
-  step: 3,
-  totalSteps: TOTAL_STEPS,
-  label: 'RAG 법조문 매칭 중',
-};
+const DEMO_IN_PROGRESS_AUDITS: InProgressAudit[] = [
+  {
+    auditId: -1,
+    modelName: 'C모델',
+    version: 'V3',
+    modelFileName: 'credit_model.json',
+    datasetFileName: 'audit_dataset.csv',
+    createdAt: '2026-07-24T09:00:00',
+    isAwaitingSelfCheck: false,
+    label: 'Step3 - 감사중',
+  },
+];
 
+// 괄호 안 세부 판정만 색으로 구분한다 ("성공" 자체는 항상 검정).
 const STATUS_CLASS_NAME: Record<DisplayStatus, string> = {
   준수: 'audit-overview-section__status--pass',
   주의: 'audit-overview-section__status--warn',
@@ -81,57 +94,72 @@ function formatDate(value: string | null): string {
   });
 }
 
+// 최근 감사 이력은 같은 날 여러 건이 완료될 수 있어 시·분까지 보여준다.
+function formatDateTime(value: string | null): string {
+  if (!value) return '';
+
+  const date = new Date(value);
+  const datePart = date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const timePart = date.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  return `${datePart} ${timePart}`;
+}
+
 const RECENT_AUDITS_LIMIT = 10;
 
+// 같은 모델 계열은 최신 버전 하나만(버전 이력 개념을 합침), 실제로 최근에 완료된
+// 감사만 보여준다 — "결과 확인"을 눌러봤는지는 더 이상 조건으로 보지 않는다.
 function toRecentAudits(audits: AuditSummary[]): RecentAudit[] {
-  // "결과 확인" 버튼을 한 번도 눌러보지 않은 감사는 아직 사용자가 결과를 확인하지
-  // 않은 것이므로 최근 이력에 노출하지 않는다.
+  return selectRecentAudits(audits, RECENT_AUDITS_LIMIT).map((audit) => ({
+    auditId: audit.auditId,
+    name: audit.modelName,
+    version: audit.version,
+    date: formatDateTime(audit.completedAt),
+    status: STATUS_DISPLAY[audit.status] ?? '미충족',
+  }));
+}
+
+// 아직 분석이 끝나지 않았거나(PENDING/IN_PROGRESS), 분석은 끝났지만 자가점검·결과 확인을
+// 아직 안 한 감사를 전부 모아 최근 시작 순으로 보여준다 — 하나만이 아니라 진행중인 만큼 다 노출.
+// 홈 화면에서 계속 추적해야 할 "내가 시작한 감사의 진행 상황"만 다루는 카드이지, 전체
+// 감사 이력을 다시 보여주는 게 아니다(그건 왼쪽 "최근 감사 이력" 카드의 몫).
+function toInProgressAudits(audits: AuditSummary[]): InProgressAudit[] {
   const viewedIds = getViewedAuditResultIds();
 
   return audits
     .filter(
-      (audit) => TERMINAL_STATUSES.includes(audit.status) && viewedIds.has(audit.auditId),
+      (audit) =>
+        audit.status === 'PENDING' ||
+        audit.status === 'IN_PROGRESS' ||
+        (audit.status !== 'FAILED' &&
+          TERMINAL_STATUSES.includes(audit.status) &&
+          !viewedIds.has(audit.auditId)),
     )
-    .sort((a, b) => {
-      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-      return bTime - aTime;
-    })
-    .slice(0, RECENT_AUDITS_LIMIT)
-    .map((audit) => ({
-      auditId: audit.auditId,
-      name: audit.modelName,
-      date: formatDate(audit.completedAt),
-      status: STATUS_DISPLAY[audit.status] ?? '미충족',
-    }));
-}
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map((audit) => {
+      const isAwaitingSelfCheck = TERMINAL_STATUSES.includes(audit.status);
 
-function toInProgressAudit(audits: AuditSummary[]): InProgressAudit | null {
-  // 모델 분석(FAILED 제외한 터미널 상태)이 끝났어도 사용자가 자가점검·결과 확인을
-  // 아직 하지 않았다면(viewedIds에 없다면) 홈 화면에서는 계속 "진행중"으로 본다.
-  const viewedIds = getViewedAuditResultIds();
-
-  const inProgress = audits.find(
-    (audit) =>
-      audit.status === 'PENDING' ||
-      audit.status === 'IN_PROGRESS' ||
-      (audit.status !== 'FAILED' &&
-        TERMINAL_STATUSES.includes(audit.status) &&
-        !viewedIds.has(audit.auditId)),
-  );
-
-  if (!inProgress) return null;
-
-  const isAwaitingSelfCheck = TERMINAL_STATUSES.includes(inProgress.status);
-
-  return {
-    auditId: inProgress.auditId,
-    step: isAwaitingSelfCheck ? TOTAL_STEPS : inProgress.currentStep,
-    totalSteps: TOTAL_STEPS,
-    label: isAwaitingSelfCheck
-      ? '자가점검 및 결과 확인 대기 중'
-      : (STEP_LABEL[inProgress.currentStep] ?? '분석 진행 중'),
-  };
+      return {
+        auditId: audit.auditId,
+        modelName: audit.modelName,
+        version: audit.version,
+        modelFileName: audit.modelFileName,
+        datasetFileName: audit.datasetFileName,
+        createdAt: audit.createdAt,
+        isAwaitingSelfCheck,
+        label: isAwaitingSelfCheck
+          ? '결과 확인 대기 중'
+          : `Step${audit.currentStep} - ${STEP_SHORT_LABEL[audit.currentStep] ?? '분석 진행중'}`,
+      };
+    });
 }
 
 function LockIcon() {
@@ -160,16 +188,16 @@ function AuditOverviewSection() {
   const isAuthenticated = useAuthStore((state) => Boolean(state.user));
   const showLoginPrompt = useLoginPromptStore((state) => state.show);
 
-  // 비로그인일 때는 아래 recentAudits/inProgressAudit 계산이 audits를 쓰지 않고
+  // 비로그인일 때는 아래 recentAudits/inProgressAudits 계산이 audits를 쓰지 않고
   // 데모 데이터로 대체하므로 조회할 필요가 없다.
   const audits = useAuditsPolling(isAuthenticated);
 
   const recentAudits = isAuthenticated
     ? toRecentAudits(audits ?? [])
     : DEMO_RECENT_AUDITS;
-  const inProgressAudit = isAuthenticated
-    ? toInProgressAudit(audits ?? [])
-    : DEMO_IN_PROGRESS_AUDIT;
+  const inProgressAudits = isAuthenticated
+    ? toInProgressAudits(audits ?? [])
+    : DEMO_IN_PROGRESS_AUDITS;
 
   const bodyClassName = (extra?: string) =>
     [
@@ -204,14 +232,24 @@ function AuditOverviewSection() {
                     <>
                       <span className="audit-overview-section__list-name">
                         {audit.name}
+                        {audit.version && (
+                          <span className="audit-overview-section__list-version"> {audit.version}</span>
+                        )}
                       </span>
                       <span className="audit-overview-section__list-date">
                         {audit.date}
                       </span>
-                      <span
-                        className={`audit-overview-section__status ${STATUS_CLASS_NAME[audit.status]}`}
-                      >
-                        {audit.status}
+                      <span className="audit-overview-section__status">
+                        {audit.status === '분석 오류' ? (
+                          '실패'
+                        ) : (
+                          <>
+                            성공{' '}
+                            <span className={STATUS_CLASS_NAME[audit.status]}>
+                              ({audit.status})
+                            </span>
+                          </>
+                        )}
                       </span>
                     </>
                   );
@@ -253,15 +291,20 @@ function AuditOverviewSection() {
           <h3 className="audit-overview-section__card-title">진행중 감사</h3>
 
           <div className={bodyClassName()}>
-            {inProgressAudit === null ? (
+            {inProgressAudits.length === 0 ? (
               <p className="audit-overview-section__empty">
                 진행중인 감사가 없습니다.
               </p>
             ) : (
-              <ProgressContent
-                inProgressAudit={inProgressAudit}
-                isAuthenticated={isAuthenticated}
-              />
+              <ul className="audit-overview-section__progress-list">
+                {inProgressAudits.map((audit) => (
+                  <ProgressItem
+                    key={audit.auditId}
+                    audit={audit}
+                    isAuthenticated={isAuthenticated}
+                  />
+                ))}
+              </ul>
             )}
           </div>
 
@@ -281,43 +324,62 @@ function AuditOverviewSection() {
   );
 }
 
-interface ProgressContentProps {
-  inProgressAudit: InProgressAudit;
+interface ProgressItemProps {
+  audit: InProgressAudit;
   isAuthenticated: boolean;
 }
 
-// 진행중인 감사를 클릭하면 감사 진행 중 페이지(체크리스트/분석 진행 화면)로 이동한다.
-// 비로그인 데모 데이터는 실제 auditId가 아니므로 클릭 가능하게 만들지 않는다.
-function ProgressContent({ inProgressAudit, isAuthenticated }: ProgressContentProps) {
-  const body = (
-    <>
-      <div className="audit-overview-section__progress-track">
-        <div
-          className="audit-overview-section__progress-bar"
-          style={{
-            width: `${(inProgressAudit.step / inProgressAudit.totalSteps) * 100}%`,
-          }}
-        />
-      </div>
-
-      <p className="audit-overview-section__progress-label">
-        STEP {inProgressAudit.step} / {inProgressAudit.totalSteps} —{' '}
-        {inProgressAudit.label}
-      </p>
-    </>
+// 진행중인 감사 하나를 카드 형태로 보여준다. 버튼 자리 자체가 상태 표시를 겸한다 —
+// 아직 분석 중이면 "StepN 진행중"이 적힌 비활성 버튼, 결과가 나왔으면(자가점검·법령
+// 매칭 대기 상태) 자가점검/법령 매칭 페이지로 갈 수 있는 활성 버튼이 된다. 분석만
+// 끝났다고 결과 페이지로 바로 보내면 자가점검을 건너뛰게 되므로, 그 중간 단계인
+// 체크리스트 페이지(/audit/{id})로 보낸다 — 거기서 건너뛰기했거나 제출을 마쳤으면
+// 그 페이지 자체의 "결과 확인" 버튼으로 이어서 진행할 수 있다.
+// 비로그인 데모 데이터는 실제 auditId가 아니므로 링크를 걸지 않는다.
+function ProgressItem({ audit, isAuthenticated }: ProgressItemProps) {
+  const resultButton = audit.isAwaitingSelfCheck ? (
+    isAuthenticated ? (
+      <AuthGatedLink
+        to={`/audit/${audit.auditId}`}
+        className="audit-overview-section__progress-result-button"
+      >
+        결과 확인
+      </AuthGatedLink>
+    ) : (
+      <span className="audit-overview-section__progress-result-button">결과 확인</span>
+    )
+  ) : (
+    <span
+      className="audit-overview-section__progress-result-button audit-overview-section__progress-result-button--disabled"
+      aria-disabled="true"
+    >
+      {audit.label}
+    </span>
   );
 
-  if (!isAuthenticated) {
-    return <div className="audit-overview-section__progress">{body}</div>;
-  }
-
   return (
-    <AuthGatedLink
-      to={`/audit/${inProgressAudit.auditId}`}
-      className="audit-overview-section__progress"
-    >
-      {body}
-    </AuthGatedLink>
+    <li className="audit-overview-section__progress-item">
+      <div className="audit-overview-section__progress-header">
+        <span className="audit-overview-section__progress-name">
+          {audit.modelName}
+          {audit.version && (
+            <span className="audit-overview-section__progress-version"> {audit.version}</span>
+          )}
+        </span>
+        <span className="audit-overview-section__progress-date">
+          {formatDate(audit.createdAt)}
+        </span>
+      </div>
+
+      <div className="audit-overview-section__progress-footer">
+        <div className="audit-overview-section__progress-meta-group">
+          <p className="audit-overview-section__progress-meta">모델 파일 {audit.modelFileName ?? '—'}</p>
+          <p className="audit-overview-section__progress-meta">데이터 {audit.datasetFileName ?? '—'}</p>
+        </div>
+
+        {resultButton}
+      </div>
+    </li>
   );
 }
 

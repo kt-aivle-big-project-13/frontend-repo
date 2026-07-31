@@ -101,14 +101,20 @@
   overflow: hidden;
   color: #202938;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.audit-overview-section__list-version {
+  color: #9099a8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .audit-overview-section__list-date {
   flex-shrink: 0;
-  width: 80px;
+  width: 118px;
   color: #9099a8;
   font-size: 12px;
   text-align: right;
@@ -141,44 +147,97 @@
   color: #9099a8;
 }
 
-.audit-overview-section__progress {
-  display: block;
-  margin: -4px;
-  padding: 4px;
+.audit-overview-section__progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.audit-overview-section__progress-item {
+  padding: 10px 12px;
   border-radius: 8px;
-  color: inherit;
+  background-color: #f7f8fa;
+}
+
+.audit-overview-section__progress-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.audit-overview-section__progress-name {
+  overflow: hidden;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-overview-section__progress-version {
+  color: #9099a8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.audit-overview-section__progress-date {
+  flex-shrink: 0;
+  color: #9099a8;
+  font-size: 12px;
+}
+
+.audit-overview-section__progress-meta-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.audit-overview-section__progress-meta {
+  margin: 0;
+  overflow: hidden;
+  color: #6b7684;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-overview-section__progress-meta + .audit-overview-section__progress-meta {
+  margin-top: 2px;
+}
+
+.audit-overview-section__progress-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audit-overview-section__progress-result-button {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.2s ease;
 }
 
-.audit-overview-section__progress:hover {
-  background-color: #eef4ff;
+.audit-overview-section__progress-result-button:hover {
+  background-color: #244fb8;
 }
 
-.audit-overview-section__progress:focus-visible {
-  outline: 3px solid rgb(45 103 232 / 25%);
-  outline-offset: 2px;
-}
-
-.audit-overview-section__progress-track {
-  height: 8px;
-  border-radius: 4px;
-  background-color: #eef0f3;
-  overflow: hidden;
-}
-
-.audit-overview-section__progress-bar {
-  height: 100%;
-  border-radius: 4px;
-  background-color: #2d67e8;
-}
-
-.audit-overview-section__progress-label {
-  margin: 14px 0 0;
-  color: #6b7684;
-  font-size: 13px;
-  font-weight: 600;
+.audit-overview-section__progress-result-button--disabled {
+  background-color: #dde2ea;
+  color: #9099a8;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .audit-overview-section__empty {
