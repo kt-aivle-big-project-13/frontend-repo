@@ -109,7 +109,7 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
       />
       <NotificationToggle
         label="재감사 권고 알림"
-        description="법령 개정으로 재감사가 필요한 모델 발생 시 안내"
+        description="감사 결과 재감사가 필요한 모델 발생 시 안내"
         checked={isReauditAlertOn}
         disabled={isDisabled}
         onChange={(value) => save('reauditAlertEnabled', value)}
