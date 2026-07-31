@@ -12,6 +12,7 @@ export interface ObjectionSummary {
   objectionId: number;
   objectionNo: string;
   customerName: string;
+  customerEmail: string;
   title: string;
   status: ObjectionStatus;
   createdAt: string;

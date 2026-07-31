@@ -10,6 +10,7 @@ import type {
 interface ObjectionDocumentFormProps {
   document: ObjectionDocument;
   letterBody: string;
+  isCompleted: boolean;
   isDirectInput: boolean;
   agreed: boolean;
   isRegenerating: boolean;
@@ -31,6 +32,7 @@ function getReviewResultLabel(
 function ObjectionDocumentForm({
   document,
   letterBody,
+  isCompleted,
   isDirectInput,
   agreed,
   isRegenerating,
@@ -43,6 +45,11 @@ function ObjectionDocumentForm({
 }: ObjectionDocumentFormProps) {
   // 고객 안내문 발송 전 유효성 검사
   const handleDispatch = () => {
+    if (isCompleted) {
+      message.warning('이미 발송이 완료된 대응문서입니다.');
+      return;
+    }
+
     if (!letterBody.trim()) {
       message.warning('고객 안내문 내용을 입력해 주세요.');
       return;
@@ -60,7 +67,11 @@ function ObjectionDocumentForm({
     <section className="objection-document-form">
       {/* 대응문서 검토 카드 상단 */}
       <header className="objection-document-form__header">
-        <h2>③ 설명문 초안 — 담당자 검토</h2>
+        <h2>
+          {isCompleted
+            ? '③ 발송된 설명문 확인'
+            : '③ 설명문 초안 — 담당자 검토'}
+        </h2>
 
         <span>
           처리 결과: {getReviewResultLabel(document.reviewResult)}
@@ -86,64 +97,92 @@ function ObjectionDocumentForm({
       <div className="objection-document-form__field">
         <div className="objection-document-form__label-row">
           <div className="objection-document-form__label">
-            <span>고객 안내문 초안 (LLM)</span>
-            <small>✦ 자동 초안</small>
+            <span>
+              {isCompleted
+                ? '발송된 고객 안내문'
+                : '고객 안내문 초안 (LLM)'}
+            </span>
+
+            <small>
+              {isCompleted ? '✦ 발송 완료' : '✦ 자동 초안'}
+            </small>
           </div>
 
-          {/* 직접입력 및 재생성 기능 */}
-          <div className="objection-document-form__controls">
-            <Checkbox
-              checked={isDirectInput}
-              onChange={(event) =>
-                onDirectInputChange(event.target.checked)
-              }
-            >
-              직접입력
-            </Checkbox>
+          {/* 답변대기 건에서만 직접입력 및 재생성 표시 */}
+          {!isCompleted && (
+            <div className="objection-document-form__controls">
+              <Checkbox
+                checked={isDirectInput}
+                onChange={(event) =>
+                  onDirectInputChange(event.target.checked)
+                }
+              >
+                직접입력
+              </Checkbox>
 
-            <Button
-              icon={<ReloadOutlined />}
-              loading={isRegenerating}
-              onClick={onRegenerate}
-            >
-              재생성
-            </Button>
-          </div>
+              <Button
+                icon={<ReloadOutlined />}
+                loading={isRegenerating}
+                onClick={onRegenerate}
+              >
+                재생성
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* 고객에게 발송할 안내문 */}
+        {/* 고객 안내문 */}
         <Input.TextArea
-          className="objection-document-form__letter"
+          className={[
+            'objection-document-form__letter',
+            isCompleted
+              ? 'objection-document-form__letter--completed'
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           value={letterBody}
-          readOnly={!isDirectInput}
+          readOnly={isCompleted || !isDirectInput}
           onChange={(event) => {
+            if (isCompleted) {
+              return;
+            }
+
             onLetterBodyChange(event.target.value);
             onAgreementChange(false);
           }}
         />
       </div>
 
-      {/* 발송 동의 및 발송 버튼 */}
-      <div className="objection-document-form__actions">
-        <Checkbox
-          checked={agreed}
-          disabled={!letterBody.trim()}
-          onChange={(event) =>
-            onAgreementChange(event.target.checked)
-          }
-        >
-          내용을 검토했으며 발송에 동의합니다.
-        </Checkbox>
+      {isCompleted ? (
+        /* 답변완료 문서 안내 */
+        <div className="objection-document-form__readonly-notice">
+          이미 고객 이메일로 발송된 대응문서입니다. 내용은 수정하거나
+          재발송할 수 없습니다.
+        </div>
+      ) : (
+        /* 발송 동의 및 발송 버튼 */
+        <div className="objection-document-form__actions">
+          <Checkbox
+            checked={agreed}
+            disabled={!letterBody.trim()}
+            onChange={(event) =>
+              onAgreementChange(event.target.checked)
+            }
+          >
+            내용을 검토했으며 발송에 동의합니다.
+          </Checkbox>
 
-        <Button
-          type="primary"
-          loading={isDispatching}
-          disabled={!agreed || !letterBody.trim()}
-          onClick={handleDispatch}
-        >
-          발송
-        </Button>
-      </div>
+          <Button
+            type="primary"
+            loading={isDispatching}
+            disabled={!agreed || !letterBody.trim()}
+            onClick={handleDispatch}
+          >
+            발송
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

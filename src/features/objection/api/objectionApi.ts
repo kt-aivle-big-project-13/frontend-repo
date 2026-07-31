@@ -22,15 +22,18 @@ function delay<T>(value: T): Promise<T> {
 }
 
 // 전체 이의제기 목록 조회
-export async function fetchObjections(): Promise<
-  ObjectionDetail[]
-> {
+export async function fetchObjections(): Promise<ObjectionDetail[]> {
   return delay(
     objectionMockData.map((item) => ({
       ...item,
       contributors: item.contributors.map((contributor) => ({
         ...contributor,
       })),
+      completionInfo: item.completionInfo
+        ? {
+            ...item.completionInfo,
+          }
+        : undefined,
     })),
   );
 }
@@ -52,6 +55,11 @@ export async function fetchObjectionDetail(
     contributors: objection.contributors.map((contributor) => ({
       ...contributor,
     })),
+    completionInfo: objection.completionInfo
+      ? {
+          ...objection.completionInfo,
+        }
+      : undefined,
   });
 }
 
@@ -84,10 +92,8 @@ export async function fetchObjectionDocument(
   objectionId: number,
   reviewResult: ObjectionReviewResult = 'REJECTED',
 ): Promise<ObjectionDocument> {
-  const savedDocument =
-    objectionDocumentMockData[objectionId];
+  const savedDocument = objectionDocumentMockData[objectionId];
 
-  // 기존에 저장된 대응문서 반환
   if (savedDocument) {
     return delay({
       ...savedDocument,
@@ -105,7 +111,6 @@ export async function fetchObjectionDocument(
     );
   }
 
-  // 저장된 문서가 없으면 기본 대응문서 생성
   return delay(createDefaultDocument(objection, reviewResult));
 }
 
@@ -130,14 +135,16 @@ export async function regenerateObjectionLetter(
   return delay(letter);
 }
 
-// 고객 안내문 발송 이력 조회
-export async function fetchDispatchHistory(): Promise<
-  ObjectionDispatchHistory[]
-> {
+// 특정 이의제기의 고객 안내문 발송 이력 조회
+export async function fetchDispatchHistory(
+  objectionId: number,
+): Promise<ObjectionDispatchHistory[]> {
   return delay(
-    objectionDispatchHistoryMockData.map((item) => ({
-      ...item,
-    })),
+    objectionDispatchHistoryMockData
+      .filter((item) => item.objectionId === objectionId)
+      .map((item) => ({
+        ...item,
+      })),
   );
 }
 
@@ -156,17 +163,23 @@ export async function dispatchObjectionDocument(
     throw new Error('발송할 고객 안내문이 비어 있습니다.');
   }
 
+  const objection = objectionMockData.find(
+    (item) => item.objectionId === request.objectionId,
+  );
+
+  if (!objection) {
+    throw new Error('발송할 이의제기 정보를 찾을 수 없습니다.');
+  }
+
   return delay({
     dispatchId: Date.now(),
-    objectionId: request.objectionId,
-    customerName: '고객',
-    objectionNo: `2026-${String(request.objectionId).padStart(
-      4,
-      '0',
-    )}`,
+    objectionId: objection.objectionId,
+    customerName: objection.customerName,
+    objectionNo: objection.objectionNo,
     dispatchedAt: new Date().toISOString(),
     reviewerName: '김담당',
     reviewResult: request.reviewResult,
+    recipientEmail: objection.customerEmail,
     status: 'DISPATCHED',
   });
 }

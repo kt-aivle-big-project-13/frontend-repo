@@ -10,6 +10,7 @@ import {
 import {
   dispatchObjectionDocument,
   fetchDispatchHistory,
+  fetchObjectionDetail,
   fetchObjectionDocument,
   regenerateObjectionLetter,
 } from '../../../features/objection/api/objectionApi';
@@ -26,9 +27,10 @@ import MainLayout from '../../../widgets/layout/ui/MainLayout';
 
 import './ObjectionDocumentPage.css';
 
-// 목록 페이지에서 전달받는 처리 결과
+// 목록 페이지에서 전달받는 처리 결과와 완료 상태
 interface DocumentLocationState {
   reviewResult?: ObjectionReviewResult;
+  isCompleted?: boolean;
 }
 
 // 날짜와 시간을 화면 표시 형식으로 변환
@@ -46,30 +48,25 @@ function formatDateTime(value: string): string {
 }
 
 // 처리 결과 코드를 한글 문구로 변환
-function getReviewResultLabel(value: ObjectionReviewResult): string {
-  return value === 'REJECTED'
-    ? '거절 유지'
-    : '재심사';
+function getReviewResultLabel(
+  value: ObjectionReviewResult,
+): string {
+  return value === 'REJECTED' ? '거절 유지' : '재심사';
 }
 
 function ObjectionDocumentPage() {
-  // 페이지 이동
   const navigate = useNavigate();
-
-  // 이전 페이지에서 전달된 상태
   const location = useLocation();
 
-  // URL의 이의제기 ID
   const { objectionId: objectionIdParam } = useParams();
-
-  // 이의제기 ID 숫자 변환
   const objectionId = Number(objectionIdParam);
 
-  // 전달받은 페이지 상태
-  const locationState = location.state as DocumentLocationState | null;
+  const locationState =
+    location.state as DocumentLocationState | null;
 
-  // 선택된 처리 결과
-  const reviewResult = locationState?.reviewResult ?? 'REJECTED';
+  // 답변대기 상태에서 사용자가 선택한 처리 결과
+  const requestedReviewResult =
+    locationState?.reviewResult ?? 'REJECTED';
 
   // 생성된 대응문서
   const [document, setDocument] =
@@ -81,6 +78,11 @@ function ObjectionDocumentPage() {
   // 발송 이력 목록
   const [dispatchHistory, setDispatchHistory] =
     useState<ObjectionDispatchHistory[]>([]);
+
+  // 실제 답변완료 여부
+  const [isCompleted, setIsCompleted] = useState(
+    locationState?.isCompleted ?? false,
+  );
 
   // 고객 안내문 직접입력 여부
   const [isDirectInput, setIsDirectInput] = useState(false);
@@ -99,7 +101,6 @@ function ObjectionDocumentPage() {
 
   // 대응문서와 발송 이력 조회
   useEffect(() => {
-    // 잘못된 이의제기 ID 검사
     if (!Number.isInteger(objectionId) || objectionId <= 0) {
       message.error('잘못된 이의제기 번호입니다.');
 
@@ -110,41 +111,71 @@ function ObjectionDocumentPage() {
       return;
     }
 
-    Promise.all([
-      fetchObjectionDocument(objectionId, reviewResult),
-      fetchDispatchHistory(),
-    ])
-      .then(([documentResult, historyResult]) => {
+    const loadDocument = async () => {
+      try {
+        setIsLoading(true);
+
+        // 이의제기 상태와 완료 정보를 먼저 조회
+        const objectionResult =
+          await fetchObjectionDetail(objectionId);
+
+        const completed =
+          objectionResult.status === 'COMPLETED';
+
+        // 완료 건은 저장된 최종 처리 결과 사용
+        const resolvedReviewResult =
+          completed
+            ? objectionResult.completionInfo?.reviewResult ??
+              'REJECTED'
+            : requestedReviewResult;
+
+        // 대응문서와 해당 이의제기의 발송 이력 조회
+        const [documentResult, historyResult] =
+          await Promise.all([
+            fetchObjectionDocument(
+              objectionId,
+              resolvedReviewResult,
+            ),
+            fetchDispatchHistory(objectionId),
+          ]);
+
         setDocument(documentResult);
         setLetterBody(documentResult.letterBody);
         setDispatchHistory(historyResult);
-      })
-      .catch((error: unknown) => {
+        setIsCompleted(completed);
+      } catch (error: unknown) {
         const errorMessage =
           error instanceof Error
             ? error.message
             : '대응문서를 불러오지 못했습니다.';
 
         message.error(errorMessage);
-      })
-      .finally(() => {
+      } finally {
         setIsLoading(false);
-      });
-  }, [navigate, objectionId, reviewResult]);
+      }
+    };
+
+    void loadDocument();
+  }, [
+    navigate,
+    objectionId,
+    requestedReviewResult,
+  ]);
 
   // 고객 안내문 재생성
   const handleRegenerate = async () => {
-    if (!document) {
+    if (!document || isCompleted) {
       return;
     }
 
     try {
       setIsRegenerating(true);
 
-      const regeneratedLetter = await regenerateObjectionLetter(
-        document.objectionId,
-        document.reviewResult,
-      );
+      const regeneratedLetter =
+        await regenerateObjectionLetter(
+          document.objectionId,
+          document.reviewResult,
+        );
 
       setLetterBody(regeneratedLetter);
       setAgreed(false);
@@ -164,18 +195,19 @@ function ObjectionDocumentPage() {
 
   // 고객 안내문 발송
   const handleDispatch = async () => {
-    if (!document) {
+    if (!document || isCompleted) {
       return;
     }
 
     try {
       setIsDispatching(true);
 
-      const dispatchResult = await dispatchObjectionDocument({
-        objectionId: document.objectionId,
-        reviewResult: document.reviewResult,
-        letterBody,
-      });
+      const dispatchResult =
+        await dispatchObjectionDocument({
+          objectionId: document.objectionId,
+          reviewResult: document.reviewResult,
+          letterBody,
+        });
 
       // 새 발송 이력을 가장 위에 추가
       setDispatchHistory((previous) => [
@@ -204,7 +236,6 @@ function ObjectionDocumentPage() {
         <div className="objection-document-page__inner">
           {/* 페이지 상단 제목 */}
           <header className="objection-document-page__page-header">
-            {/* 이의제기 목록으로 돌아가기 버튼 */}
             <button
               type="button"
               aria-label="이의제기 목록으로 돌아가기"
@@ -214,7 +245,11 @@ function ObjectionDocumentPage() {
             </button>
 
             <div>
-              <h1>고객 이의제기 대응문서 생성</h1>
+              <h1>
+                {isCompleted
+                  ? '고객 이의제기 대응문서 조회'
+                  : '고객 이의제기 대응문서 생성'}
+              </h1>
 
               <p>
                 신용정보법 제36조의2
@@ -225,7 +260,6 @@ function ObjectionDocumentPage() {
           </header>
 
           {isLoading ? (
-            // 대응문서 로딩 화면
             <div className="objection-document-page__loading">
               대응문서를 불러오는 중입니다.
             </div>
@@ -235,6 +269,7 @@ function ObjectionDocumentPage() {
               <ObjectionDocumentForm
                 document={document}
                 letterBody={letterBody}
+                isCompleted={isCompleted}
                 isDirectInput={isDirectInput}
                 agreed={agreed}
                 isRegenerating={isRegenerating}
@@ -242,15 +277,18 @@ function ObjectionDocumentPage() {
                 onLetterBodyChange={setLetterBody}
                 onDirectInputChange={setIsDirectInput}
                 onAgreementChange={setAgreed}
-                onRegenerate={() => void handleRegenerate()}
-                onDispatch={() => void handleDispatch()}
+                onRegenerate={() =>
+                  void handleRegenerate()
+                }
+                onDispatch={() =>
+                  void handleDispatch()
+                }
               />
 
               {/* 고객 안내문 발송 이력 */}
               <section className="objection-document-history">
                 <h2>발송 이력</h2>
 
-                {/* 발송 이력 표 제목 */}
                 <div className="objection-document-history__head">
                   <span>심사 대상</span>
                   <span>발송 일시</span>
@@ -259,36 +297,35 @@ function ObjectionDocumentPage() {
                 </div>
 
                 {dispatchHistory.length === 0 ? (
-                  // 발송 이력이 없는 경우
                   <div className="objection-document-history__empty">
                     발송 이력이 없습니다.
                   </div>
                 ) : (
-                  // 발송 이력 목록
                   dispatchHistory.map((item) => (
                     <div
                       className="objection-document-history__row"
                       key={item.dispatchId}
                     >
-                      {/* 심사 대상 고객 */}
                       <strong>
-                        {item.customerName}* #{item.objectionNo}
+                        {item.customerName}* #
+                        {item.objectionNo}
                       </strong>
 
-                      {/* 발송 일시 */}
                       <time>
-                        {formatDateTime(item.dispatchedAt)}
+                        {formatDateTime(
+                          item.dispatchedAt,
+                        )}
                       </time>
 
-                      {/* 승인 담당자 */}
                       <span>
                         승인자: {item.reviewerName}
                       </span>
 
-                      {/* 처리 결과와 발송 상태 */}
                       <div>
                         <span className="objection-document-history__result">
-                          {getReviewResultLabel(item.reviewResult)}
+                          {getReviewResultLabel(
+                            item.reviewResult,
+                          )}
                         </span>
 
                         <span className="objection-document-history__status">
@@ -301,7 +338,6 @@ function ObjectionDocumentPage() {
               </section>
             </>
           ) : (
-            // 대응문서 조회 실패 화면
             <div className="objection-document-page__loading">
               대응문서를 찾을 수 없습니다.
             </div>

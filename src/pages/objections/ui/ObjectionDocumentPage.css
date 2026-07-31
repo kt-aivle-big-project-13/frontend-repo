@@ -222,6 +222,18 @@
   color: #4d5765 !important;
 }
 
+/* 발송 완료 고객 안내문 입력창 */
+.objection-document-form__letter--completed {
+  resize: none;
+  cursor: default;
+}
+
+/* 발송 완료 입력창 포커스 제거 */
+.objection-document-form__letter--completed:focus {
+  border-color: #dde2ea !important;
+  box-shadow: none !important;
+}
+
 /* 발송 동의와 발송 버튼 영역 */
 .objection-document-form__actions {
   display: flex;
@@ -258,6 +270,21 @@
 .objection-document-form__actions .ant-btn-primary:not(:disabled):hover {
   border-color: #244fb8;
   background-color: #244fb8;
+}
+
+/* 발송 완료 문서 읽기 전용 안내 */
+.objection-document-form__readonly-notice {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid #b7ebc8;
+  border-radius: 8px;
+  background-color: #effcf4;
+  color: #16a05d;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 /* 발송 이력 전체 영역 */

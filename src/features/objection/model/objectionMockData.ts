@@ -4,11 +4,13 @@ import type {
   ObjectionDocument,
 } from './objectionTypes';
 
+// 이의제기 목록 및 상세 목업 데이터
 export const objectionMockData: ObjectionDetail[] = [
   {
     objectionId: 412,
     objectionNo: '2026-0412',
     customerName: '조영',
+    customerEmail: 'joyoung@example.com',
     title: '왜 거절이 됐나!',
     content:
       '저는 신용 점수가 800점 이상인데 왜 거절되었죠?',
@@ -45,6 +47,7 @@ export const objectionMockData: ObjectionDetail[] = [
     objectionId: 411,
     objectionNo: '2026-0411',
     customerName: '황민',
+    customerEmail: 'hwangmin@example.com',
     title: '날 승인해 달라!',
     content:
       '소득도 충분하고 연체 이력도 없는데 대출이 거절된 이유를 알고 싶습니다.',
@@ -81,6 +84,7 @@ export const objectionMockData: ObjectionDetail[] = [
     objectionId: 410,
     objectionNo: '2026-0410',
     customerName: '김다',
+    customerEmail: 'kinda@example.com',
     title: '한도가 왜 이렇게 낮은가요',
     content:
       '기존에 안내받은 금액보다 승인 한도가 낮게 책정된 이유가 궁금합니다.',
@@ -123,6 +127,7 @@ export const objectionMockData: ObjectionDetail[] = [
     objectionId: 409,
     objectionNo: '2026-0409',
     customerName: '김다',
+    customerEmail: 'kimda2@example.com',
     title: '서류를 다시 확인해주세요',
     content:
       '제출한 소득 증빙 서류가 정상적으로 반영되었는지 다시 확인해주세요.',
@@ -159,6 +164,7 @@ export const objectionMockData: ObjectionDetail[] = [
     objectionId: 408,
     objectionNo: '2026-0408',
     customerName: '김석',
+    customerEmail: 'kimseok@example.com',
     title: '금리가 타행보다 높습니다',
     content:
       '동일한 조건인데 다른 금융기관보다 금리가 높게 산정된 이유를 확인하고 싶습니다.',
@@ -193,6 +199,7 @@ export const objectionMockData: ObjectionDetail[] = [
   },
 ];
 
+// 생성된 대응문서 목업 데이터
 export const objectionDocumentMockData: Record<
   number,
   ObjectionDocument
@@ -243,6 +250,7 @@ export const objectionDocumentMockData: Record<
   },
 };
 
+// 고객 안내문 발송 이력 목업 데이터
 export const objectionDispatchHistoryMockData: ObjectionDispatchHistory[] = [
   {
     dispatchId: 1,
