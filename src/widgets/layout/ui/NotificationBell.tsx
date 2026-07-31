@@ -4,6 +4,7 @@ import { Badge, Empty, Popover, Spin } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
 
 import {
+  clearAllNotifications,
   fetchNotifications,
   fetchUnreadNotificationCount,
   markAllNotificationsRead,
@@ -98,18 +99,39 @@ function NotificationBell() {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      await clearAllNotifications();
+
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch {
+      // no-op
+    }
+  };
+
   const panel = (
     <div className="notification-bell__panel">
       <div className="notification-bell__panel-header">
         <span>알림</span>
-        <button
-          type="button"
-          className="notification-bell__mark-all"
-          onClick={handleMarkAllRead}
-          disabled={unreadCount === 0}
-        >
-          모두 읽음
-        </button>
+        <div className="notification-bell__panel-actions">
+          <button
+            type="button"
+            className="notification-bell__mark-all"
+            onClick={handleMarkAllRead}
+            disabled={unreadCount === 0}
+          >
+            모두 읽음
+          </button>
+          <button
+            type="button"
+            className="notification-bell__clear-all"
+            onClick={handleClearAll}
+            disabled={notifications.length === 0}
+          >
+            초기화
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
