@@ -186,7 +186,8 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
 
   const handleSelfCheckAnswer = (id: SelfCheckItemCode, answer: SelfCheckAnswer) => {
     setIsSelfCheckSubmitted(false);
-    setSelfCheckAnswers((prev) => ({ ...prev, [id]: answer }));
+    // 이미 선택된 답변을 다시 누르면 선택을 해제한다(토글).
+    setSelfCheckAnswers((prev) => ({ ...prev, [id]: prev[id] === answer ? null : answer }));
     // 답변을 바꾸면 이전 제출 기준으로 나온 매칭 조항은 더 이상 유효하지 않으므로 같이 지운다.
     setMatchedArticles([]);
   };
