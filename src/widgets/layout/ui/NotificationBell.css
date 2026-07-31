@@ -32,7 +32,14 @@
   font-weight: 700;
 }
 
-.notification-bell__mark-all {
+.notification-bell__panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-bell__mark-all,
+.notification-bell__clear-all {
   border: none;
   background: none;
   color: #2d67e8;
@@ -41,9 +48,14 @@
   cursor: pointer;
 }
 
-.notification-bell__mark-all:disabled {
+.notification-bell__mark-all:disabled,
+.notification-bell__clear-all:disabled {
   color: #b7bfc9;
   cursor: default;
+}
+
+.notification-bell__clear-all {
+  color: #6b7684;
 }
 
 .notification-bell__loading {

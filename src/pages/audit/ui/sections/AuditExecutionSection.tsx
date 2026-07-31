@@ -281,7 +281,7 @@ function AuditExecutionSection() {
             onDrop={handleModelDrop}
           >
             <span className="audit-execution-section__dropzone-text">
-              {modelFile ? modelFile.name : 'XGBoost 모델(.json) 드래그앤드롭 또는 업로드'}
+              {modelFile ? modelFile.name : '모델 파일 업로드'}
             </span>
             <button
               type="button"
@@ -317,7 +317,7 @@ function AuditExecutionSection() {
             onDrop={handleAuditDatasetDrop}
           >
             <span className="audit-execution-section__dropzone-text">
-              {auditDatasetFile ? auditDatasetFile.name : 'audit_dataset.csv 드래그앤드롭 또는 업로드'}
+              {auditDatasetFile ? auditDatasetFile.name : '감사 데이터 파일 업로드'}
             </span>
             <button
               type="button"
