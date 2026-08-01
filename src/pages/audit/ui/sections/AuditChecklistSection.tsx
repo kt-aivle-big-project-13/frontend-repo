@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Tooltip } from 'antd';
 
 import {
   getAudits,
@@ -52,6 +53,13 @@ const SELF_CHECK_ITEMS: SelfCheckItem[] = [
     location: '확인 위치: 위험관리 내규, 운영 회의록',
   },
 ];
+
+// 매칭 조항 배지에 "1번" 식으로 표시할 문항 번호. 백엔드는 itemCode만 내려주므로
+// SELF_CHECK_ITEMS 배열 순서를 그대로 번호로 쓴다.
+const CHECKLIST_ITEM_NUMBERS: Record<SelfCheckItemCode, number> = SELF_CHECK_ITEMS.reduce(
+  (numbers, item, index) => ({ ...numbers, [item.id]: index + 1 }),
+  {} as Record<SelfCheckItemCode, number>,
+);
 
 const DEFAULT_SELF_CHECK: Record<SelfCheckItemCode, SelfCheckAnswer> = {
   NOTICE: null,
@@ -177,9 +185,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     };
   }, [auditId]);
 
-  const answeredCount = Object.values(selfCheckAnswers).filter(
-    (answer) => answer !== null,
-  ).length;
+  const answeredCount = Object.values(selfCheckAnswers).filter((answer) => answer !== null).length;
   const unansweredCount = SELF_CHECK_ITEMS.length - answeredCount;
   const isSelfCheckComplete = unansweredCount === 0;
 
@@ -219,9 +225,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
         setIsMappingPending(true);
       } else {
         setSelfCheckError(
-          error instanceof Error
-            ? error.message
-            : '매칭 조항 조회 중 오류가 발생했습니다.',
+          error instanceof Error ? error.message : '매칭 조항 조회 중 오류가 발생했습니다.',
         );
       }
     } finally {
@@ -251,9 +255,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     } catch (error) {
       if (auditIdRef.current === submittedAuditId) {
         setSelfCheckError(
-          error instanceof Error
-            ? error.message
-            : '규제 자가 점검 제출 중 오류가 발생했습니다.',
+          error instanceof Error ? error.message : '규제 자가 점검 제출 중 오류가 발생했습니다.',
         );
       }
     } finally {
@@ -275,11 +277,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
           감사 분석이 실패했습니다. 백엔드·AI 서버 로그를 확인해주세요.
         </p>
       ) : (
-        <div
-          className="audit-execution-section__loading"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="audit-execution-section__loading" role="status" aria-live="polite">
           {isAnalyzed ? (
             <span className="audit-execution-section__status-check" aria-hidden="true">
               ✓
@@ -345,16 +343,12 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       )}
 
       <section className="audit-execution-section__result-card">
-        <h2 className="audit-execution-section__result-title">
-          자가점검 및 법령 매칭
-        </h2>
+        <h2 className="audit-execution-section__result-title">자가점검 및 법령 매칭</h2>
 
         <div className="audit-execution-section__step4-grid">
           <div className="audit-execution-section__self-check">
             <div className="audit-execution-section__self-check-header">
-              <h3 className="audit-execution-section__self-check-title">
-                규제 자가점검 (5항목)
-              </h3>
+              <h3 className="audit-execution-section__self-check-title">규제 자가점검 (5항목)</h3>
               <span className="audit-execution-section__self-check-count">
                 {answeredCount}/{SELF_CHECK_ITEMS.length} 응답
               </span>
@@ -369,12 +363,8 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               {SELF_CHECK_ITEMS.map((item) => (
                 <li key={item.id} className="audit-execution-section__self-check-item">
                   <div className="audit-execution-section__self-check-item-text">
-                    <p className="audit-execution-section__self-check-question">
-                      {item.question}
-                    </p>
-                    <p className="audit-execution-section__self-check-location">
-                      {item.location}
-                    </p>
+                    <p className="audit-execution-section__self-check-question">{item.question}</p>
+                    <p className="audit-execution-section__self-check-location">{item.location}</p>
                   </div>
                   <div className="audit-execution-section__answer-group">
                     <button
@@ -400,9 +390,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
 
             <div className="audit-execution-section__self-check-footer">
               {isSelfCheckSubmitted ? (
-                <span className="audit-execution-section__self-check-submitted">
-                  제출 완료
-                </span>
+                <span className="audit-execution-section__self-check-submitted">제출 완료</span>
               ) : !isAnalyzed ? (
                 <span className="audit-execution-section__self-check-remaining">
                   분석 완료 후 제출 가능합니다.
@@ -442,9 +430,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               매칭 조항 (실제 조항명·원문 인용)
             </h3>
             {isLoadingMatches ? (
-              <p className="audit-execution-section__empty">
-                매칭 조항을 불러오는 중입니다…
-              </p>
+              <p className="audit-execution-section__empty">매칭 조항을 불러오는 중입니다…</p>
             ) : isMappingPending ? (
               <div className="audit-execution-section__empty">
                 <p>매칭 조항을 아직 생성하는 중입니다. 잠시 후 다시 조회해주세요.</p>
@@ -464,16 +450,30 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               </p>
             ) : (
               <ul className="audit-execution-section__matched-list">
-                {matchedArticles.map((article) => (
-                  <li key={article.mappingId} className="audit-execution-section__matched-item">
-                    <p className="audit-execution-section__matched-title">
-                      {article.regulation} {article.article}
-                    </p>
-                    <p className="audit-execution-section__matched-quote">
-                      「{article.content}」
-                    </p>
-                  </li>
-                ))}
+                {/* 조항 하나가 여러 문항에, 문항마다 다른 항으로 걸릴 수 있어(예: 제34조는
+                    위험관리 문항엔 ①1호, 관리감독 문항엔 ①4호) 문항당 한 줄로 펼쳐서 보여준다.
+                    제목엔 그 줄에 해당하는 항 번호까지 정확히 표시하고, 배지엔 문항 번호만 표시한다. */}
+                {matchedArticles.flatMap((article) =>
+                  article.matchedItems.map((matched) => (
+                    <li
+                      key={`${article.mappingId}-${matched.itemCode}`}
+                      className="audit-execution-section__matched-item"
+                    >
+                      <div className="audit-execution-section__matched-header">
+                        <p className="audit-execution-section__matched-title">
+                          {article.regulation} {article.article}
+                          {matched.clauseNo ? ` ${matched.clauseNo}` : ''}
+                        </p>
+                        <span className="audit-execution-section__matched-badge">
+                          {CHECKLIST_ITEM_NUMBERS[matched.itemCode]}번
+                        </span>
+                      </div>
+                      <Tooltip title={article.content} placement="top">
+                        <p className="audit-execution-section__matched-quote">{matched.note}</p>
+                      </Tooltip>
+                    </li>
+                  )),
+                )}
               </ul>
             )}
           </div>

@@ -6,19 +6,23 @@ import {
 } from 'react-router-dom';
 
 import AuthInitializer from '../features/auth/model/AuthInitializer';
+
 import AuditPage from '../pages/audit/ui/AuditPage';
 import BoardDetailPage from '../pages/board/ui/BoardDetailPage';
 import BoardFormPage from '../pages/board/ui/BoardFormPage';
 import BoardListPage from '../pages/board/ui/BoardListPage';
 import DashboardDetailPage from '../pages/dashboard-detail/ui/DashboardDetailPage';
-import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
+import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import HomePage from '../pages/home/ui/HomePage';
 import LoginPage from '../pages/login/ui/LoginPage';
 import MyPage from '../pages/my-page/ui/MyPage';
+import ObjectionDocumentPage from '../pages/objections/ui/ObjectionDocumentPage';
+import ObjectionsPage from '../pages/objections/ui/ObjectionsPage';
 import PreDiagnosisPage from '../pages/pre-diagnosis/ui/PreDiagnosisPage';
 import ResetPasswordPage from '../pages/reset-password/ui/ResetPasswordPage';
 import SignupPage from '../pages/signup/ui/SignupPage';
+
 import { QueryProvider } from './providers/QueryProvider';
 
 function App() {
@@ -52,6 +56,20 @@ function App() {
             {/* 대시보드 — 감사 세부정보 상세보기 (목록 페이지는 별도 작업 중) */}
             <Route path="/dashboard/:auditId" element={<DashboardDetailPage />} />
 
+            {/* 이의제기 목록 및 상세 */}
+            <Route
+              path="/objections"
+              element={<ObjectionsPage />}
+            />
+
+            {/* 이의제기 대응문서 */}
+            <Route
+              path="/objections/:objectionId/document"
+              element={
+                <ObjectionDocumentPage />
+              }
+            />
+            
             {/* 게시판 */}
             <Route path="/board" element={<BoardListPage />} />
             <Route path="/board/write" element={<BoardFormPage />} />

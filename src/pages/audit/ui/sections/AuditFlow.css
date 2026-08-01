@@ -709,17 +709,38 @@
   margin-bottom: 0;
 }
 
+.audit-execution-section__matched-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
 .audit-execution-section__matched-title {
-  margin: 0 0 4px;
+  margin: 0;
   color: #202938;
   font-size: 12.5px;
   font-weight: 700;
+}
+
+.audit-execution-section__matched-badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background-color: #eef1ff;
+  color: #4b5fd6;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .audit-execution-section__matched-quote {
   margin: 0;
   color: #9099a8;
   font-size: 12px;
+  cursor: default;
 }
 
 .audit-execution-section__deliverables {
