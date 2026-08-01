@@ -14,6 +14,7 @@ export const TERMINAL_STATUSES: AuditStatus[] = [
 ];
 
 export interface StartAuditRequest {
+  assessmentId?: number;
   modelId: number;
   datasetId: number;
   auditName: string;

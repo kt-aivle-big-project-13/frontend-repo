@@ -46,10 +46,7 @@ export async function generateFinalReport(
   return data;
 }
 
-export async function downloadDeliverable(
-  reportId: number,
-  filename: string,
-): Promise<void> {
+export async function downloadDeliverable(reportId: number, filename: string): Promise<void> {
   const response = await apiClient.get(`/deliverables/${reportId}/download`, {
     responseType: 'blob',
   });
@@ -102,10 +99,7 @@ export async function generateAndDownloadExplainabilityReport(
         `/audits/${auditId}/reports/explainability/${reportId}/download`,
         { responseType: 'blob' },
       );
-      saveBlob(
-        response.data as Blob,
-        `설명가능성_리포트_${auditId}.${FORMAT_EXTENSION[format]}`,
-      );
+      saveBlob(response.data as Blob, `설명가능성_리포트_${auditId}.${FORMAT_EXTENSION[format]}`);
     },
   });
 }
@@ -127,14 +121,10 @@ export async function generateAndDownloadBiasReport(
       return data;
     },
     download: async (reportId) => {
-      const response = await apiClient.get(
-        `/audits/${auditId}/reports/bias/${reportId}/download`,
-        { responseType: 'blob' },
-      );
-      saveBlob(
-        response.data as Blob,
-        `편향진단_보고서_${auditId}.${FORMAT_EXTENSION[format]}`,
-      );
+      const response = await apiClient.get(`/audits/${auditId}/reports/bias/${reportId}/download`, {
+        responseType: 'blob',
+      });
+      saveBlob(response.data as Blob, `편향진단_보고서_${auditId}.${FORMAT_EXTENSION[format]}`);
     },
   });
 }
@@ -160,9 +150,36 @@ export async function generateAndDownloadComplianceReport(
         `/audits/${auditId}/reports/compliance/${reportId}/download`,
         { responseType: 'blob' },
       );
+      saveBlob(response.data as Blob, `규제준수_판정서_${auditId}.${FORMAT_EXTENSION[format]}`);
+    },
+  });
+}
+
+export async function generateAndDownloadHighImpactReport(
+  auditId: number,
+  format: ReportFormat,
+): Promise<void> {
+  await generateAndDownloadReport({
+    format,
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/reports/high-impact-assessment`);
+    },
+    getLatest: async (fmt) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/reports/high-impact-assessment`,
+        { params: { format: fmt } },
+      );
+      return data;
+    },
+    download: async (reportId) => {
+      const response = await apiClient.get(
+        `/audits/${auditId}/reports/high-impact-assessment/${reportId}/download`,
+        { responseType: 'blob' },
+      );
+
       saveBlob(
         response.data as Blob,
-        `규제준수_판정서_${auditId}.${FORMAT_EXTENSION[format]}`,
+        `고영향_AI_사전진단_보고서_${auditId}.${FORMAT_EXTENSION[format]}`,
       );
     },
   });
