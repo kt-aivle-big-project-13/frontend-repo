@@ -110,7 +110,7 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
 
       message.success(`${report.label} (${format}) 다운로드가 완료됐습니다.`);
     } catch {
-      message.error(`${report.label} 생성에 실패했습니다.`);
+      message.error(`${report.label} 생성 또는 다운로드에 실패했습니다.`);
     } finally {
       hide();
       setPendingKey(null);

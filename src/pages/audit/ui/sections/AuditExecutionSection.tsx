@@ -136,9 +136,11 @@ function AuditExecutionSection() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const assessmentIdParam = searchParams.get('assessmentId');
-  const assessmentId = assessmentIdParam
-    ? Number(assessmentIdParam)
-    : undefined;
+  const parsedAssessmentId = Number(assessmentIdParam);
+  const assessmentId =
+    Number.isSafeInteger(parsedAssessmentId) && parsedAssessmentId > 0
+      ? parsedAssessmentId
+      : undefined;
 
   const [modelMode, setModelMode] = useState<ModelMode>('new');
   const [modelName, setModelName] = useState('');
