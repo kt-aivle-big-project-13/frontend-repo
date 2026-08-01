@@ -38,6 +38,10 @@ export async function startAudit(request: StartAuditRequest): Promise<StartAudit
 export interface AuditSummary {
   auditId: number;
   modelName: string;
+  modelFileName: string | null;
+  datasetFileName: string | null;
+  modelGroupId: string | null;
+  version: string | null;
   completedAt: string | null;
   status: AuditStatus;
   currentStep: number;
@@ -110,10 +114,19 @@ export interface ShapMetricItem {
   status: ShapStatus;
 }
 
+export interface FeatureImportanceItem {
+  rank: number;
+  feature: string;
+  value: number | null;
+  isSensitive: boolean;
+  sensitiveGroup: string | null;
+}
+
 export interface ExplainabilityResponse {
   auditId: number;
   method: string;
   metrics: ShapMetricItem[];
+  topFeatures: FeatureImportanceItem[];
 }
 
 export async function getExplainability(auditId: number): Promise<ExplainabilityResponse> {
