@@ -12,7 +12,11 @@ import {
   uploadModel,
   uploadDataset,
   updateSensitiveAttributes,
+  getModels,
+  getModelDatasets,
   type ModelType,
+  type ModelSummaryResponse,
+  type DatasetSummaryResponse,
 } from '../../../../features/audit/api/modelApi';
 import { startAudit } from '../../../../features/audit/api/auditApi';
 import StepIndicator from '../StepIndicator';
@@ -20,6 +24,113 @@ import StepIndicator from '../StepIndicator';
 import './AuditFlow.css';
 
 type ModelMode = 'new' | 'update';
+
+// 이전 버전이 "V숫자" 형태면 다음 숫자로, "1.0.0" 같은 시맨틱 버전이면 메이저 버전을 올려
+// 제안한다. 그 외 형식은 사용자가 직접 고치도록 그대로 복사해서 보여준다.
+function suggestNextVersion(previousVersion: string): string {
+  const trimmed = previousVersion.trim();
+
+  const vMatch = /^V(\d+)$/i.exec(trimmed);
+  if (vMatch) return `V${Number(vMatch[1]) + 1}`;
+
+  const semverMatch = /^(\d+)\.(\d+)\.(\d+)$/.exec(trimmed);
+  if (semverMatch) return `${Number(semverMatch[1]) + 1}.0.0`;
+
+  return trimmed;
+}
+
+interface SensitiveColumnPickerProps {
+  availableColumns: string[];
+  selectedColumns: Set<string>;
+  onAdd: (column: string) => void;
+}
+
+// 컬럼이 많은 데이터셋에서 원하는 민감변수를 빠르게 찾을 수 있도록 검색 가능한 드롭다운으로 제공한다.
+function SensitiveColumnPicker({
+  availableColumns,
+  selectedColumns,
+  onAdd,
+}: SensitiveColumnPickerProps) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const options = availableColumns.filter(
+    (column) =>
+      !selectedColumns.has(column) &&
+      column.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const handleSelect = (column: string) => {
+    onAdd(column);
+    setQuery('');
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="audit-execution-section__combobox" ref={containerRef}>
+      <input
+        type="text"
+        className="audit-execution-section__text-input audit-execution-section__combobox-input"
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && options.length > 0) {
+            event.preventDefault();
+            handleSelect(options[0]);
+          }
+          if (event.key === 'Escape') setIsOpen(false);
+        }}
+        placeholder="컬럼 검색"
+      />
+
+      {isOpen && (
+        <ul className="audit-execution-section__combobox-list">
+          {options.length > 0 ? (
+            options.map((column) => (
+              <li key={column}>
+                <button
+                  type="button"
+                  className="audit-execution-section__combobox-option"
+                  onClick={() => handleSelect(column)}
+                >
+                  {column}
+                </button>
+              </li>
+            ))
+          ) : (
+            <li className="audit-execution-section__combobox-empty">
+              일치하는 컬럼이 없습니다
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function formatUploadedAt(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+}
 
 function AuditExecutionSection() {
   const navigate = useNavigate();
@@ -38,6 +149,17 @@ function AuditExecutionSection() {
   const [useValidationDataset, setUseValidationDataset] = useState(false);
   const [validationDatasetFile, setValidationDatasetFile] =
     useState<File | null>(null);
+
+  // 버전업(기존 모델) 관련 상태 — 이전 모델을 고르면 모델명/버전을 자동 채우고,
+  // 그 계열의 최근 감사 데이터셋을 재사용 후보로 가져온다.
+  const [previousModels, setPreviousModels] = useState<ModelSummaryResponse[]>([]);
+  const [isLoadingPreviousModels, setIsLoadingPreviousModels] = useState(false);
+  const [selectedPreviousModelId, setSelectedPreviousModelId] = useState<number | null>(null);
+  const [newVersion, setNewVersion] = useState('');
+  const [reusedDataset, setReusedDataset] = useState<DatasetSummaryResponse | null>(null);
+  const [isLoadingReusedDataset, setIsLoadingReusedDataset] = useState(false);
+  const [useNewDatasetUpload, setUseNewDatasetUpload] = useState(false);
+  const [useNewModelUpload, setUseNewModelUpload] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -58,6 +180,67 @@ function AuditExecutionSection() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSubmitting]);
+
+  const selectedPreviousModel = useMemo(
+    () => previousModels.find((model) => model.modelId === selectedPreviousModelId) ?? null,
+    [previousModels, selectedPreviousModelId],
+  );
+
+  const handleModelModeChange = (mode: ModelMode) => {
+    setModelMode(mode);
+    setSelectedPreviousModelId(null);
+    setNewVersion('');
+    setReusedDataset(null);
+    setUseNewDatasetUpload(false);
+    setUseNewModelUpload(false);
+    setModelName('');
+    setModelFile(null);
+    setAuditDatasetFile(null);
+    setAvailableColumns([]);
+    setSensitiveColumns(new Set());
+
+    if (mode !== 'update') {
+      setPreviousModels([]);
+      return;
+    }
+
+    // "기존(버전업)"으로 전환할 때 내 모델 목록(계열당 최신 버전)을 가져와 선택지로 보여준다.
+    setIsLoadingPreviousModels(true);
+    getModels()
+      .then(setPreviousModels)
+      .catch(() => setPreviousModels([]))
+      .finally(() => setIsLoadingPreviousModels(false));
+  };
+
+  const handleSelectPreviousModel = (event: ChangeEvent<HTMLSelectElement>) => {
+    const modelId = Number(event.target.value);
+    const model = previousModels.find((item) => item.modelId === modelId);
+    if (!model) return;
+
+    setSelectedPreviousModelId(modelId);
+    setModelName(model.modelName);
+    setNewVersion(suggestNextVersion(model.currentVersion));
+    setUseNewDatasetUpload(false);
+    setUseNewModelUpload(false);
+    setModelFile(null);
+    setReusedDataset(null);
+    setAuditDatasetFile(null);
+    setAvailableColumns([]);
+    setSensitiveColumns(new Set());
+
+    setIsLoadingReusedDataset(true);
+    getModelDatasets(modelId, 'AUDIT')
+      .then((datasets) => {
+        const latest = datasets[0] ?? null;
+        setReusedDataset(latest);
+        if (!latest) setUseNewDatasetUpload(true);
+      })
+      .catch(() => {
+        setReusedDataset(null);
+        setUseNewDatasetUpload(true);
+      })
+      .finally(() => setIsLoadingReusedDataset(false));
+  };
 
   // AI 서버가 아직 XGBoost(.json) 외 포맷을 로드하지 못해 .pkl/.joblib은 실행 단계에서 막힌다.
   // 여기서도 같은 기준으로 미리 알려준다 (resolveModelType 과 일치시킬 것).
@@ -91,6 +274,7 @@ function AuditExecutionSection() {
 
   const handleAuditDatasetFile = (file: File | null) => {
     setAuditDatasetFile(file);
+    setSensitiveColumns(new Set());
 
     if (!file) {
       setAvailableColumns([]);
@@ -126,6 +310,10 @@ function AuditExecutionSection() {
     });
   };
 
+  const handleAddSensitiveColumn = (column: string) => {
+    setSensitiveColumns((prev) => new Set(prev).add(column));
+  };
+
   const handleAddManualColumn = () => {
     const column = manualColumnInput.trim();
     if (!column) return;
@@ -134,25 +322,34 @@ function AuditExecutionSection() {
     setManualColumnInput('');
   };
 
-  const handleSelectSensitiveColumn = (event: ChangeEvent<HTMLSelectElement>) => {
-    const column = event.target.value;
-    if (!column) return;
-
-    setSensitiveColumns((prev) => new Set(prev).add(column));
-    event.target.value = '';
-  };
-
   // .json 파일만 XGBoost로 확정할 수 있다. .pkl/.joblib은 XGBoost/LightGBM 등이 섞여있을 수 있어
   // 확장자만으로 단정하면 잘못된 modelType 이 저장될 위험이 있다. 모델 타입 선택 UI가 생기기 전까지는
   // 확실하지 않으면 null 을 돌려주고 실행을 막는다.
   const resolveModelType = (file: File): ModelType | null =>
     file.name.toLowerCase().endsWith('.json') ? 'XGBOOST' : null;
 
+  const isUpdateMode = modelMode === 'update';
+  const willReuseDataset = isUpdateMode && reusedDataset != null && !useNewDatasetUpload;
+  const willReuseModel = isUpdateMode && selectedPreviousModel != null && !useNewModelUpload;
+  const isVersionSameAsPrevious =
+    isUpdateMode &&
+    selectedPreviousModel != null &&
+    newVersion.trim().length > 0 &&
+    newVersion.trim() === selectedPreviousModel.currentVersion.trim();
+
   const handleStartAudit = async () => {
-    if (!modelFile || !auditDatasetFile || isSubmitting) return;
+    if (isSubmitting) return;
+    if (!willReuseModel && !modelFile) return;
+    if (isUpdateMode && !selectedPreviousModelId) return;
+    if (!willReuseDataset && !auditDatasetFile) return;
+    if (!willReuseDataset && sensitiveColumns.size === 0) return;
     if (useValidationDataset && !validationDatasetFile) return;
 
-    const modelType = resolveModelType(modelFile);
+    const modelType = willReuseModel
+      ? selectedPreviousModel!.modelType
+      : modelFile
+        ? resolveModelType(modelFile)
+        : null;
     if (!modelType) {
       setSubmitError(
         '.pkl/.joblib 모델은 아직 모델 타입을 자동으로 판단할 수 없습니다. .json(XGBoost) 파일로 업로드해주세요.',
@@ -164,23 +361,30 @@ function AuditExecutionSection() {
     setSubmitError(null);
 
     try {
+      const fallbackModelName = modelFile?.name ?? selectedPreviousModel?.modelName ?? '';
+
       const model = await uploadModel(
-        modelFile,
-        modelName || modelFile.name,
+        willReuseModel ? null : modelFile,
+        modelName || fallbackModelName,
         modelType,
+        isUpdateMode
+          ? {
+              version: newVersion || undefined,
+              previousModelId: selectedPreviousModelId ?? undefined,
+            }
+          : undefined,
       );
 
-      const dataset = await uploadDataset(
-        model.modelId,
-        auditDatasetFile,
-        'AUDIT',
-      );
+      let datasetId: number;
+      if (willReuseDataset && reusedDataset) {
+        datasetId = reusedDataset.datasetId;
+      } else {
+        const dataset = await uploadDataset(model.modelId, auditDatasetFile!, 'AUDIT');
+        await updateSensitiveAttributes(model.modelId, dataset.datasetId, [...sensitiveColumns]);
+        datasetId = dataset.datasetId;
+      }
 
-      await updateSensitiveAttributes(
-        model.modelId,
-        dataset.datasetId,
-        [...sensitiveColumns],
-      );
+      const auditName = modelName || fallbackModelName;
 
       // Validation 데이터셋을 켠 경우에만 별도로 올려서 임계값 산출에 쓰고,
       // 안 켠 경우(기본값)는 기존과 동일하게 MANUAL + 0.5 고정 임계값을 쓴다.
@@ -194,16 +398,16 @@ function AuditExecutionSection() {
 
         started = await startAudit({
           modelId: model.modelId,
-          datasetId: dataset.datasetId,
-          auditName: modelName || modelFile.name,
+          datasetId,
+          auditName,
           thresholdMethod: 'VALIDATION_DATASET',
           validationDatasetId: validationDataset.datasetId,
         });
       } else {
         started = await startAudit({
           modelId: model.modelId,
-          datasetId: dataset.datasetId,
-          auditName: modelName || modelFile.name,
+          datasetId,
+          auditName,
           thresholdMethod: 'MANUAL',
           manualThreshold: 0.5,
         });
@@ -222,6 +426,16 @@ function AuditExecutionSection() {
       setIsSubmitting(false);
     }
   };
+
+  const isStartDisabled =
+    (!willReuseModel && !modelFile) ||
+    isSubmitting ||
+    (isUpdateMode && !selectedPreviousModelId) ||
+    (isUpdateMode && newVersion.trim().length === 0) ||
+    isVersionSameAsPrevious ||
+    (!willReuseDataset && !auditDatasetFile) ||
+    (!willReuseDataset && sensitiveColumns.size === 0) ||
+    (useValidationDataset && !validationDatasetFile);
 
   return (
     <div className="audit-execution-section">
@@ -249,19 +463,72 @@ function AuditExecutionSection() {
               <button
                 type="button"
                 className={`audit-execution-section__mode-button${modelMode === 'new' ? ' audit-execution-section__mode-button--active' : ''}`}
-                onClick={() => setModelMode('new')}
+                onClick={() => handleModelModeChange('new')}
               >
                 신규
               </button>
               <button
                 type="button"
                 className={`audit-execution-section__mode-button${modelMode === 'update' ? ' audit-execution-section__mode-button--active' : ''}`}
-                onClick={() => setModelMode('update')}
+                onClick={() => handleModelModeChange('update')}
               >
                 기존(버전업)
               </button>
             </div>
           </div>
+
+          {isUpdateMode && (
+            <>
+              <label className="audit-execution-section__field-label" htmlFor="previous-model">
+                이전 모델 선택
+              </label>
+              <select
+                id="previous-model"
+                className="audit-execution-section__select"
+                value={selectedPreviousModelId ?? ''}
+                onChange={handleSelectPreviousModel}
+                disabled={isLoadingPreviousModels}
+                style={{ marginBottom: 16 }}
+              >
+                <option value="" disabled>
+                  {isLoadingPreviousModels
+                    ? '모델 목록을 불러오는 중…'
+                    : previousModels.length === 0
+                      ? '버전업할 수 있는 기존 모델이 없습니다'
+                      : '모델을 선택해주세요'}
+                </option>
+                {previousModels.map((model) => (
+                  <option key={model.modelId} value={model.modelId}>
+                    {model.modelName} ({model.currentVersion})
+                  </option>
+                ))}
+              </select>
+
+              {selectedPreviousModel && (
+                <p className="audit-execution-section__version-row">
+                  이전버전{' '}
+                  <span className="audit-execution-section__version-badge">
+                    {selectedPreviousModel.currentVersion}
+                  </span>
+                  <span className="audit-execution-section__version-arrow">→</span>
+                  신규버전
+                  <input
+                    type="text"
+                    className={`audit-execution-section__version-input${isVersionSameAsPrevious ? ' audit-execution-section__version-input--invalid' : ''}`}
+                    value={newVersion}
+                    onChange={(event) => setNewVersion(event.target.value)}
+                    placeholder="예: V2"
+                  />
+                </p>
+              )}
+
+              {isVersionSameAsPrevious && (
+                <p className="audit-execution-section__version-error">
+                  버전 이름을 다르게 해주세요
+                </p>
+              )}
+            </>
+          )}
 
           <label className="audit-execution-section__field-label" htmlFor="model-name">
             모델명
@@ -275,135 +542,213 @@ function AuditExecutionSection() {
             placeholder="모델명을 입력해주세요"
           />
 
-          <div
-            className="audit-execution-section__dropzone"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={handleModelDrop}
-          >
-            <span className="audit-execution-section__dropzone-text">
-              {modelFile ? modelFile.name : '모델 파일 업로드'}
-            </span>
-            <button
-              type="button"
-              className="audit-execution-section__upload-trigger"
-              onClick={() => modelFileInputRef.current?.click()}
-            >
-              업로드
-            </button>
-            <input
-              ref={modelFileInputRef}
-              type="file"
-              accept=".json"
-              className="audit-execution-section__hidden-input"
-              onChange={(event) => setModelFile(event.target.files?.[0] ?? null)}
-            />
-          </div>
+          {willReuseModel && selectedPreviousModel ? (
+            <div className="audit-execution-section__reuse-panel">
+              <div className="audit-execution-section__reuse-header">
+                <span className="audit-execution-section__reuse-label">이전 모델 파일 재사용</span>
+                <button
+                  type="button"
+                  className="audit-execution-section__reuse-switch"
+                  onClick={() => setUseNewModelUpload(true)}
+                >
+                  새 모델 파일 업로드
+                </button>
+              </div>
+              <p className="audit-execution-section__reuse-meta">
+                {selectedPreviousModel.originalFileName ?? '파일명 정보 없음'}
+              </p>
+            </div>
+          ) : (
+            <>
+              {isUpdateMode && selectedPreviousModel && (
+                <button
+                  type="button"
+                  className="audit-execution-section__reuse-switch audit-execution-section__reuse-switch--back"
+                  onClick={() => {
+                    setUseNewModelUpload(false);
+                    setModelFile(null);
+                  }}
+                >
+                  ← 이전 모델 파일 재사용으로 돌아가기
+                </button>
+              )}
 
-          <p
-            className={`audit-execution-section__hint${isModelFileSupported === null ? '' : isModelFileSupported ? ' audit-execution-section__hint--valid' : ' audit-execution-section__hint--invalid'}`}
-          >
-            지원 형식: XGBoost(.json, v1.0+) — .pkl / .joblib 은 준비 중입니다
-          </p>
+              <div
+                className="audit-execution-section__dropzone"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleModelDrop}
+              >
+                <span className="audit-execution-section__dropzone-text">
+                  {modelFile ? modelFile.name : '모델 파일 업로드'}
+                </span>
+                <button
+                  type="button"
+                  className="audit-execution-section__upload-trigger"
+                  onClick={() => modelFileInputRef.current?.click()}
+                >
+                  업로드
+                </button>
+                <input
+                  ref={modelFileInputRef}
+                  type="file"
+                  accept=".json"
+                  className="audit-execution-section__hidden-input"
+                  onChange={(event) => setModelFile(event.target.files?.[0] ?? null)}
+                />
+              </div>
+
+              <p
+                className={`audit-execution-section__hint${isModelFileSupported === null ? '' : isModelFileSupported ? ' audit-execution-section__hint--valid' : ' audit-execution-section__hint--invalid'}`}
+              >
+                지원 형식: XGBoost(.json, v1.0+) — .pkl / .joblib 은 준비 중입니다
+              </p>
+            </>
+          )}
         </div>
 
         <div className="audit-execution-section__upload-card">
-          <h2 className="audit-execution-section__upload-title">
+          <h2 className="audit-execution-section__upload-title audit-execution-section__upload-title--standalone">
             ② 감사 데이터 + 민감변수 지정
           </h2>
 
-          <div
-            className="audit-execution-section__dropzone"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={handleAuditDatasetDrop}
-          >
-            <span className="audit-execution-section__dropzone-text">
-              {auditDatasetFile ? auditDatasetFile.name : '감사 데이터 파일 업로드'}
-            </span>
-            <button
-              type="button"
-              className="audit-execution-section__upload-trigger"
-              onClick={() => auditDatasetFileInputRef.current?.click()}
-            >
-              업로드
-            </button>
-            <input
-              ref={auditDatasetFileInputRef}
-              type="file"
-              accept=".csv"
-              className="audit-execution-section__hidden-input"
-              onChange={(event) =>
-                handleAuditDatasetFile(event.target.files?.[0] ?? null)
-              }
-            />
-          </div>
+          {willReuseDataset && reusedDataset ? (
+            <div className="audit-execution-section__reuse-panel">
+              <div className="audit-execution-section__reuse-header">
+                <span className="audit-execution-section__reuse-label">이전 데이터셋 재사용</span>
+                <button
+                  type="button"
+                  className="audit-execution-section__reuse-switch"
+                  onClick={() => setUseNewDatasetUpload(true)}
+                >
+                  새 데이터셋 업로드
+                </button>
+              </div>
+              <p className="audit-execution-section__reuse-meta">
+                {formatUploadedAt(reusedDataset.createdAt)} 업로드 · 컬럼 {reusedDataset.columns.length}개
+              </p>
 
-          <p className="audit-execution-section__field-label">
-            민감변수 컬럼
-            <span className="audit-execution-section__field-label-count">
-              {sensitiveColumns.size}개
-            </span>
-          </p>
-
-          {availableColumns.length > 0 ? (
-            <div className="audit-execution-section__sensitive-input-row">
-              <select
-                className="audit-execution-section__select"
-                defaultValue=""
-                onChange={handleSelectSensitiveColumn}
-              >
-                <option value="" disabled>
-                  컬럼 선택
-                </option>
-                {availableColumns
-                  .filter((column) => !sensitiveColumns.has(column))
-                  .map((column) => (
-                    <option key={column} value={column}>
-                      {column}
-                    </option>
-                  ))}
-              </select>
+              <p className="audit-execution-section__field-label">
+                민감변수 컬럼
+                <span className="audit-execution-section__field-label-count">
+                  {reusedDataset.sensitiveAttributes.length}개
+                </span>
+              </p>
+              <div className="audit-execution-section__tag-list">
+                {reusedDataset.sensitiveAttributes.map((column) => (
+                  <span
+                    key={column}
+                    className="audit-execution-section__tag audit-execution-section__tag--selected audit-execution-section__tag--readonly"
+                  >
+                    {column}
+                  </span>
+                ))}
+              </div>
             </div>
           ) : (
-            <div className="audit-execution-section__sensitive-input-row">
-              <input
-                type="text"
-                className="audit-execution-section__text-input"
-                value={manualColumnInput}
-                onChange={(event) => setManualColumnInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    handleAddManualColumn();
-                  }
-                }}
-                placeholder="감사 데이터를 업로드하면 컬럼을 선택할 수 있어요"
-              />
-              <button
-                type="button"
-                className="audit-execution-section__tag-add-button"
-                onClick={handleAddManualColumn}
-              >
-                추가
-              </button>
-            </div>
-          )}
+            <>
+              {isUpdateMode && reusedDataset && (
+                <button
+                  type="button"
+                  className="audit-execution-section__reuse-switch audit-execution-section__reuse-switch--back"
+                  onClick={() => {
+                    setUseNewDatasetUpload(false);
+                    setAuditDatasetFile(null);
+                    setAvailableColumns([]);
+                    setSensitiveColumns(new Set());
+                  }}
+                >
+                  ← 이전 데이터셋 재사용으로 돌아가기
+                </button>
+              )}
 
-          {sensitiveColumns.size > 0 && (
-            <div className="audit-execution-section__tag-list">
-              {[...sensitiveColumns].map((column) => (
-                <span key={column} className="audit-execution-section__tag audit-execution-section__tag--selected">
-                  {column}
+              {isUpdateMode && isLoadingReusedDataset && (
+                <p className="audit-execution-section__hint">이전 데이터셋을 확인하는 중…</p>
+              )}
+
+              <div
+                className="audit-execution-section__dropzone"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleAuditDatasetDrop}
+              >
+                <span className="audit-execution-section__dropzone-text">
+                  {auditDatasetFile ? auditDatasetFile.name : '감사 데이터 파일 업로드'}
+                </span>
+                <button
+                  type="button"
+                  className="audit-execution-section__upload-trigger"
+                  onClick={() => auditDatasetFileInputRef.current?.click()}
+                >
+                  업로드
+                </button>
+                <input
+                  ref={auditDatasetFileInputRef}
+                  type="file"
+                  accept=".csv"
+                  className="audit-execution-section__hidden-input"
+                  onChange={(event) =>
+                    handleAuditDatasetFile(event.target.files?.[0] ?? null)
+                  }
+                />
+              </div>
+
+              <p className="audit-execution-section__field-label">
+                민감변수 컬럼
+                <span className="audit-execution-section__field-label-count">
+                  {sensitiveColumns.size}개
+                </span>
+              </p>
+
+              {availableColumns.length > 0 ? (
+                <div className="audit-execution-section__sensitive-input-row">
+                  <SensitiveColumnPicker
+                    availableColumns={availableColumns}
+                    selectedColumns={sensitiveColumns}
+                    onAdd={handleAddSensitiveColumn}
+                  />
+                </div>
+              ) : (
+                <div className="audit-execution-section__sensitive-input-row">
+                  <input
+                    type="text"
+                    className="audit-execution-section__text-input"
+                    value={manualColumnInput}
+                    onChange={(event) => setManualColumnInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleAddManualColumn();
+                      }
+                    }}
+                    placeholder="감사 데이터를 업로드하면 컬럼을 선택할 수 있어요"
+                  />
                   <button
                     type="button"
-                    className="audit-execution-section__tag-remove"
-                    onClick={() => toggleSensitiveColumn(column)}
-                    aria-label={`${column} 제거`}
+                    className="audit-execution-section__tag-add-button"
+                    onClick={handleAddManualColumn}
                   >
-                    ×
+                    추가
                   </button>
-                </span>
-              ))}
-            </div>
+                </div>
+              )}
+
+              {sensitiveColumns.size > 0 && (
+                <div className="audit-execution-section__tag-list">
+                  {[...sensitiveColumns].map((column) => (
+                    <span key={column} className="audit-execution-section__tag audit-execution-section__tag--selected">
+                      {column}
+                      <button
+                        type="button"
+                        className="audit-execution-section__tag-remove"
+                        onClick={() => toggleSensitiveColumn(column)}
+                        aria-label={`${column} 제거`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           <label className="audit-execution-section__checkbox-label">
@@ -454,15 +799,10 @@ function AuditExecutionSection() {
         <button
           type="button"
           className="audit-execution-section__run-button"
-          disabled={
-            !modelFile ||
-            !auditDatasetFile ||
-            isSubmitting ||
-            (useValidationDataset && !validationDatasetFile)
-          }
+          disabled={isStartDisabled}
           onClick={handleStartAudit}
         >
-          감사 시작
+          {isUpdateMode ? '버전업 감사' : '감사 시작'}
         </button>
       </div>
         </>
