@@ -60,7 +60,12 @@ function DocumentIcon() {
         strokeLinejoin="round"
       />
       <path d="M14 2.5V7h4" stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M8 12h8M8 15.5h8M8 18.5h5" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M8 12h8M8 15.5h8M8 18.5h5"
+        stroke="#ffffff"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
