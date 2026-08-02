@@ -22,18 +22,18 @@ function CriteriaHelpContent() {
   return (
     <div className="fairness-table__tooltip">
       <p className="fairness-table__tooltip-desc">
-        지표 값이 기준 범위 안에 있으면 "충족", 조금 벗어나면 "추가검토", 크게 벗어나면
-        "기준초과"로 표시돼요. 추가검토는 아직 확정된 문제가 아니라 사람이 한 번 더 살펴보면
-        좋다는 신호예요.
+        지표 값이 기준 범위 안에 있으면 "충족", 조금 벗어나면 "주의", 크게 벗어나면
+        "추가검토"로 표시돼요. 주의·추가검토는 아직 확정된 문제가 아니라 사람이 한 번 더
+        살펴보면 좋다는 신호예요.
       </p>
       <p className="fairness-table__tooltip-criteria">
         격차형 지표 (Demographic Parity · Equal Opportunity · Equalized Odds · FPR · FDR · FOR) —
-        값이 0에 가까울수록 공정해요. 0.10 이하는 충족, 0.10~0.20은 추가검토, 0.20 초과는
-        기준초과예요.
+        값이 0에 가까울수록 공정해요. 충족은 0.20 이하, 주의는 0.20 초과 0.40 이하, 추가검토는
+        0.40 초과예요.
       </p>
       <p className="fairness-table__tooltip-criteria">
-        비율형 지표 (Proportional Parity) — 값이 1에 가까울수록 공정해요. 0.80 이상은 충족,
-        0.70~0.80은 추가검토, 0.70 미만은 기준초과예요.
+        비율형 지표 (Proportional Parity) — 값이 1에 가까울수록 공정해요. 충족은 0.80 이상,
+        주의는 0.70 이상 0.80 미만, 추가검토는 0.70 미만이에요.
       </p>
     </div>
   );

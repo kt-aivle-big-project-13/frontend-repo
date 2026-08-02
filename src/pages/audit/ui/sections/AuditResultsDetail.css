@@ -145,6 +145,8 @@
 
   .audit-results-detail__risk-area {
     align-self: stretch;
+    flex-wrap: wrap;
+    row-gap: 16px;
     justify-content: space-between;
   }
 

@@ -475,14 +475,16 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                           <Tooltip
                             title={article.content}
                             placement="top"
-                            styles={{ container: { maxWidth: 420 } }}
+                            trigger={['hover', 'focus']}
+                            styles={{ root: { maxWidth: 420 } }}
                           >
-                            <span
+                            <button
+                              type="button"
                               className="audit-execution-section__matched-help"
                               aria-label="조항 원문 보기"
                             >
                               ?
-                            </span>
+                            </button>
                           </Tooltip>
                         </p>
                         <span className="audit-execution-section__matched-badge">

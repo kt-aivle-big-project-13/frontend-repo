@@ -55,9 +55,11 @@ const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
 
 // SHAP(민감변수 기여비율 제외 2개) + Fairlearn 14개(민감변수2×지표7) 판정을 집계.
 // 임의로 지어낸 "종합 위험 점수"가 아니라, 실제 지표 판정 개수를 그대로 세어 비율로 보여준다.
-// 카드/표에 찍히는 라벨과 정확히 같은 5개 범주로 나눈다 — "주의"(SHAP WARNING)와
-// "추가검토"(SHAP REVIEW + Fairlearn REVIEW)를 하나로 합치지 않고, "경고"라는
-// 존재하지 않는 이름 대신 실제 배지 라벨인 "기준초과"(Fairlearn FAIL)를 그대로 쓴다.
+// SHAP·Fairlearn 모두 "충족 > 주의 > 추가검토" 3단계로 라벨이 통일돼 있으므로(shapData.ts,
+// fairnessData.ts 참고) 여기서도 그 3단계 + 계산불가로만 나눈다. Fairlearn의 원래 상태
+// 코드(REVIEW/FAIL)와 화면 라벨(주의/추가검토)이 더는 이름이 같지 않으니 주의해서 매핑한다:
+// Fairlearn REVIEW(중간 등급) → "주의" 합계, Fairlearn FAIL(최하 등급)과 SHAP REVIEW(최하
+// 등급) → "추가검토" 합계.
 function buildStatusSegments(
   shapMetrics: ShapMetricItem[],
   fairnessResults: FairlearnResultItem[],
@@ -67,9 +69,8 @@ function buildStatusSegments(
 
   return [
     { label: '충족', count: shap.pass + fairness.pass, color: '#1b9851' },
-    { label: '주의', count: shap.warning, color: '#e09c14' },
-    { label: '추가검토', count: shap.review + fairness.review, color: '#d9822b' },
-    { label: '기준초과', count: fairness.fail, color: '#d93e44' },
+    { label: '주의', count: shap.warning + fairness.review, color: '#e09c14' },
+    { label: '추가검토', count: shap.review + fairness.fail, color: '#d93e44' },
     { label: '계산불가', count: fairness.na, color: '#c1c7d0' },
   ];
 }
@@ -172,12 +173,6 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
   }
 
   useEffect(() => {
-    // 이 페이지가 감사의 최종 결과 화면이므로, 방문한 순간 "결과 확인함"으로 표시해
-    // 홈 화면의 "진행중 감사" 목록에서 빠지도록 한다.
-    markAuditResultsViewed(auditId);
-  }, [auditId]);
-
-  useEffect(() => {
     let cancelled = false;
 
     Promise.all([getExplainability(auditId), getFairness(auditId), getAudits()])
@@ -192,6 +187,11 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
         const currentAudit = audits.find((audit) => audit.auditId === auditId) ?? null;
         setAuditSummary(currentAudit);
         setVersionHistory(selectVersionHistory(audits, currentAudit?.modelGroupId ?? null));
+
+        // 이 페이지가 감사의 최종 결과 화면이므로, 결과 조회에 성공한 시점에만 "결과 확인함"으로
+        // 표시해 홈 화면의 "진행중 감사" 목록에서 빠지도록 한다. 조회가 실패하면(네트워크 오류 등)
+        // 사용자가 결과를 실제로 보지 못한 것이므로 viewed 처리하지 않고 목록에 남겨둔다.
+        markAuditResultsViewed(auditId);
       })
       .catch(() => {
         if (!cancelled) setLoadError('감사 결과를 불러오지 못했습니다.');
