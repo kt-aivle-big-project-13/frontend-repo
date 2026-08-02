@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-import { fetchObjections } from '../../../features/objection/api/objectionApi';
+import {
+  extractErrorMessage,
+  fetchObjectionDetail,
+  fetchObjections,
+  importObjectionsCsv,
+} from '../../../features/objection/api/objectionApi';
 
 import type {
   ObjectionDetail,
   ObjectionReviewResult,
+  ObjectionSummary,
 } from '../../../features/objection/model/objectionTypes';
 
 import ObjectionDetailPanel from '../../../features/objection/ui/ObjectionDetailPanel';
@@ -23,18 +29,24 @@ const ITEMS_PER_PAGE = 10;
 const DETAIL_ANIMATION_DURATION = 300;
 
 function ObjectionsPage() {
-  // 페이지 이동
   const navigate = useNavigate();
 
   // 상세 패널 닫기 타이머
   const closeTimerRef = useRef<number | null>(null);
 
-  // 전체 이의제기 목록
-  const [objections, setObjections] = useState<ObjectionDetail[]>([]);
+  // 전체 이의제기 목록 (요약)
+  const [objections, setObjections] = useState<ObjectionSummary[]>([]);
 
   // 현재 선택된 이의제기 ID
   const [selectedObjectionId, setSelectedObjectionId] =
     useState<number | null>(null);
+
+  // 선택된 이의제기의 상세 정보 (선택 시 별도 조회)
+  const [selectedObjection, setSelectedObjection] =
+    useState<ObjectionDetail | null>(null);
+
+  // 상세 정보 로딩 상태
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   // 담당자가 선택한 처리 결과
   const [reviewResult, setReviewResult] =
@@ -55,21 +67,27 @@ function ObjectionsPage() {
   // 목록 로딩 상태
   const [isLoading, setIsLoading] = useState(true);
 
+  // CSV 업로드 상태
+  const [isUploading, setIsUploading] = useState(false);
+
   // 이의제기 목록 조회
-  useEffect(() => {
+  const loadObjections = () => {
+    setIsLoading(true);
+
     fetchObjections()
       .then(setObjections)
       .catch((error: unknown) => {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : '이의제기 목록을 불러오지 못했습니다.';
-
-        message.error(errorMessage);
+        message.error(
+          extractErrorMessage(error, '이의제기 목록을 불러오지 못했습니다.'),
+        );
       })
       .finally(() => {
         setIsLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadObjections();
   }, []);
 
   // 컴포넌트 종료 시 타이머 제거
@@ -115,12 +133,8 @@ function ObjectionsPage() {
     currentPage * ITEMS_PER_PAGE,
   );
 
-  // 현재 선택된 이의제기 정보
-  const selectedObjection =
-    objections.find((item) => item.objectionId === selectedObjectionId) ?? null;
-
   // 상세 패널 표시 여부
-  const isDetailVisible = selectedObjection !== null;
+  const isDetailVisible = selectedObjectionId !== null;
 
   // 검색어 변경
   const handleSearchKeywordChange = (value: string) => {
@@ -134,7 +148,7 @@ function ObjectionsPage() {
     setCurrentPage(1);
   };
 
-  // 이의제기 선택
+  // 이의제기 선택 시 상세 정보를 별도로 조회
   const handleSelect = (objectionId: number) => {
     if (closeTimerRef.current !== null) {
       window.clearTimeout(closeTimerRef.current);
@@ -143,12 +157,26 @@ function ObjectionsPage() {
 
     setIsDetailClosing(false);
     setSelectedObjectionId(objectionId);
+    setSelectedObjection(null);
     setReviewResult('REJECTED');
+    setIsDetailLoading(true);
+
+    fetchObjectionDetail(objectionId)
+      .then(setSelectedObjection)
+      .catch((error: unknown) => {
+        message.error(
+          extractErrorMessage(error, '이의제기 상세 정보를 불러오지 못했습니다.'),
+        );
+        setSelectedObjectionId(null);
+      })
+      .finally(() => {
+        setIsDetailLoading(false);
+      });
   };
 
   // 상세 패널 닫기
   const handleCloseDetail = () => {
-    if (!selectedObjection || isDetailClosing) {
+    if (!selectedObjectionId || isDetailClosing) {
       return;
     }
 
@@ -156,6 +184,7 @@ function ObjectionsPage() {
 
     closeTimerRef.current = window.setTimeout(() => {
       setSelectedObjectionId(null);
+      setSelectedObjection(null);
       setReviewResult('REJECTED');
       setIsDetailClosing(false);
       closeTimerRef.current = null;
@@ -181,6 +210,29 @@ function ObjectionsPage() {
     });
   };
 
+  // 신용감사 결과 CSV 업로드
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+
+      const result = await importObjectionsCsv(file);
+
+      message.success(`이의제기 ${result.importedCount}건이 등록되었습니다.`);
+      loadObjections();
+    } catch (error: unknown) {
+      message.error(extractErrorMessage(error, 'CSV 업로드에 실패했습니다.'));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="objections-page">
@@ -198,10 +250,22 @@ function ObjectionsPage() {
                 </p>
               </div>
 
-              {/* 상세 패널이 닫혀 있을 때만 상단에 전체 건수 표시 */}
-              {!isDetailVisible && (
-                <strong>{objections.length}건</strong>
-              )}
+              <div className="objections-page__title-actions">
+                {/* 신용감사 결과 CSV 업로드 */}
+                <label className="objections-page__upload-button">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(event) => void handleFileChange(event)}
+                    disabled={isUploading}
+                    hidden
+                  />
+                  {isUploading ? '업로드 중...' : '신용감사 결과 업로드'}
+                </label>
+
+                {/* 상세 패널이 닫혀 있을 때만 상단에 전체 건수 표시 */}
+                {!isDetailVisible && <strong>{objections.length}건</strong>}
+              </div>
             </div>
           </header>
 
@@ -242,7 +306,7 @@ function ObjectionsPage() {
               />
 
               {/* 선택된 이의제기 상세 패널 */}
-              {selectedObjection && (
+              {selectedObjectionId && (
                 <div
                   className={[
                     'objections-page__detail-wrapper',
@@ -253,13 +317,19 @@ function ObjectionsPage() {
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  <ObjectionDetailPanel
-                    objection={selectedObjection}
-                    reviewResult={reviewResult}
-                    onReviewResultChange={setReviewResult}
-                    onClose={handleCloseDetail}
-                    onCreateDocument={handleCreateDocument}
-                  />
+                  {isDetailLoading || !selectedObjection ? (
+                    <div className="objections-page__loading">
+                      이의제기 상세 정보를 불러오는 중입니다.
+                    </div>
+                  ) : (
+                    <ObjectionDetailPanel
+                      objection={selectedObjection}
+                      reviewResult={reviewResult}
+                      onReviewResultChange={setReviewResult}
+                      onClose={handleCloseDetail}
+                      onCreateDocument={handleCreateDocument}
+                    />
+                  )}
                 </div>
               )}
             </div>

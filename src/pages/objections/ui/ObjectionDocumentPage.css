@@ -234,6 +234,15 @@
   box-shadow: none !important;
 }
 
+/* 수신 이메일 형식 오류 문구 */
+.objection-document-form__email-error {
+  display: block;
+  margin-top: 6px;
+  color: #d92d20;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
 /* 발송 동의와 발송 버튼 영역 */
 .objection-document-form__actions {
   display: flex;

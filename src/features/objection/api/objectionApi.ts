@@ -1,117 +1,215 @@
-import {
-  objectionDispatchHistoryMockData,
-  objectionDocumentMockData,
-  objectionMockData,
-} from '../model/objectionMockData';
+import axios from 'axios';
+
+import { apiClient } from '../../../shared/api/client';
 
 import type {
+  ObjectionCompletionInfo,
+  ObjectionContributor,
   ObjectionDetail,
   ObjectionDispatchHistory,
   ObjectionDocument,
+  ObjectionImportResult,
   ObjectionReviewResult,
+  ObjectionSummary,
 } from '../model/objectionTypes';
 
-// 목업 API 응답 지연 시간
-const MOCK_DELAY_MS = 250;
-
-// 실제 API 요청처럼 응답을 지연시키는 함수
-function delay<T>(value: T): Promise<T> {
-  return new Promise((resolve) => {
-    window.setTimeout(() => resolve(value), MOCK_DELAY_MS);
-  });
+interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
 }
 
-// 전체 이의제기 목록 조회
-export async function fetchObjections(): Promise<ObjectionDetail[]> {
-  return delay(
-    objectionMockData.map((item) => ({
-      ...item,
-      contributors: item.contributors.map((contributor) => ({
-        ...contributor,
-      })),
-      completionInfo: item.completionInfo
-        ? {
-            ...item.completionInfo,
-          }
-        : undefined,
-    })),
+type ObjectionDecisionDto = 'REJECT_MAINTAIN' | 'REEXAMINATION';
+
+// 백엔드 이의제기 요약 응답
+interface ObjectionSummaryDto {
+  objectionId: number;
+  objectionNo: string;
+  customerName: string;
+  title: string;
+  caseType: string;
+  highImpactAi: boolean;
+  status: 'WAITING' | 'COMPLETED';
+  submittedAt: string;
+}
+
+// 백엔드 이의제기 상세 응답
+interface ObjectionDetailDto extends ObjectionSummaryDto {
+  content: string;
+  modelId: number | null;
+  modelName: string | null;
+  shapEvidence: string | null;
+  staffNote: string | null;
+  decision: ObjectionDecisionDto | null;
+  draftContent: string | null;
+  approvedAt: string | null;
+  deliveredAt: string | null;
+  approverName: string | null;
+  recipientEmail: string | null;
+}
+
+// 백엔드 대응문서 응답
+interface ObjectionDocumentDto {
+  objectionId: number;
+  objectionNo: string;
+  customerName: string;
+  decision: ObjectionDecisionDto;
+  explanation: string;
+  letterTitle: string;
+  letterBody: string;
+}
+
+// 백엔드가 GlobalExceptionHandler로 내려주는 에러 응답 형태
+interface ApiErrorResponse {
+  message?: string;
+}
+
+// axios 에러에서 백엔드가 내려준 실제 에러 메시지를 꺼낸다.
+export function extractErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError<ApiErrorResponse>(error) && error.response?.data?.message) {
+    return error.response.data.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+// 백엔드 ObjectionDecision <-> 프론트 ObjectionReviewResult 매핑
+function toReviewResult(decision: ObjectionDecisionDto): ObjectionReviewResult {
+  return decision === 'REEXAMINATION' ? 'RE_REVIEW' : 'REJECTED';
+}
+
+function toDecision(reviewResult: ObjectionReviewResult): ObjectionDecisionDto {
+  return reviewResult === 'RE_REVIEW' ? 'REEXAMINATION' : 'REJECT_MAINTAIN';
+}
+
+type ContributorLevelInternal = ObjectionContributor['level'];
+
+// "부채비율 82%; 신용점수 812점" 같은 CSV 원문을 화면에 표시할 판단 근거 칩으로 변환
+function parseContributors(shapEvidence: string | null): ObjectionContributor[] {
+  if (!shapEvidence) {
+    return [];
+  }
+
+  const levels: ContributorLevelInternal[] = ['HIGH', 'MEDIUM', 'LOW'];
+
+  return shapEvidence
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part, index) => {
+      const lastSpaceIndex = part.lastIndexOf(' ');
+      const label = lastSpaceIndex === -1 ? part : part.slice(0, lastSpaceIndex);
+      const value = lastSpaceIndex === -1 ? '-' : part.slice(lastSpaceIndex + 1);
+
+      return {
+        feature: `shap-${index}`,
+        label: label || part,
+        value,
+        level: levels[Math.min(index, levels.length - 1)],
+      };
+    });
+}
+
+function toSummary(dto: ObjectionSummaryDto): ObjectionSummary {
+  return {
+    objectionId: dto.objectionId,
+    objectionNo: dto.objectionNo,
+    customerName: dto.customerName,
+    title: dto.title,
+    caseType: dto.caseType,
+    highImpactAi: dto.highImpactAi,
+    status: dto.status,
+    createdAt: dto.submittedAt,
+  };
+}
+
+function toCompletionInfo(dto: ObjectionDetailDto): ObjectionCompletionInfo | undefined {
+  if (dto.status !== 'COMPLETED' || !dto.decision || !dto.deliveredAt) {
+    return undefined;
+  }
+
+  return {
+    reviewResult: toReviewResult(dto.decision),
+    dispatchedAt: dto.deliveredAt,
+    recipientEmail: dto.recipientEmail ?? '',
+  };
+}
+
+function toDetail(dto: ObjectionDetailDto): ObjectionDetail {
+  return {
+    ...toSummary(dto),
+    content: dto.content,
+    contributors: parseContributors(dto.shapEvidence),
+    reviewBasis: dto.staffNote ?? '',
+    completionInfo: toCompletionInfo(dto),
+  };
+}
+
+// 이의제기 목록 조회
+export async function fetchObjections(): Promise<ObjectionSummary[]> {
+  const { data } = await apiClient.get<PageResponse<ObjectionSummaryDto>>(
+    '/objections',
+    { params: { page: 1, size: 100, sort: 'latest' } },
   );
+
+  return data.content.map(toSummary);
 }
 
 // 특정 이의제기 상세 조회
 export async function fetchObjectionDetail(
   objectionId: number,
 ): Promise<ObjectionDetail> {
-  const objection = objectionMockData.find(
-    (item) => item.objectionId === objectionId,
+  const { data } = await apiClient.get<ObjectionDetailDto>(
+    `/objections/${objectionId}`,
   );
 
-  if (!objection) {
-    throw new Error('해당 이의제기 정보를 찾을 수 없습니다.');
-  }
-
-  return delay({
-    ...objection,
-    contributors: objection.contributors.map((contributor) => ({
-      ...contributor,
-    })),
-    completionInfo: objection.completionInfo
-      ? {
-          ...objection.completionInfo,
-        }
-      : undefined,
-  });
+  return toDetail(data);
 }
 
-// 처리 결과에 따라 기본 대응문서 생성
-function createDefaultDocument(
-  objection: ObjectionDetail,
-  reviewResult: ObjectionReviewResult,
-): ObjectionDocument {
-  const isReReview = reviewResult === 'RE_REVIEW';
+// 이의제기 신용감사 결과 CSV 업로드 (다건 일괄 등록)
+export async function importObjectionsCsv(
+  file: File,
+): Promise<ObjectionImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const { data } = await apiClient.post<{
+    importedCount: number;
+    objections: ObjectionSummaryDto[];
+  }>('/objections/import', formData);
 
   return {
-    objectionId: objection.objectionId,
-    objectionNo: objection.objectionNo,
-    customerName: objection.customerName,
-    reviewResult,
-    explanation:
-      objection.reviewBasis ||
-      '연계된 분석 결과를 기반으로 판단 근거 설명이 생성됩니다.',
-    letterTitle: isReReview
-      ? '신용평가 재심사 안내'
-      : '신용평가 결과 이의제기 회신 안내',
-    letterBody: isReReview
-      ? '안녕하세요, 고객님. 접수하신 이의제기 내용을 검토한 결과 추가 자료를 바탕으로 재심사를 진행할 예정입니다.'
-      : `안녕하세요, 고객님. 신청하신 심사 결과를 안내드립니다.\n\n${objection.reviewBasis}\n\n관련하여 궁금하신 사항은 이의제기 화면을 통해 다시 문의해주시면 담당자가 성실히 답변드리겠습니다. 감사합니다.`,
+    importedCount: data.importedCount,
+    objections: data.objections.map(toSummary),
   };
 }
 
-// 특정 이의제기의 대응문서 조회
+// 처리 결과에 따라 대응문서(판단 근거 설명 + 고객 안내문 초안) 조회
 export async function fetchObjectionDocument(
   objectionId: number,
   reviewResult: ObjectionReviewResult = 'REJECTED',
 ): Promise<ObjectionDocument> {
-  const savedDocument = objectionDocumentMockData[objectionId];
-
-  if (savedDocument) {
-    return delay({
-      ...savedDocument,
-      reviewResult,
-    });
-  }
-
-  const objection = objectionMockData.find(
-    (item) => item.objectionId === objectionId,
+  const { data } = await apiClient.get<ObjectionDocumentDto>(
+    `/objections/${objectionId}/document`,
+    { params: { decision: toDecision(reviewResult) } },
   );
 
-  if (!objection) {
-    throw new Error(
-      '대응문서를 생성할 이의제기를 찾을 수 없습니다.',
-    );
-  }
-
-  return delay(createDefaultDocument(objection, reviewResult));
+  return {
+    objectionId: data.objectionId,
+    objectionNo: data.objectionNo,
+    customerName: data.customerName,
+    reviewResult: toReviewResult(data.decision),
+    explanation: data.explanation,
+    letterTitle: data.letterTitle,
+    letterBody: data.letterBody,
+  };
 }
 
 // 고객 안내문 재생성
@@ -119,67 +217,74 @@ export async function regenerateObjectionLetter(
   objectionId: number,
   reviewResult: ObjectionReviewResult,
 ): Promise<string> {
-  const objection = objectionMockData.find(
-    (item) => item.objectionId === objectionId,
+  const { data } = await apiClient.post<{ letterBody: string }>(
+    `/objections/${objectionId}/document/regenerate`,
+    null,
+    { params: { decision: toDecision(reviewResult) } },
   );
 
-  if (!objection) {
-    throw new Error('고객 안내문을 생성할 수 없습니다.');
-  }
-
-  const letter =
-    reviewResult === 'RE_REVIEW'
-      ? `안녕하세요, 고객님. 접수하신 이의제기 내용을 다시 검토했습니다.\n\n검토 결과 추가 자료를 바탕으로 재심사를 진행할 예정입니다. 필요한 자료와 후속 절차는 담당자가 별도로 안내드리겠습니다.\n\n감사합니다.`
-      : `안녕하세요, 고객님. 접수하신 이의제기 내용을 검토한 결과를 안내드립니다.\n\n${objection.reviewBasis}\n\n위 사유를 종합적으로 검토하여 기존 심사 결과를 유지하기로 결정했습니다. 추가 문의사항은 이의제기 화면을 통해 남겨주시기 바랍니다.\n\n감사합니다.`;
-
-  return delay(letter);
+  return data.letterBody;
 }
 
 // 특정 이의제기의 고객 안내문 발송 이력 조회
 export async function fetchDispatchHistory(
   objectionId: number,
 ): Promise<ObjectionDispatchHistory[]> {
-  return delay(
-    objectionDispatchHistoryMockData
-      .filter((item) => item.objectionId === objectionId)
-      .map((item) => ({
-        ...item,
-      })),
-  );
+  const objection = await fetchObjectionDetail(objectionId);
+
+  if (!objection.completionInfo) {
+    return [];
+  }
+
+  return [
+    {
+      dispatchId: objection.objectionId,
+      objectionId: objection.objectionId,
+      customerName: objection.customerName,
+      objectionNo: objection.objectionNo,
+      dispatchedAt: objection.completionInfo.dispatchedAt,
+      reviewResult: objection.completionInfo.reviewResult,
+      status: 'DISPATCHED',
+    },
+  ];
 }
 
 // 고객 안내문 발송 요청 정보
 export interface DispatchDocumentRequest {
   objectionId: number;
   reviewResult: ObjectionReviewResult;
+  letterTitle: string;
   letterBody: string;
+  recipientEmail: string;
 }
 
-// 고객 안내문 발송
+// 이의제기 처리 확정 및 고객 안내문 발송
 export async function dispatchObjectionDocument(
   request: DispatchDocumentRequest,
 ): Promise<ObjectionDispatchHistory> {
-  if (!request.letterBody.trim()) {
-    throw new Error('발송할 고객 안내문이 비어 있습니다.');
-  }
-
-  const objection = objectionMockData.find(
-    (item) => item.objectionId === request.objectionId,
+  const { data } = await apiClient.post<ObjectionDetailDto>(
+    `/objections/${request.objectionId}/dispatch`,
+    {
+      decision: toDecision(request.reviewResult),
+      letterTitle: request.letterTitle,
+      letterBody: request.letterBody,
+      recipientEmail: request.recipientEmail,
+    },
   );
 
-  if (!objection) {
-    throw new Error('발송할 이의제기 정보를 찾을 수 없습니다.');
+  const detail = toDetail(data);
+
+  if (!detail.completionInfo) {
+    throw new Error('발송 처리에 실패했습니다.');
   }
 
-  return delay({
-    dispatchId: Date.now(),
-    objectionId: objection.objectionId,
-    customerName: objection.customerName,
-    objectionNo: objection.objectionNo,
-    dispatchedAt: new Date().toISOString(),
-    reviewerName: '김담당',
-    reviewResult: request.reviewResult,
-    recipientEmail: objection.customerEmail,
+  return {
+    dispatchId: detail.objectionId,
+    objectionId: detail.objectionId,
+    customerName: detail.customerName,
+    objectionNo: detail.objectionNo,
+    dispatchedAt: detail.completionInfo.dispatchedAt,
+    reviewResult: detail.completionInfo.reviewResult,
     status: 'DISPATCHED',
-  });
+  };
 }

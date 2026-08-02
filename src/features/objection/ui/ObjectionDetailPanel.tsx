@@ -2,9 +2,9 @@ import {
   CheckOutlined,
   CloseOutlined,
   FileTextOutlined,
-  StarFilled,
 } from '@ant-design/icons';
 
+import { maskEmail } from '../lib/maskEmail';
 import type {
   ObjectionDetail,
   ObjectionReviewResult,
@@ -131,22 +131,9 @@ function ObjectionDetailPanel({
 
       {/* SHAP 판단 근거 영역 */}
       <section className="objection-detail__analysis">
-        <div className="objection-detail__analysis-title">
-          <span
-            className="objection-detail__analysis-icon"
-            aria-hidden="true"
-          >
-            <StarFilled />
-          </span>
-
-          <strong>SHAP 기반 판단 근거 자동 매칭</strong>
-
-          <small>· STEP 4 RAG 법조문 매핑 완료</small>
-        </div>
-
         {/* 주요 판단 근거 변수 제목 */}
         <p className="objection-detail__analysis-label">
-          주요 판단 근거 변수
+          주요 판단 근거
         </p>
 
         {/* 주요 판단 근거 변수 목록 */}
@@ -223,16 +210,16 @@ function ObjectionDetailPanel({
                   </div>
 
                   <div>
-                    <dt>승인자</dt>
-                    <dd>
-                      {objection.completionInfo.reviewerName}
-                    </dd>
+                    <dt>고객 이름</dt>
+                    <dd>{objection.customerName}</dd>
                   </div>
 
                   <div>
                     <dt>수신 이메일</dt>
                     <dd>
-                      {objection.completionInfo.recipientEmail}
+                      {maskEmail(
+                        objection.completionInfo.recipientEmail,
+                      )}
                     </dd>
                   </div>
                 </dl>

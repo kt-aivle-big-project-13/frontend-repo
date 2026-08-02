@@ -54,16 +54,51 @@
   font-size: 13px;
 }
 
-/* 전체 이의제기 건수 배지 */
-.objections-page__title-row > strong {
+/* 제목 우측 액션 영역 (업로드 버튼 + 전체 건수 배지) */
+.objections-page__title-actions {
+  display: flex;
   flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
   margin-top: 42px;
+}
+
+/* CSV 업로드 버튼 */
+.objections-page__upload-button {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 8px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* CSV 업로드 버튼 마우스 오버 */
+.objections-page__upload-button:hover {
+  background-color: #244fb8;
+}
+
+/* 업로드 중인 CSV 업로드 버튼 */
+.objections-page__upload-button:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 전체 이의제기 건수 배지 */
+.objections-page__title-actions > strong {
   padding: 4px 10px;
   border-radius: 999px;
   background-color: #edf4ff;
   color: #2d67e8;
   font-size: 12px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 /* 목록과 상세 패널 배치 */
@@ -717,58 +752,9 @@
   background-color: #fbfdff;
 }
 
-/* SHAP 판단 근거 제목 */
-.objection-detail__analysis-title {
-  display: flex;
-  min-height: 18px;
-  align-items: center;
-  gap: 7px;
-  color: #2d67e8;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-/* SHAP 판단 근거 별 아이콘 */
-.objection-detail__analysis-icon {
-  display: inline-flex;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border-radius: 4px;
-  background-color: #2d67e8;
-  color: #ffffff;
-  font-size: 9px;
-  line-height: 1;
-}
-
-/* 별 아이콘 Ant Design 영역 */
-.objection-detail__analysis-icon .anticon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-/* 별 아이콘 위치 조정 */
-.objection-detail__analysis-icon svg {
-  display: block;
-  width: 9px;
-  height: 9px;
-  transform: translate(0.5px, 0.5px);
-}
-
-/* RAG 매핑 완료 문구 */
-.objection-detail__analysis-title small {
-  color: #9099a8;
-  font-size: 11px;
-}
-
 /* 주요 판단 근거 변수 제목 */
 .objection-detail__analysis-label {
-  margin: 14px 0 8px;
+  margin: 0 0 8px;
   color: #6b7684;
   font-size: 12px;
 }
@@ -1099,8 +1085,8 @@
     padding: 32px 24px 60px;
   }
 
-  /* 모바일 전체 건수 배지 */
-  .objections-page__title-row > strong {
+  /* 모바일 제목 우측 액션 영역 */
+  .objections-page__title-actions {
     margin-top: 8px;
   }
 
