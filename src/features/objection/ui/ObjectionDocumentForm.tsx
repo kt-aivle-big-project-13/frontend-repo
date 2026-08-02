@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Input, message } from 'antd';
+import { Button, Checkbox, Input, Modal, message } from 'antd';
 
+import { maskEmail } from '../lib/maskEmail';
 import type {
   ObjectionDocument,
   ObjectionReviewResult,
 } from '../model/objectionTypes';
+
+// 이메일 형식 검증용 정규식 (간단한 형식 확인 용도)
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // 대응문서 폼에서 전달받는 값과 이벤트
 interface ObjectionDocumentFormProps {
@@ -19,7 +24,7 @@ interface ObjectionDocumentFormProps {
   onDirectInputChange: (checked: boolean) => void;
   onAgreementChange: (checked: boolean) => void;
   onRegenerate: () => void;
-  onDispatch: () => void;
+  onDispatch: (recipientEmail: string) => void;
 }
 
 // 처리 결과 코드를 한글 문구로 변환
@@ -43,8 +48,18 @@ function ObjectionDocumentForm({
   onRegenerate,
   onDispatch,
 }: ObjectionDocumentFormProps) {
-  // 고객 안내문 발송 전 유효성 검사
-  const handleDispatch = () => {
+  // 1단계: 수신 이메일 입력 모달
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+
+  // 2단계: 최종 발송 확인 모달 (실제 발송에는 원본 이메일을, 화면 표시에는 마스킹된 값을 쓴다)
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [confirmedEmail, setConfirmedEmail] = useState('');
+
+  const isEmailValid = EMAIL_PATTERN.test(emailInput.trim());
+
+  // 발송 버튼 클릭 시 이메일 입력 모달을 연다
+  const handleOpenEmailModal = () => {
     if (isCompleted) {
       message.warning('이미 발송이 완료된 대응문서입니다.');
       return;
@@ -60,7 +75,28 @@ function ObjectionDocumentForm({
       return;
     }
 
-    onDispatch();
+    setEmailInput('');
+    setIsEmailModalOpen(true);
+  };
+
+  // 이메일 입력 확인 -> 최종 발송 확인 모달로 전환
+  const handleConfirmEmail = () => {
+    const trimmedEmail = emailInput.trim();
+
+    if (!trimmedEmail || !EMAIL_PATTERN.test(trimmedEmail)) {
+      message.warning('올바른 이메일 주소를 입력해 주세요.');
+      return;
+    }
+
+    setConfirmedEmail(trimmedEmail);
+    setIsEmailModalOpen(false);
+    setIsConfirmModalOpen(true);
+  };
+
+  // 최종 확인 -> 실제 발송 (원본 이메일로 전송)
+  const handleFinalConfirm = () => {
+    setIsConfirmModalOpen(false);
+    onDispatch(confirmedEmail);
   };
 
   return (
@@ -177,12 +213,60 @@ function ObjectionDocumentForm({
             type="primary"
             loading={isDispatching}
             disabled={!agreed || !letterBody.trim()}
-            onClick={handleDispatch}
+            onClick={handleOpenEmailModal}
           >
             발송
           </Button>
         </div>
       )}
+
+      {/* 1단계: 수신 이메일 입력 모달 */}
+      <Modal
+        title="수신 이메일 입력"
+        open={isEmailModalOpen}
+        okText="확인"
+        cancelText="취소"
+        okButtonProps={{ disabled: !isEmailValid }}
+        onOk={handleConfirmEmail}
+        onCancel={() => setIsEmailModalOpen(false)}
+      >
+        <p>고객에게 발송할 이메일 주소를 입력하세요.</p>
+
+        <Input
+          type="email"
+          value={emailInput}
+          placeholder="example@email.com"
+          status={
+            emailInput.trim() && !isEmailValid ? 'error' : undefined
+          }
+          onChange={(event) => setEmailInput(event.target.value)}
+          onPressEnter={handleConfirmEmail}
+          autoFocus
+        />
+
+        {emailInput.trim() && !isEmailValid && (
+          <span className="objection-document-form__email-error">
+            이메일 형식이 올바르지 않습니다.
+          </span>
+        )}
+      </Modal>
+
+      {/* 2단계: 최종 발송 확인 모달 */}
+      <Modal
+        title="발송 확인"
+        open={isConfirmModalOpen}
+        okText="예"
+        cancelText="아니오"
+        confirmLoading={isDispatching}
+        onOk={handleFinalConfirm}
+        onCancel={() => setIsConfirmModalOpen(false)}
+      >
+        <p>
+          <strong>{maskEmail(confirmedEmail)}</strong>(으)로 대응문서를
+          발송합니다.
+        </p>
+        <p>정말 발송하시겠습니까?</p>
+      </Modal>
     </section>
   );
 }

@@ -9,6 +9,7 @@ import {
 
 import {
   dispatchObjectionDocument,
+  extractErrorMessage,
   fetchDispatchHistory,
   fetchObjectionDetail,
   fetchObjectionDocument,
@@ -144,12 +145,9 @@ function ObjectionDocumentPage() {
         setDispatchHistory(historyResult);
         setIsCompleted(completed);
       } catch (error: unknown) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : '대응문서를 불러오지 못했습니다.';
-
-        message.error(errorMessage);
+        message.error(
+          extractErrorMessage(error, '대응문서를 불러오지 못했습니다.'),
+        );
       } finally {
         setIsLoading(false);
       }
@@ -182,19 +180,16 @@ function ObjectionDocumentPage() {
 
       message.success('고객 안내문을 재생성했습니다.');
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : '고객 안내문 재생성에 실패했습니다.';
-
-      message.error(errorMessage);
+      message.error(
+        extractErrorMessage(error, '고객 안내문 재생성에 실패했습니다.'),
+      );
     } finally {
       setIsRegenerating(false);
     }
   };
 
-  // 고객 안내문 발송
-  const handleDispatch = async () => {
+  // 고객 안내문 발송 (이메일은 폼의 확인 모달에서 입력받아 인자로 전달받는다)
+  const handleDispatch = async (recipientEmail: string) => {
     if (!document || isCompleted) {
       return;
     }
@@ -206,7 +201,9 @@ function ObjectionDocumentPage() {
         await dispatchObjectionDocument({
           objectionId: document.objectionId,
           reviewResult: document.reviewResult,
+          letterTitle: document.letterTitle,
           letterBody,
+          recipientEmail,
         });
 
       // 새 발송 이력을 가장 위에 추가
@@ -216,15 +213,13 @@ function ObjectionDocumentPage() {
       ]);
 
       setAgreed(false);
+      setIsCompleted(true);
 
       message.success('고객 안내문 발송이 완료되었습니다.');
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : '고객 안내문 발송에 실패했습니다.';
-
-      message.error(errorMessage);
+      message.error(
+        extractErrorMessage(error, '고객 안내문 발송에 실패했습니다.'),
+      );
     } finally {
       setIsDispatching(false);
     }
@@ -280,8 +275,8 @@ function ObjectionDocumentPage() {
                 onRegenerate={() =>
                   void handleRegenerate()
                 }
-                onDispatch={() =>
-                  void handleDispatch()
+                onDispatch={(recipientEmail) =>
+                  void handleDispatch(recipientEmail)
                 }
               />
 
@@ -292,7 +287,7 @@ function ObjectionDocumentPage() {
                 <div className="objection-document-history__head">
                   <span>심사 대상</span>
                   <span>발송 일시</span>
-                  <span>승인자</span>
+                  <span>고객 이름</span>
                   <span>심사 결과</span>
                 </div>
 
@@ -307,8 +302,8 @@ function ObjectionDocumentPage() {
                       key={item.dispatchId}
                     >
                       <strong>
-                        {item.customerName}* #
-                        {item.objectionNo}
+                        {item.customerName}* (#
+                        {item.objectionNo})
                       </strong>
 
                       <time>
@@ -317,9 +312,7 @@ function ObjectionDocumentPage() {
                         )}
                       </time>
 
-                      <span>
-                        승인자: {item.reviewerName}
-                      </span>
+                      <span>{item.customerName}</span>
 
                       <div>
                         <span className="objection-document-history__result">
