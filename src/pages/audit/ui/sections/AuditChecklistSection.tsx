@@ -234,7 +234,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   };
 
   const handleSelfCheckSubmit = async () => {
-    if (!isAnalyzed || !isSelfCheckComplete || isSelfCheckSubmitting) return;
+    if (!isSelfCheckComplete || isSelfCheckSubmitting) return;
 
     const submittedAuditId = auditId;
 
@@ -391,10 +391,6 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
             <div className="audit-execution-section__self-check-footer">
               {isSelfCheckSubmitted ? (
                 <span className="audit-execution-section__self-check-submitted">제출 완료</span>
-              ) : !isAnalyzed ? (
-                <span className="audit-execution-section__self-check-remaining">
-                  분석 완료 후 제출 가능합니다.
-                </span>
               ) : (
                 <span className="audit-execution-section__self-check-remaining">
                   {unansweredCount > 0
@@ -407,7 +403,6 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                 className="audit-execution-section__submit-button"
                 disabled={
                   skipSelfCheck ||
-                  !isAnalyzed ||
                   !isSelfCheckComplete ||
                   isSelfCheckSubmitted ||
                   isSelfCheckSubmitting
