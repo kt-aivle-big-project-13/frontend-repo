@@ -6,6 +6,7 @@ import {
   generateAndDownloadComplianceReport,
   generateAndDownloadExplainabilityReport,
   generateAndDownloadHighImpactReport,
+  generateAndDownloadImprovementGuide,
   generateFinalReport,
   downloadDeliverable,
   type ReportFormat,
@@ -16,7 +17,7 @@ interface ReportsSectionProps {
   auditId: number;
 }
 
-type ReportKind = 'high-impact' | 'shap' | 'bias' | 'compliance' | 'unavailable';
+type ReportKind = 'high-impact' | 'shap' | 'bias' | 'compliance' | 'improvement';
 
 interface ReportItem {
   id: string;
@@ -46,8 +47,12 @@ const REPORTS: ReportItem[] = [
     kind: 'compliance',
     formats: ['PDF', 'WORD'],
   },
-  // 개선 권고 가이드는 백엔드 연동이 아직 develop에 머지되지 않아(진행 중, #190) 대기 상태로 둔다.
-  { id: 'improvement-guide', label: '개선 권고 가이드', kind: 'unavailable', formats: [] },
+  {
+    id: 'improvement-guide',
+    label: '개선 권고 가이드',
+    kind: 'improvement',
+    formats: ['PDF', 'WORD'],
+  },
 ];
 
 function DocumentIcon() {
@@ -96,8 +101,10 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
         await generateAndDownloadExplainabilityReport(auditId, format);
       } else if (report.kind === 'bias') {
         await generateAndDownloadBiasReport(auditId, format);
-      } else {
+      } else if (report.kind === 'compliance') {
         await generateAndDownloadComplianceReport(auditId, format);
+      } else {
+        await generateAndDownloadImprovementGuide(auditId, format);
       }
 
       message.success(`${report.label} (${format}) 다운로드가 완료됐습니다.`);
@@ -161,26 +168,6 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
 
       <div className="reports-section__grid">
         {REPORTS.map((report) => {
-          if (report.kind === 'unavailable') {
-            return (
-              <button
-                key={report.id}
-                type="button"
-                className="reports-section__card"
-                onClick={() =>
-                  // TODO: 개선 권고 가이드는 백엔드 연동 완료 후 연결
-                  message.info('이 보고서 종류는 개별 다운로드 기능을 추후에 개발할 예정입니다.')
-                }
-              >
-                <span className="reports-section__card-icon" aria-hidden="true">
-                  <DocumentIcon />
-                </span>
-                <span className="reports-section__card-label">{report.label}</span>
-                <span className="reports-section__card-note">개발 예정</span>
-              </button>
-            );
-          }
-
           const downloadMenu = (
             <div className="reports-section__download-menu">
               {report.formats.map((format) => (

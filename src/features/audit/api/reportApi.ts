@@ -155,6 +155,32 @@ export async function generateAndDownloadComplianceReport(
   });
 }
 
+export async function generateAndDownloadImprovementGuide(
+  auditId: number,
+  format: ReportFormat,
+): Promise<void> {
+  await generateAndDownloadReport({
+    format,
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/reports/improvement`);
+    },
+    getLatest: async (fmt) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/reports/improvement`,
+        { params: { format: fmt } },
+      );
+      return data;
+    },
+    download: async (reportId) => {
+      const response = await apiClient.get(
+        `/audits/${auditId}/reports/improvement/${reportId}/download`,
+        { responseType: 'blob' },
+      );
+      saveBlob(response.data as Blob, `개선_권고_가이드_${auditId}.${FORMAT_EXTENSION[format]}`);
+    },
+  });
+}
+
 export async function generateAndDownloadHighImpactReport(
   auditId: number,
   format: ReportFormat,
