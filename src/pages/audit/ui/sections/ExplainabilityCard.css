@@ -50,6 +50,9 @@
 }
 
 .explainability-card__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: #6b7684;
   font-size: 13px;
   font-weight: 600;

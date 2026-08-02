@@ -1,6 +1,13 @@
 import type { ShapMetricItem } from '../../../../features/audit/api/auditApi';
+import MetricHelpTooltip from '../../../../features/audit/ui/MetricHelpTooltip';
 
-import { SHAP_METRIC_LABEL, SHAP_METRIC_RANGE, SHAP_STATUS_LABEL } from './shapData';
+import {
+  SHAP_METRIC_HELP,
+  SHAP_METRIC_LABEL,
+  SHAP_METRIC_RANGE,
+  SHAP_METRIC_TIP,
+  SHAP_STATUS_LABEL,
+} from './shapData';
 import './ExplainabilityCard.css';
 
 interface ExplainabilityCardProps {
@@ -29,6 +36,11 @@ function ExplainabilityCard({ metrics, isLoading, error }: ExplainabilityCardPro
               <div className="explainability-card__row-header">
                 <span className="explainability-card__label">
                   {SHAP_METRIC_LABEL[metric.metricCode] ?? metric.metricCode}
+                  <MetricHelpTooltip
+                    label={SHAP_METRIC_LABEL[metric.metricCode] ?? metric.metricCode}
+                    description={SHAP_METRIC_HELP[metric.metricCode] ?? ''}
+                    tip={SHAP_METRIC_TIP[metric.metricCode] ?? ''}
+                  />
                 </span>
                 <span
                   className={`explainability-card__badge explainability-card__badge--${metric.status.toLowerCase()}`}

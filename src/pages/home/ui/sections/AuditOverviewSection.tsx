@@ -330,35 +330,23 @@ interface ProgressItemProps {
 }
 
 // 진행중인 감사 하나를 카드 형태로 보여준다. 버튼 자리 자체가 상태 표시를 겸한다 —
-// 아직 분석 중이면 "StepN 진행중"이 적힌 비활성 버튼, 결과가 나왔으면(자가점검·법령
-// 매칭 대기 상태) 자가점검/법령 매칭 페이지로 갈 수 있는 활성 버튼이 된다. 분석만
-// 끝났다고 결과 페이지로 바로 보내면 자가점검을 건너뛰게 되므로, 그 중간 단계인
-// 체크리스트 페이지(/audit/{id})로 보낸다 — 거기서 건너뛰기했거나 제출을 마쳤으면
-// 그 페이지 자체의 "결과 확인" 버튼으로 이어서 진행할 수 있다.
+// 아직 분석 중이어도 클릭하면 체크리스트/진행상황 페이지(/audit/{id})로 이동해 현재
+// 상태를 볼 수 있고, 결과가 나왔으면(자가점검·법령 매칭 대기 상태) 같은 페이지에서
+// 자가점검/법령 매칭을 이어서 진행할 수 있다. 분석만 끝났다고 결과 페이지로 바로
+// 보내면 자가점검을 건너뛰게 되므로, 항상 체크리스트 페이지로 보낸다 — 거기서
+// 건너뛰기했거나 제출을 마쳤으면 그 페이지 자체의 "결과 확인" 버튼으로 이어서
+// 진행할 수 있다.
 // 비로그인 데모 데이터는 실제 auditId가 아니므로 링크를 걸지 않는다.
 function ProgressItem({ audit, isAuthenticated }: ProgressItemProps) {
-  const resultButton = audit.isAwaitingSelfCheck ? (
-    isAuthenticated ? (
-      <AuthGatedLink
-        to={`/audit/${audit.auditId}`}
-        className="audit-overview-section__progress-result-button"
-      >
-        결과 확인
-      </AuthGatedLink>
-    ) : (
-      <span className="audit-overview-section__progress-result-button">결과 확인</span>
-    )
-  ) : (
-    <span
-      className="audit-overview-section__progress-result-button audit-overview-section__progress-result-button--disabled"
-      aria-disabled="true"
-    >
-      {audit.label}
-    </span>
-  );
+  const buttonLabel = audit.isAwaitingSelfCheck ? '결과 확인' : audit.label;
+  const buttonClassName = audit.isAwaitingSelfCheck
+    ? 'audit-overview-section__progress-result-button'
+    : 'audit-overview-section__progress-result-button audit-overview-section__progress-result-button--pending';
 
-  return (
-    <li className="audit-overview-section__progress-item">
+  // 버튼만이 아니라 카드 전체를 눌러도 이동되도록, 버튼은 더 이상 별도 링크가 아니라
+  // 카드 링크 안에 들어가는 시각적 표시(pill)로만 둔다.
+  const itemContent = (
+    <>
       <div className="audit-overview-section__progress-header">
         <span className="audit-overview-section__progress-name">
           {audit.modelName}
@@ -377,8 +365,23 @@ function ProgressItem({ audit, isAuthenticated }: ProgressItemProps) {
           <p className="audit-overview-section__progress-meta">데이터 {audit.datasetFileName ?? '—'}</p>
         </div>
 
-        {resultButton}
+        <span className={buttonClassName}>{buttonLabel}</span>
       </div>
+    </>
+  );
+
+  return (
+    <li>
+      {isAuthenticated ? (
+        <AuthGatedLink
+          to={`/audit/${audit.auditId}`}
+          className="audit-overview-section__progress-item"
+        >
+          {itemContent}
+        </AuthGatedLink>
+      ) : (
+        <div className="audit-overview-section__progress-item">{itemContent}</div>
+      )}
     </li>
   );
 }

@@ -12,17 +12,6 @@
   font-weight: 800;
 }
 
-.reports-section__empty {
-  margin: 0 0 16px;
-  padding: 24px 16px;
-  border: 1px dashed #d9dee6;
-  border-radius: 10px;
-  background-color: #f7f8fa;
-  color: #9099a8;
-  font-size: 13px;
-  text-align: center;
-}
-
 .reports-section__grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -76,22 +65,6 @@
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-}
-
-.reports-section__objection-button {
-  padding: 12px 20px;
-  border: 1.5px solid #d9dee6;
-  border-radius: 8px;
-  background-color: #ffffff;
-  color: #202938;
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.reports-section__objection-button:hover {
-  border-color: #2d67e8;
-  color: #2d67e8;
 }
 
 .reports-section__final-button {
