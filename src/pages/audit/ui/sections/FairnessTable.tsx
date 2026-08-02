@@ -18,16 +18,40 @@ interface FairnessTableProps {
   error: string | null;
 }
 
+function CriteriaHelpContent() {
+  return (
+    <div className="fairness-table__tooltip">
+      <p className="fairness-table__tooltip-desc">
+        지표 값이 기준 범위 안에 있으면 "충족", 조금 벗어나면 "주의", 크게 벗어나면
+        "추가검토"로 표시돼요. 주의·추가검토는 아직 확정된 문제가 아니라 사람이 한 번 더
+        살펴보면 좋다는 신호예요.
+      </p>
+      <p className="fairness-table__tooltip-criteria">
+        격차형 지표 (Demographic Parity · Equal Opportunity · Equalized Odds · FPR · FDR · FOR) —
+        값이 0에 가까울수록 공정해요. 충족은 0.20 이하, 주의는 0.20 초과 0.40 이하, 추가검토는
+        0.40 초과예요.
+      </p>
+      <p className="fairness-table__tooltip-criteria">
+        비율형 지표 (Proportional Parity) — 값이 1에 가까울수록 공정해요. 충족은 0.80 이상,
+        주의는 0.70 이상 0.80 미만, 추가검토는 0.70 미만이에요.
+      </p>
+    </div>
+  );
+}
+
 function FairnessTable({ results, isLoading, error }: FairnessTableProps) {
   const grouped = groupByAttribute(results);
 
   return (
     <section className="fairness-table">
-      <h2 className="fairness-table__title">Fairlearn 공정성</h2>
-      <p className="fairness-table__desc">
-        감사 대상 민감변수 2개 · 변수별 7개 지표 (
-        {COLUMN_ORDER.map((code) => COLUMN_LABEL[code]).join(' · ')})
-      </p>
+      <div className="fairness-table__title-row">
+        <h2 className="fairness-table__title">Fairlearn 공정성</h2>
+        <Popover content={<CriteriaHelpContent />} title="판정 기준" trigger="click" placement="bottomLeft">
+          <button type="button" className="fairness-table__help-button" aria-label="판정 기준 도움말">
+            ?
+          </button>
+        </Popover>
+      </div>
 
       {isLoading ? (
         <p className="fairness-table__status">불러오는 중…</p>
@@ -107,16 +131,6 @@ function FairnessTable({ results, isLoading, error }: FairnessTableProps) {
           </table>
         </div>
       )}
-
-      <div className="fairness-table__legend">
-        <p className="fairness-table__legend-title">판정 기준</p>
-        <p className="fairness-table__legend-row">
-          격차형 지표 (DP·EO·EOdds·FPR·FDR·FOR) — PASS ≤0.10 · REVIEW 0.10~0.20 · FAIL &gt;0.20
-        </p>
-        <p className="fairness-table__legend-row">
-          비율형 지표 (Proportional Parity) — PASS ≥0.80 · REVIEW 0.70~0.80 · FAIL &lt;0.70
-        </p>
-      </div>
     </section>
   );
 }

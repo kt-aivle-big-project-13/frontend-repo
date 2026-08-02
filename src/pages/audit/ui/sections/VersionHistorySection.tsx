@@ -14,7 +14,7 @@ interface VersionHistorySectionProps {
 }
 
 function handleCompareClick(event: MouseEvent) {
-  // 행 자체의 클릭(감사 상세 이동)으로 이벤트가 전파되지 않도록 막는다.
+  // 행 자체의 클릭(감사 결과 이동)으로 이벤트가 전파되지 않도록 막는다.
   event.stopPropagation();
   // TODO: 버전 비교 기능 개발 후 실제 동작으로 교체 필요
   message.info('비교 기능은 추후에 개발 예정입니다.');
@@ -42,11 +42,11 @@ function VersionHistorySection({ audits, currentAuditId, isLoading }: VersionHis
                 className={`version-history-section__row${isCurrent ? ' version-history-section__row--current' : ''}`}
                 role="button"
                 tabIndex={0}
-                onClick={() => navigate(`/dashboard/${audit.auditId}`)}
+                onClick={() => navigate(`/audit/${audit.auditId}/results`)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    navigate(`/dashboard/${audit.auditId}`);
+                    navigate(`/audit/${audit.auditId}/results`);
                   }
                 }}
               >
@@ -61,17 +61,14 @@ function VersionHistorySection({ audits, currentAuditId, isLoading }: VersionHis
                 <span className="version-history-section__date">
                   {formatAuditDate(audit.completedAt)}
                 </span>
-                <span className="version-history-section__summary">
-                  <span
-                    className="version-history-section__status-badge"
-                    style={{
-                      backgroundColor: STATUS_BG_COLOR[audit.status],
-                      color: STATUS_TEXT_COLOR[audit.status],
-                    }}
-                  >
-                    {STATUS_LABEL[audit.status]}
-                  </span>
-                  {isCurrent && ' · 현재'}
+                <span
+                  className="version-history-section__status-badge"
+                  style={{
+                    backgroundColor: STATUS_BG_COLOR[audit.status],
+                    color: STATUS_TEXT_COLOR[audit.status],
+                  }}
+                >
+                  {STATUS_LABEL[audit.status]}
                 </span>
                 {!isCurrent && (
                   <button

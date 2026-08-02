@@ -234,7 +234,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   };
 
   const handleSelfCheckSubmit = async () => {
-    if (!isAnalyzed || !isSelfCheckComplete || isSelfCheckSubmitting) return;
+    if (!isSelfCheckComplete || isSelfCheckSubmitting) return;
 
     const submittedAuditId = auditId;
 
@@ -391,10 +391,6 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
             <div className="audit-execution-section__self-check-footer">
               {isSelfCheckSubmitted ? (
                 <span className="audit-execution-section__self-check-submitted">제출 완료</span>
-              ) : !isAnalyzed ? (
-                <span className="audit-execution-section__self-check-remaining">
-                  분석 완료 후 제출 가능합니다.
-                </span>
               ) : (
                 <span className="audit-execution-section__self-check-remaining">
                   {unansweredCount > 0
@@ -407,7 +403,6 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                 className="audit-execution-section__submit-button"
                 disabled={
                   skipSelfCheck ||
-                  !isAnalyzed ||
                   !isSelfCheckComplete ||
                   isSelfCheckSubmitted ||
                   isSelfCheckSubmitting
@@ -452,9 +447,18 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               <ul className="audit-execution-section__matched-list">
                 {/* 조항 하나가 여러 문항에, 문항마다 다른 항으로 걸릴 수 있어(예: 제34조는
                     위험관리 문항엔 ①1호, 관리감독 문항엔 ①4호) 문항당 한 줄로 펼쳐서 보여준다.
-                    제목엔 그 줄에 해당하는 항 번호까지 정확히 표시하고, 배지엔 문항 번호만 표시한다. */}
-                {matchedArticles.flatMap((article) =>
-                  article.matchedItems.map((matched) => (
+                    제목엔 그 줄에 해당하는 항 번호까지 정확히 표시하고, 배지엔 문항 번호만 표시한다.
+                    배지 번호(체크리스트 문항 순서) 기준으로 정렬해 1번→5번 순으로 묶여 보이게 한다. */}
+                {matchedArticles
+                  .flatMap((article) =>
+                    article.matchedItems.map((matched) => ({ article, matched })),
+                  )
+                  .sort(
+                    (a, b) =>
+                      CHECKLIST_ITEM_NUMBERS[a.matched.itemCode] -
+                      CHECKLIST_ITEM_NUMBERS[b.matched.itemCode],
+                  )
+                  .map(({ article, matched }) => (
                     <li
                       key={`${article.mappingId}-${matched.itemCode}`}
                       className="audit-execution-section__matched-item"
@@ -463,17 +467,28 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                         <p className="audit-execution-section__matched-title">
                           {article.regulation} {article.article}
                           {matched.clauseNo ? ` ${matched.clauseNo}` : ''}
+                          <Tooltip
+                            title={article.content}
+                            placement="top"
+                            trigger={['hover', 'focus']}
+                            styles={{ root: { maxWidth: 420 } }}
+                          >
+                            <button
+                              type="button"
+                              className="audit-execution-section__matched-help"
+                              aria-label="조항 원문 보기"
+                            >
+                              ?
+                            </button>
+                          </Tooltip>
                         </p>
                         <span className="audit-execution-section__matched-badge">
                           {CHECKLIST_ITEM_NUMBERS[matched.itemCode]}번
                         </span>
                       </div>
-                      <Tooltip title={article.content} placement="top">
-                        <p className="audit-execution-section__matched-quote">{matched.note}</p>
-                      </Tooltip>
+                      <p className="audit-execution-section__matched-quote">{matched.note}</p>
                     </li>
-                  )),
-                )}
+                  ))}
               </ul>
             )}
           </div>

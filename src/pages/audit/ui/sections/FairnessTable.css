@@ -5,17 +5,39 @@
   background-color: #ffffff;
 }
 
+.fairness-table__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
 .fairness-table__title {
-  margin: 0 0 6px;
+  margin: 0;
   color: #202938;
   font-size: 15px;
   font-weight: 800;
 }
 
-.fairness-table__desc {
-  margin: 0 0 18px;
-  color: #9099a8;
-  font-size: 12.5px;
+.fairness-table__help-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #c1c7d0;
+  border-radius: 50%;
+  background: none;
+  color: #6b7684;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fairness-table__help-button:hover {
+  border-color: #2d67e8;
+  color: #2d67e8;
 }
 
 .fairness-table__status {
@@ -130,27 +152,6 @@
 .fairness-table__badge--na {
   background-color: #f7f8fa;
   color: #9099a8;
-}
-
-.fairness-table__legend {
-  padding: 14px 16px;
-  border: 1px dashed #d9dee6;
-  border-radius: 8px;
-  background-color: #f7f8fa;
-}
-
-.fairness-table__legend-title {
-  margin: 0 0 6px;
-  color: #202938;
-  font-size: 12.5px;
-  font-weight: 800;
-}
-
-.fairness-table__legend-row {
-  margin: 0;
-  color: #6b7684;
-  font-size: 12px;
-  line-height: 1.6;
 }
 
 .fairness-table__tooltip {

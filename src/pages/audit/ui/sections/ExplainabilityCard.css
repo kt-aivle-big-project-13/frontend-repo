@@ -50,6 +50,9 @@
 }
 
 .explainability-card__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: #6b7684;
   font-size: 13px;
   font-weight: 600;
@@ -67,9 +70,11 @@
   color: #1b9851;
 }
 
+/* 추가검토(REVIEW)는 주의(WARNING)보다 기준에서 더 벗어난, 더 안 좋은 등급이라
+   Fairlearn의 추가검토(FAIL)와 같은 색으로 맞춘다. */
 .explainability-card__badge--review {
-  background-color: #fef2d8;
-  color: #e09c14;
+  background-color: #feecea;
+  color: #d93e44;
 }
 
 .explainability-card__badge--warning {
@@ -111,7 +116,10 @@
   background-color: #1b9851;
 }
 
-.explainability-card__bar-fill--review,
+.explainability-card__bar-fill--review {
+  background-color: #d93e44;
+}
+
 .explainability-card__bar-fill--warning {
   background-color: #e09c14;
 }

@@ -1,15 +1,10 @@
-.dashboard-detail-page {
+.audit-results-detail {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 1240px;
-  min-height: 100%;
-  margin: 0 auto;
-  padding: 32px 24px 64px;
-  background-color: #f4f6fb;
 }
 
-.dashboard-detail-page__header {
+.audit-results-detail__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -20,79 +15,73 @@
   background-color: #ffffff;
 }
 
-.dashboard-detail-page__title {
+.audit-results-detail__model-title {
   margin: 0 0 20px;
   color: #202938;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
 }
 
-.dashboard-detail-page__title-version {
+.audit-results-detail__model-version {
   color: #9099a8;
   font-size: 14px;
   font-weight: 700;
 }
 
-.dashboard-detail-page__title-suffix {
-  color: #202938;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.dashboard-detail-page__meta {
+.audit-results-detail__meta {
   display: flex;
   gap: 56px;
 }
 
-.dashboard-detail-page__meta-label {
+.audit-results-detail__meta-label {
   margin: 0 0 4px;
   color: #9099a8;
   font-size: 12px;
 }
 
-.dashboard-detail-page__meta-value {
+.audit-results-detail__meta-value {
   margin: 0;
   color: #202938;
   font-size: 15px;
   font-weight: 700;
 }
 
-.dashboard-detail-page__risk-area {
+.audit-results-detail__risk-area {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   gap: 24px;
 }
 
-.dashboard-detail-page__risk-gauge-wrap {
+.audit-results-detail__risk-gauge-wrap {
   text-align: center;
 }
 
-.dashboard-detail-page__risk-label {
+.audit-results-detail__risk-label {
   margin: 0 0 6px;
   color: #9099a8;
   font-size: 12px;
   font-weight: 600;
 }
 
-.dashboard-detail-page__gauge {
+.audit-results-detail__gauge {
   width: 100px;
   height: 100px;
 }
 
-.dashboard-detail-page__gauge-value {
+.audit-results-detail__gauge-value {
   fill: #202938;
   font-size: 20px;
   font-weight: 800;
 }
 
-.dashboard-detail-page__gauge-caption {
+.audit-results-detail__gauge-caption {
   fill: #9099a8;
   font-size: 9px;
   font-weight: 700;
 }
 
-.dashboard-detail-page__legend {
+.audit-results-detail__legend {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -101,40 +90,40 @@
   list-style: none;
 }
 
-.dashboard-detail-page__legend-row {
+.audit-results-detail__legend-row {
   display: flex;
   align-items: center;
   gap: 8px;
   white-space: nowrap;
 }
 
-.dashboard-detail-page__legend-dot {
+.audit-results-detail__legend-dot {
   flex-shrink: 0;
   width: 8px;
   height: 8px;
   border-radius: 999px;
 }
 
-.dashboard-detail-page__legend-label {
+.audit-results-detail__legend-label {
   color: #6b7684;
   font-size: 12.5px;
   font-weight: 600;
   width: 48px;
 }
 
-.dashboard-detail-page__legend-value {
+.audit-results-detail__legend-value {
   color: #202938;
   font-size: 12.5px;
   font-weight: 800;
 }
 
-.dashboard-detail-page__risk-status {
+.audit-results-detail__risk-status {
   max-width: 200px;
   padding-left: 20px;
   border-left: 1px solid #eef0f3;
 }
 
-.dashboard-detail-page__status-badge {
+.audit-results-detail__status-badge {
   display: inline-block;
   padding: 5px 14px;
   border-radius: 999px;
@@ -143,50 +132,25 @@
   white-space: nowrap;
 }
 
-.dashboard-detail-page__status-comment {
-  margin: 8px 0 0;
-  color: #6b7684;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.dashboard-detail-page__grid {
+.audit-results-detail__grid {
   display: grid;
   grid-template-columns: 4fr 6fr;
   gap: 20px;
 }
 
-.dashboard-detail-page__footer {
-  display: flex;
-  justify-content: center;
-  margin-top: 12px;
-}
-
-.dashboard-detail-page__list-button {
-  padding: 14px 32px;
-  border-radius: 8px;
-  background-color: #2d67e8;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.dashboard-detail-page__list-button:hover {
-  background-color: #1f52c9;
-}
-
 @media (max-width: 860px) {
-  .dashboard-detail-page__header {
+  .audit-results-detail__header {
     flex-direction: column;
   }
 
-  .dashboard-detail-page__risk-area {
+  .audit-results-detail__risk-area {
     align-self: stretch;
+    flex-wrap: wrap;
+    row-gap: 16px;
     justify-content: space-between;
   }
 
-  .dashboard-detail-page__grid {
+  .audit-results-detail__grid {
     grid-template-columns: 1fr;
   }
 }
