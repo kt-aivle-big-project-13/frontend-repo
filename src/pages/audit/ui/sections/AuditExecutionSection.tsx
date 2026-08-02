@@ -6,7 +6,7 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   uploadModel,
@@ -134,6 +134,13 @@ function formatUploadedAt(value: string): string {
 
 function AuditExecutionSection() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const assessmentIdParam = searchParams.get('assessmentId');
+  const parsedAssessmentId = Number(assessmentIdParam);
+  const assessmentId =
+    Number.isSafeInteger(parsedAssessmentId) && parsedAssessmentId > 0
+      ? parsedAssessmentId
+      : undefined;
 
   const [modelMode, setModelMode] = useState<ModelMode>('new');
   const [modelName, setModelName] = useState('');
@@ -397,6 +404,7 @@ function AuditExecutionSection() {
         );
 
         started = await startAudit({
+          assessmentId,
           modelId: model.modelId,
           datasetId,
           auditName,
@@ -405,6 +413,7 @@ function AuditExecutionSection() {
         });
       } else {
         started = await startAudit({
+          assessmentId,
           modelId: model.modelId,
           datasetId,
           auditName,

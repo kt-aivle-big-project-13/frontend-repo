@@ -5,6 +5,7 @@ import {
   generateAndDownloadBiasReport,
   generateAndDownloadComplianceReport,
   generateAndDownloadExplainabilityReport,
+  generateAndDownloadHighImpactReport,
   generateFinalReport,
   downloadDeliverable,
   type ReportFormat,
@@ -16,7 +17,7 @@ interface ReportsSectionProps {
   auditId: number;
 }
 
-type ReportKind = 'shap' | 'bias' | 'compliance' | 'unavailable';
+type ReportKind = 'high-impact' | 'shap' | 'bias' | 'compliance' | 'unavailable';
 
 interface ReportItem {
   id: string;
@@ -27,10 +28,25 @@ interface ReportItem {
 }
 
 const REPORTS: ReportItem[] = [
-  { id: 'high-impact-ai', label: '고영향 AI 사전진단', kind: 'unavailable', formats: [] },
+  {
+    id: 'high-impact-ai',
+    label: '고영향 AI 사전진단',
+    kind: 'high-impact',
+    formats: ['PDF', 'WORD'],
+  },
   { id: 'shap-report', label: '설명가능성 리포트 (SHAP)', kind: 'shap', formats: ['PDF', 'WORD'] },
-  { id: 'fairness-report', label: '편향 진단 보고서 (Fairlearn)', kind: 'bias', formats: ['PDF', 'WORD'] },
-  { id: 'compliance-verdict', label: '규제준수 판정서', kind: 'compliance', formats: ['PDF', 'WORD'] },
+  {
+    id: 'fairness-report',
+    label: '편향 진단 보고서 (Fairlearn)',
+    kind: 'bias',
+    formats: ['PDF', 'WORD'],
+  },
+  {
+    id: 'compliance-verdict',
+    label: '규제준수 판정서',
+    kind: 'compliance',
+    formats: ['PDF', 'WORD'],
+  },
   // 개선 권고 가이드는 백엔드 연동이 아직 develop에 머지되지 않아(진행 중, #190) 대기 상태로 둔다.
   { id: 'improvement-guide', label: '개선 권고 가이드', kind: 'unavailable', formats: [] },
 ];
@@ -45,7 +61,12 @@ function DocumentIcon() {
         strokeLinejoin="round"
       />
       <path d="M14 2.5V7h4" stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M8 12h8M8 15.5h8M8 18.5h5" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M8 12h8M8 15.5h8M8 18.5h5"
+        stroke="#ffffff"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -77,16 +98,19 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
     const hide = message.loading(`${report.label} (${format}) 생성 중…`, 0);
 
     try {
-      if (report.kind === 'shap') {
+      if (report.kind === 'high-impact') {
+        await generateAndDownloadHighImpactReport(auditId, format);
+      } else if (report.kind === 'shap') {
         await generateAndDownloadExplainabilityReport(auditId, format);
       } else if (report.kind === 'bias') {
         await generateAndDownloadBiasReport(auditId, format);
       } else {
         await generateAndDownloadComplianceReport(auditId, format);
       }
+
       message.success(`${report.label} (${format}) 다운로드가 완료됐습니다.`);
     } catch {
-      message.error(`${report.label} 생성에 실패했습니다.`);
+      message.error(`${report.label} 생성 또는 다운로드에 실패했습니다.`);
     } finally {
       hide();
       setPendingKey(null);
@@ -156,7 +180,7 @@ function ReportsSection({ auditId }: ReportsSectionProps) {
                 type="button"
                 className="reports-section__card"
                 onClick={() =>
-                  // TODO: 고영향 AI 사전진단·개선 권고 가이드는 개별 생성 API가 아직 없음(개선 권고 가이드는 백엔드 연동 진행 중, #190)
+                  // TODO: 개선 권고 가이드는 백엔드 연동 완료 후 연결
                   message.info('이 보고서 종류는 개별 다운로드 기능을 추후에 개발할 예정입니다.')
                 }
               >
