@@ -43,6 +43,8 @@ export interface AuditSummary {
   datasetFileName: string | null;
   modelGroupId: string | null;
   version: string | null;
+  // 연결된 고영향 AI 사전진단. 사전진단은 건너뛸 수 있어 null 이면 진행하지 않은 감사다.
+  assessmentId: number | null;
   createdAt: string;
   completedAt: string | null;
   status: AuditStatus;
