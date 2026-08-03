@@ -100,7 +100,8 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
   const handleReportDownload = async (report: ReportItem, format: ReportFormat) => {
     const key = `${report.id}:${format}`;
     setPendingKey(key);
-    const hide = message.loading(`${report.label} (${format}) 생성 중…`, 0);
+    // 이미 만들어 둔 산출물이면 생성 없이 바로 내려받으므로 "생성"으로 단정하지 않는다.
+    const hide = message.loading(`${report.label} (${format}) 준비 중…`, 0);
 
     try {
       if (report.kind === 'high-impact') {

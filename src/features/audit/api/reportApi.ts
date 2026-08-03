@@ -1,3 +1,5 @@
+import { isAxiosError } from 'axios';
+
 import { apiClient } from '../../../shared/api/client';
 
 export type ReportFormat = 'PDF' | 'WORD' | 'HTML';
@@ -67,12 +69,38 @@ interface ReportMetadataResponse {
   generatedAt: string;
 }
 
+// 아직 만든 적이 없으면 서버가 404(REPORT_NOT_FOUND)를 준다. 그 경우만 "없음"으로 보고
+// 나머지 오류(권한·서버 장애)는 그대로 던져 호출부가 실패로 처리하게 둔다.
+async function findLatestReport(
+  getLatest: (format: ReportFormat) => Promise<ReportMetadataResponse>,
+  format: ReportFormat,
+): Promise<ReportMetadataResponse | null> {
+  try {
+    return await getLatest(format);
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 async function generateAndDownloadReport(options: {
   format: ReportFormat;
   generate: () => Promise<void>;
   getLatest: (format: ReportFormat) => Promise<ReportMetadataResponse>;
   download: (reportId: number) => Promise<void>;
 }): Promise<void> {
+  // 이미 만들어 둔 산출물이 있으면 다시 만들지 않는다. 생성은 AI 서버 호출이라 오래 걸리고,
+  // 호출할 때마다 S3 객체와 DB 행이 새로 쌓인다.
+  const existing = await findLatestReport(options.getLatest, options.format);
+
+  if (existing?.status === 'COMPLETED') {
+    await options.download(existing.reportId);
+    return;
+  }
+
   await options.generate();
   const metadata = await options.getLatest(options.format);
   await options.download(metadata.reportId);
