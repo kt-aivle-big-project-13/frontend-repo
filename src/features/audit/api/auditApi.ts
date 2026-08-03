@@ -42,6 +42,20 @@ export async function cancelAudit(auditId: number): Promise<void> {
   await apiClient.post(`/audits/${auditId}/cancel`);
 }
 
+export interface RetryAuditResponse {
+  auditId: number;
+  status: string;
+  retriedAt: string;
+}
+
+// FAILED·CANCELLED 감사를 기존 모델·데이터셋 참조 그대로 재실행한다. 202로 응답하며,
+// 이후 진행 상황은 getAudits() 폴링으로 다시 조회해야 한다.
+export async function retryAudit(auditId: number): Promise<RetryAuditResponse> {
+  const { data } = await apiClient.post<RetryAuditResponse>(`/audits/${auditId}/retry`);
+
+  return data;
+}
+
 export interface AuditSummary {
   auditId: number;
   modelName: string;

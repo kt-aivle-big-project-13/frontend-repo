@@ -7,6 +7,7 @@ import {
   getAudits,
   getRegulationMappings,
   getSelfCheckAnswers,
+  retryAudit,
   saveSelfCheckAnswers,
   waitForRegulationMappings,
   RegulationMappingTimeoutError,
@@ -83,6 +84,8 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const [pollError, setPollError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   const [selfCheckAnswers, setSelfCheckAnswers] =
     useState<Record<SelfCheckItemCode, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
@@ -113,6 +116,8 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     setPollError(null);
     setIsCancelling(false);
     setCancelError(null);
+    setIsRetrying(false);
+    setRetryError(null);
     setSelfCheckAnswers(DEFAULT_SELF_CHECK);
     setIsSelfCheckSubmitted(false);
     setSelfCheckError(null);
@@ -301,18 +306,57 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     }
   };
 
+  // 재시도 성공 시 isDone을 다시 false로 되돌려 폴링 useEffect(의존값 isDone)가
+  // 처음부터 다시 돌게 한다. handleCancel과 동일하게 요청 시작 시점의 auditId와
+  // 최신 auditId(ref)가 같을 때만 반영해 다른 감사 화면으로 넘어간 뒤 늦게 온
+  // 응답이 지금 화면을 덮어쓰지 않게 한다.
+  const handleRetry = async () => {
+    if (isRetrying) return;
+
+    const submittedAuditId = auditId;
+
+    setIsRetrying(true);
+    setRetryError(null);
+
+    try {
+      await retryAudit(submittedAuditId);
+      if (auditIdRef.current !== submittedAuditId) return;
+
+      setIsDone(false);
+      setStatus(null);
+      setRunningStep(2);
+      setPollError(null);
+    } catch (error) {
+      if (auditIdRef.current === submittedAuditId) {
+        setRetryError(error instanceof Error ? error.message : '감사 재시도 중 오류가 발생했습니다.');
+      }
+    } finally {
+      if (auditIdRef.current === submittedAuditId) setIsRetrying(false);
+    }
+  };
+
   return (
     <div className="audit-execution-section">
       <StepIndicator doneSteps={[1, 2]} activeSteps={[3]} />
 
-      {isFailed ? (
-        <p className="audit-execution-section__empty" role="alert">
-          감사 분석이 실패했습니다. 백엔드·AI 서버 로그를 확인해주세요.
-        </p>
-      ) : isCancelled ? (
-        <p className="audit-execution-section__empty" role="alert">
-          감사를 취소했습니다.
-        </p>
+      {isFailed || isCancelled ? (
+        <>
+          <p className="audit-execution-section__empty" role="alert">
+            {isFailed
+              ? '감사 분석이 실패했습니다. 백엔드·AI 서버 로그를 확인해주세요.'
+              : '감사를 취소했습니다.'}
+          </p>
+          <div className="audit-execution-section__retry-bar">
+            <button
+              type="button"
+              className="audit-execution-section__retry-button"
+              disabled={isRetrying}
+              onClick={handleRetry}
+            >
+              {isRetrying ? '재시도하는 중…' : '재시도'}
+            </button>
+          </div>
+        </>
       ) : (
         <div className="audit-execution-section__loading" role="status" aria-live="polite">
           {isAnalyzed ? (
@@ -391,6 +435,12 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       {cancelError && (
         <p className="audit-execution-section__empty" role="alert">
           {cancelError}
+        </p>
+      )}
+
+      {retryError && (
+        <p className="audit-execution-section__empty" role="alert">
+          {retryError}
         </p>
       )}
 
