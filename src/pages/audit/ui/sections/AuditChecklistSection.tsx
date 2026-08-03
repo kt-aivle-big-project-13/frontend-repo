@@ -275,21 +275,29 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   };
 
   // 취소 성공 시 다음 폴링 응답을 기다리지 않고 바로 상태를 CANCELLED로 반영해
-  // 폴링 useEffect(의존값 isDone)가 즉시 정리되도록 한다.
+  // 폴링 useEffect(의존값 isDone)가 즉시 정리되도록 한다. 다른 감사 화면으로 이미
+  // 넘어간 뒤에 이전 요청의 응답이 늦게 와서 지금 화면 상태를 덮어쓰지 않도록
+  // 요청 시작 시점의 auditId와 최신 auditId(ref)가 같을 때만 반영한다.
   const handleCancel = async () => {
     if (isCancelling) return;
+
+    const submittedAuditId = auditId;
 
     setIsCancelling(true);
     setCancelError(null);
 
     try {
-      await cancelAudit(auditId);
+      await cancelAudit(submittedAuditId);
+      if (auditIdRef.current !== submittedAuditId) return;
+
       setStatus('CANCELLED');
       setIsDone(true);
     } catch (error) {
-      setCancelError(error instanceof Error ? error.message : '감사 취소 중 오류가 발생했습니다.');
+      if (auditIdRef.current === submittedAuditId) {
+        setCancelError(error instanceof Error ? error.message : '감사 취소 중 오류가 발생했습니다.');
+      }
     } finally {
-      setIsCancelling(false);
+      if (auditIdRef.current === submittedAuditId) setIsCancelling(false);
     }
   };
 
