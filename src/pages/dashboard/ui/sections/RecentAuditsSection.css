@@ -1,0 +1,150 @@
+.recent-audits__title {
+  margin: 0 0 14px;
+  color: #202938;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.recent-audits__table-card {
+  overflow: hidden;
+  padding: 12px 20px 18px;
+  border: 1px solid #dde3eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.recent-audits__table-scroll {
+  overflow-x: auto;
+}
+
+.recent-audits__table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.recent-audits__table th {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e6eaf0;
+  color: #7d8795;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.recent-audits__table th:nth-child(1) {
+  width: 10%;
+}
+
+.recent-audits__table th:nth-child(2) {
+  width: 18%;
+}
+
+.recent-audits__table th:nth-child(3) {
+  width: 14%;
+}
+
+.recent-audits__table th:nth-child(4) {
+  width: 34%;
+}
+
+.recent-audits__table th:nth-child(5) {
+  width: 12%;
+}
+
+.recent-audits__table th:nth-child(6) {
+  width: 12%;
+}
+
+.recent-audits__table td {
+  height: 58px;
+  padding: 12px;
+  border-bottom: 1px solid #f0f2f5;
+  color: #697386;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.recent-audits__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.recent-audits__id,
+.recent-audits__model {
+  color: #283140 !important;
+  font-weight: 600;
+}
+
+.recent-audits__status {
+  display: inline-flex;
+  min-width: 72px;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.recent-audits__status--compliant {
+  background-color: #e5f6ec;
+  color: #16803a;
+}
+
+.recent-audits__status--warning {
+  background-color: #fff2d8;
+  color: #d47a0c;
+}
+
+.recent-audits__status--non_compliant {
+  background-color: #fde8e8;
+  color: #d42c35;
+}
+
+.recent-audits__risk {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-audits__date {
+  color: #8b94a2 !important;
+}
+
+.recent-audits__detail-link {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.recent-audits__detail-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.recent-audits__detail-link:focus-visible {
+  border-radius: 3px;
+  outline: 3px solid rgb(45 103 232 / 25%);
+  outline-offset: 2px;
+}
+
+.recent-audits__empty {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  color: #8a93a2;
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .recent-audits__title {
+    font-size: 20px;
+  }
+
+  .recent-audits__table-card {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}
