@@ -1,9 +1,4 @@
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-} from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import AuthInitializer from '../features/auth/model/AuthInitializer';
 
@@ -11,6 +6,7 @@ import AuditPage from '../pages/audit/ui/AuditPage';
 import BoardDetailPage from '../pages/board/ui/BoardDetailPage';
 import BoardFormPage from '../pages/board/ui/BoardFormPage';
 import BoardListPage from '../pages/board/ui/BoardListPage';
+import DashboardPage from '../pages/dashboard/ui/DashboardPage';
 import FeaturesPage from '../pages/features/ui/FeaturesPage';
 import FindPasswordPage from '../pages/find-password/ui/FindPasswordPage';
 import HomePage from '../pages/home/ui/HomePage';
@@ -42,15 +38,12 @@ function App() {
             {/* 모델 감사 실행 — STEP2 모델 업로드 */}
             <Route path="/audit" element={<AuditPage mode="upload" />} />
             {/* STEP3 체크리스트 작성 (분석 진행 상황 확인 + 자가점검 동시 진행) */}
-            <Route
-              path="/audit/:auditId"
-              element={<AuditPage mode="checklist" />}
-            />
+            <Route path="/audit/:auditId" element={<AuditPage mode="checklist" />} />
             {/* STEP4 결과물 및 보고서 다운로드 */}
-            <Route
-              path="/audit/:auditId/results"
-              element={<AuditPage mode="results" />}
-            />
+            <Route path="/audit/:auditId/results" element={<AuditPage mode="results" />} />
+
+            {/* AI 운영 모니터링 대시보드 */}
+            <Route path="/dashboard" element={<DashboardPage />} />
 
             {/* 이의제기 목록 및 상세 */}
             <Route

@@ -1,0 +1,135 @@
+.fairness-distribution {
+  padding: 26px;
+  border: 1px solid #dde3eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.fairness-distribution__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e7ebf0;
+}
+
+.fairness-distribution__title {
+  margin: 0;
+  color: #202938;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.fairness-distribution__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 0;
+  padding: 0;
+  color: #7a8493;
+  font-size: 11px;
+  list-style: none;
+}
+
+.fairness-distribution__legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fairness-distribution__legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.fairness-distribution__legend-dot--pass,
+.fairness-distribution__segment--pass {
+  background-color: #2fac68;
+}
+
+.fairness-distribution__legend-dot--review,
+.fairness-distribution__segment--review {
+  background-color: #f4b43d;
+}
+
+.fairness-distribution__legend-dot--fail,
+.fairness-distribution__segment--fail {
+  background-color: #e84d52;
+}
+
+.fairness-distribution__legend-dot--unavailable,
+.fairness-distribution__segment--unavailable {
+  background-color: #aeb5bf;
+}
+
+.fairness-distribution__list {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  padding-top: 20px;
+}
+
+.fairness-distribution__metric-name {
+  margin-bottom: 7px;
+  color: #303846;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fairness-distribution__bar {
+  display: flex;
+  width: 100%;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 9px;
+  background-color: #edf0f4;
+}
+
+.fairness-distribution__segment {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fairness-distribution__note {
+  margin: 18px 0 0;
+  color: #98a0ad;
+  font-size: 11px;
+}
+
+.fairness-distribution__empty {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  color: #8a93a2;
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .fairness-distribution {
+    padding: 22px 18px;
+  }
+
+  .fairness-distribution__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .fairness-distribution__legend {
+    gap: 8px 14px;
+  }
+
+  .fairness-distribution__metric-name {
+    font-size: 11px;
+  }
+}
