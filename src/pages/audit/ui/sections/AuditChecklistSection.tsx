@@ -537,7 +537,9 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                       </span>
                     </button>
 
-                    {isOpen && (
+                    <div
+                      className={`audit-execution-section__self-check-group-body${isOpen ? ' audit-execution-section__self-check-group-body--open' : ''}`}
+                    >
                       <ul className="audit-execution-section__self-check-list">
                         {items.map((item) => {
                           const answer = selfCheckAnswers[item.code];
@@ -573,38 +575,47 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                                 )}
                               </div>
                               <div className="audit-execution-section__answer-group">
-                                <button
-                                  type="button"
-                                  className={`audit-execution-section__answer audit-execution-section__answer--yes${answer === 'YES' ? ' audit-execution-section__answer--selected-yes' : ''}`}
-                                  disabled={skipSelfCheck}
-                                  onClick={() => handleSelfCheckAnswer(item.code, 'YES')}
-                                >
-                                  예
-                                </button>
-                                <button
-                                  type="button"
-                                  className={`audit-execution-section__answer audit-execution-section__answer--no${answer === 'NO' ? ' audit-execution-section__answer--selected-no' : ''}`}
-                                  disabled={skipSelfCheck}
-                                  onClick={() => handleSelfCheckAnswer(item.code, 'NO')}
-                                >
-                                  아니오
-                                </button>
-                                {item.answerType === 'YES_NO_NA' && (
+                                <div className="audit-execution-section__answer-pair">
                                   <button
                                     type="button"
-                                    className={`audit-execution-section__answer audit-execution-section__answer--na${answer === 'NA' ? ' audit-execution-section__answer--selected-na' : ''}`}
+                                    className={`audit-execution-section__answer audit-execution-section__answer--yes${answer === 'YES' ? ' audit-execution-section__answer--selected-yes' : ''}`}
                                     disabled={skipSelfCheck}
-                                    onClick={() => handleSelfCheckAnswer(item.code, 'NA')}
+                                    onClick={() => handleSelfCheckAnswer(item.code, 'YES')}
                                   >
-                                    해당없음
+                                    예
                                   </button>
-                                )}
+                                  <button
+                                    type="button"
+                                    className={`audit-execution-section__answer audit-execution-section__answer--no${answer === 'NO' ? ' audit-execution-section__answer--selected-no' : ''}`}
+                                    disabled={skipSelfCheck}
+                                    onClick={() => handleSelfCheckAnswer(item.code, 'NO')}
+                                  >
+                                    아니오
+                                  </button>
+                                </div>
+                                <div className="audit-execution-section__answer-na-slot">
+                                  {item.answerType === 'YES_NO_NA' ? (
+                                    <button
+                                      type="button"
+                                      className={`audit-execution-section__answer audit-execution-section__answer--na${answer === 'NA' ? ' audit-execution-section__answer--selected-na' : ''}`}
+                                      disabled={skipSelfCheck}
+                                      onClick={() => handleSelfCheckAnswer(item.code, 'NA')}
+                                    >
+                                      해당없음
+                                    </button>
+                                  ) : (
+                                    <span
+                                      className="audit-execution-section__answer-na-placeholder"
+                                      aria-hidden="true"
+                                    />
+                                  )}
+                                </div>
                               </div>
                             </li>
                           );
                         })}
                       </ul>
-                    )}
+                    </div>
                   </div>
                 );
               })}
