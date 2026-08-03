@@ -22,6 +22,7 @@ import {
   createChatConversation,
   sendChatMessage,
 } from '../../../features/chatbot/api/chatbotApi';
+import { GROUNDING_STATUS_LABEL } from '../../../features/chatbot/model/chatbotTypes';
 import type { ChatbotMessage } from '../../../features/chatbot/model/chatbotTypes';
 
 import './ChatbotWidget.css';
@@ -349,7 +350,11 @@ function ChatbotWidget() {
                   key={audit.auditId}
                   value={audit.auditId}
                 >
-                  {`#${audit.auditId} ${audit.modelName}`}
+                  {/* auditId를 그대로 보여주면 사용자가 의미를 알 수 없어, 같은 모델의
+                      여러 감사를 구분할 수 있도록 버전을 대신 붙인다. */}
+                  {audit.version
+                    ? `${audit.modelName} (${audit.version})`
+                    : audit.modelName}
                 </option>
               ))}
             </select>
@@ -423,7 +428,9 @@ function ChatbotWidget() {
                     message.groundingStatus && (
                       <div className="chatbot-message__grounding">
                         근거 충실도:{' '}
-                        {message.groundingStatus}
+                        {GROUNDING_STATUS_LABEL[
+                          message.groundingStatus
+                        ]}
                       </div>
                     )}
                 </div>
