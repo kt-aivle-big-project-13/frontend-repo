@@ -4,6 +4,7 @@ import {
   useState,
 } from 'react';
 
+import { extractApiErrorMessage } from '../../../shared/api/client';
 import '../../../shared/ui/authForm.css';
 import { findPassword } from '../api/passwordApi';
 
@@ -126,10 +127,10 @@ function FindPasswordForm() {
           '비밀번호 재설정 링크가 이메일로 발송되었습니다.',
       );
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : '비밀번호 재설정 링크 발송에 실패했습니다.';
+      const errorMessage = extractApiErrorMessage(
+        error,
+        '비밀번호 재설정 링크 발송에 실패했습니다.',
+      );
 
       setErrors((previousErrors) => ({
         ...previousErrors,

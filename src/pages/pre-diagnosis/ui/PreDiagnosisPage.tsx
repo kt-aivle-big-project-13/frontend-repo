@@ -19,6 +19,7 @@ import {
   toStage1Answers,
   toStage2Answers,
 } from '../../../features/pre-diagnosis/model/assessmentModel';
+import { extractApiErrorMessage } from '../../../shared/api/client';
 import MainLayout from '../../../widgets/layout/ui/MainLayout';
 
 import AuditStepper from './sections/AuditStepper';
@@ -55,12 +56,12 @@ function PreDiagnosisPage() {
 
       return response.assessmentId;
     } catch (error: unknown) {
-      const nextErrorMessage =
-        error instanceof Error
-          ? `사전진단 시작 API 호출 실패: ${error.message}`
-          : '사전진단을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.';
-
-      setErrorMessage(nextErrorMessage);
+      setErrorMessage(
+        extractApiErrorMessage(
+          error,
+          '사전진단을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+        ),
+      );
       return null;
     } finally {
       setIsStartingAssessment(false);
@@ -140,12 +141,7 @@ function PreDiagnosisPage() {
 
       setErrorMessage('예상하지 못한 진단 결과가 반환되었습니다.');
     } catch (error: unknown) {
-      const nextErrorMessage =
-        error instanceof Error
-          ? error.message
-          : '정성 게이트 결과를 제출하지 못했습니다.';
-
-      setErrorMessage(nextErrorMessage);
+      setErrorMessage(extractApiErrorMessage(error, '정성 게이트 결과를 제출하지 못했습니다.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -176,12 +172,7 @@ function PreDiagnosisPage() {
       setResultSource('quantitative');
       setCurrentStep('result');
     } catch (error: unknown) {
-      const nextErrorMessage =
-        error instanceof Error
-          ? error.message
-          : '정량 배점 결과를 제출하지 못했습니다.';
-
-      setErrorMessage(nextErrorMessage);
+      setErrorMessage(extractApiErrorMessage(error, '정량 배점 결과를 제출하지 못했습니다.'));
     } finally {
       setIsSubmitting(false);
     }

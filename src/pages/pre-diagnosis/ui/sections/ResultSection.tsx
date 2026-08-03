@@ -14,17 +14,13 @@ interface ResultSectionProps {
   resultSource: AssessmentResultSource | null;
 }
 
-function ResultSection({
-  currentStep,
-  result,
-  resultSource,
-}: ResultSectionProps) {
+function ResultSection({ currentStep, result, resultSource }: ResultSectionProps) {
   const navigate = useNavigate();
   const isHighImpact = result.result === 'HIGH_IMPACT';
   const isQuantitativeResult = resultSource === 'quantitative';
 
   const handleProceedAudit = () => {
-    navigate('/audit');
+    navigate(`/audit?assessmentId=${result.assessmentId}`);
   };
 
   return (
@@ -34,8 +30,7 @@ function ResultSection({
         <div>
           <h2 className="pre-diagnosis-page__step-title">판정 결과</h2>
           <p className="pre-diagnosis-page__step-description">
-            정성 게이트와 정량 배점 결과를 기준으로 고영향 AI 해당 여부를
-            확인합니다.
+            정성 게이트와 정량 배점 결과를 기준으로 고영향 AI 해당 여부를 확인합니다.
           </p>
           <PreDiagnosisTabs currentStep={currentStep} />
         </div>

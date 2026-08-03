@@ -6,6 +6,7 @@ import AuthGatedLink from '../../../entities/user/ui/AuthGatedLink';
 import Avatar from '../../../shared/ui/Avatar';
 import { maskName } from '../../../shared/lib/maskName';
 import { logout } from '../../../features/auth/api/loginApi';
+import { useSubmissionLockStore } from '../../../shared/model/submissionLockStore';
 import {
   hasInProgressAudit,
   useAuditsPolling,
@@ -38,11 +39,19 @@ function Header() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const isSubmissionLocked = useSubmissionLockStore((state) => state.isLocked);
   const isAuthenticated = Boolean(user);
   const audits = useAuditsPolling(isAuthenticated);
   const isAuditRunning = isAuthenticated && hasInProgressAudit(audits);
 
   const handleLogout = () => {
+    // 모델 업로드~감사 시작처럼 여러 단계 요청이 진행 중일 때 로그아웃하면 토큰이
+    // 무효화되어 뒤 단계 요청이 401로 실패하고, 앞 단계만 반영된 채 남을 수 있다.
+    if (isSubmissionLocked) {
+      message.warning('제출이 진행 중입니다. 완료된 후 다시 시도해주세요.');
+      return;
+    }
+
     Modal.confirm({
       title: '로그아웃',
       content: '로그아웃 하시겠습니까?',
@@ -51,6 +60,14 @@ function Header() {
       centered: true,
 
       async onOk() {
+        // 모달이 열려있는 동안(사용자가 "확인"을 누르기 전) 다른 화면에서 제출이 시작될
+        // 수 있다. onOk는 모달을 연 시점에 클로저로 캡처한 isSubmissionLocked를 그대로
+        // 쓰므로, 실행 시점의 최신 잠금 상태를 스토어에서 다시 읽어와야 한다.
+        if (useSubmissionLockStore.getState().isLocked) {
+          message.warning('제출이 진행 중입니다. 완료된 후 다시 시도해주세요.');
+          return;
+        }
+
         try {
           await logout();
 

@@ -3,13 +3,7 @@ import { apiClient } from '../../../shared/api/client';
 export type ThresholdMethod = 'VALIDATION_DATASET' | 'MANUAL';
 
 export type AuditStatus =
-  | 'PENDING'
-  | 'IN_PROGRESS'
-  | 'COMPLIANT'
-  | 'WARNING'
-  | 'NON_COMPLIANT'
-  | 'UNCONFIRMED'
-  | 'FAILED';
+  'PENDING' | 'IN_PROGRESS' | 'COMPLIANT' | 'WARNING' | 'NON_COMPLIANT' | 'UNCONFIRMED' | 'FAILED' | 'CANCELLED';
 
 export const TERMINAL_STATUSES: AuditStatus[] = [
   'COMPLIANT',
@@ -17,9 +11,11 @@ export const TERMINAL_STATUSES: AuditStatus[] = [
   'NON_COMPLIANT',
   'UNCONFIRMED',
   'FAILED',
+  'CANCELLED',
 ];
 
 export interface StartAuditRequest {
+  assessmentId?: number;
   modelId: number;
   datasetId: number;
   auditName: string;
@@ -35,13 +31,27 @@ export interface StartAuditResponse {
   startedAt: string;
 }
 
-export async function startAudit(
-  request: StartAuditRequest,
-): Promise<StartAuditResponse> {
-  const { data } = await apiClient.post<StartAuditResponse>(
-    '/audits',
-    request,
-  );
+export async function startAudit(request: StartAuditRequest): Promise<StartAuditResponse> {
+  const { data } = await apiClient.post<StartAuditResponse>('/audits', request);
+
+  return data;
+}
+
+// 진행 중인 분석 요청 자체를 끊지는 않는 soft cancel이라, 204 No Content로 응답한다.
+export async function cancelAudit(auditId: number): Promise<void> {
+  await apiClient.post(`/audits/${auditId}/cancel`);
+}
+
+export interface RetryAuditResponse {
+  auditId: number;
+  status: string;
+  retriedAt: string;
+}
+
+// FAILED·CANCELLED 감사를 기존 모델·데이터셋 참조 그대로 재실행한다. 202로 응답하며,
+// 이후 진행 상황은 getAudits() 폴링으로 다시 조회해야 한다.
+export async function retryAudit(auditId: number): Promise<RetryAuditResponse> {
+  const { data } = await apiClient.post<RetryAuditResponse>(`/audits/${auditId}/retry`);
 
   return data;
 }
@@ -49,6 +59,13 @@ export async function startAudit(
 export interface AuditSummary {
   auditId: number;
   modelName: string;
+  modelFileName: string | null;
+  datasetFileName: string | null;
+  modelGroupId: string | null;
+  version: string | null;
+  // 연결된 고영향 AI 사전진단. 사전진단은 건너뛸 수 있어 null 이면 진행하지 않은 감사다.
+  assessmentId: number | null;
+  createdAt: string;
   completedAt: string | null;
   status: AuditStatus;
   currentStep: number;
@@ -105,20 +122,13 @@ export interface FairnessResponse {
   results: FairlearnResultItem[];
 }
 
-export async function getFairness(
-  auditId: number,
-): Promise<FairnessResponse> {
-  const { data } = await apiClient.get<FairnessResponse>(
-    `/audits/${auditId}/fairness`,
-  );
+export async function getFairness(auditId: number): Promise<FairnessResponse> {
+  const { data } = await apiClient.get<FairnessResponse>(`/audits/${auditId}/fairness`);
 
   return data;
 }
 
-export type ShapMetricCode =
-  | 'SENSITIVE_CONTRIB'
-  | 'GLOBAL_STABILITY'
-  | 'FIDELITY';
+export type ShapMetricCode = 'SENSITIVE_CONTRIB' | 'GLOBAL_STABILITY' | 'FIDELITY';
 export type ShapStatus = 'PASS' | 'WARNING' | 'REVIEW';
 
 export interface ShapMetricItem {
@@ -128,28 +138,29 @@ export interface ShapMetricItem {
   status: ShapStatus;
 }
 
+export interface FeatureImportanceItem {
+  rank: number;
+  feature: string;
+  value: number | null;
+  isSensitive: boolean;
+  sensitiveGroup: string | null;
+}
+
 export interface ExplainabilityResponse {
   auditId: number;
   method: string;
   metrics: ShapMetricItem[];
+  topFeatures: FeatureImportanceItem[];
 }
 
-export async function getExplainability(
-  auditId: number,
-): Promise<ExplainabilityResponse> {
-  const { data } = await apiClient.get<ExplainabilityResponse>(
-    `/audits/${auditId}/explainability`,
-  );
+export async function getExplainability(auditId: number): Promise<ExplainabilityResponse> {
+  const { data } = await apiClient.get<ExplainabilityResponse>(`/audits/${auditId}/explainability`);
 
   return data;
 }
 
 export type SelfCheckItemCode =
-  | 'NOTICE'
-  | 'OBJECTION'
-  | 'OVERSIGHT'
-  | 'RISK_MANAGEMENT'
-  | 'DOCUMENTATION';
+  'NOTICE' | 'OBJECTION' | 'OVERSIGHT' | 'RISK_MANAGEMENT' | 'DOCUMENTATION';
 
 export interface SelfCheckAnswerItem {
   itemCode: SelfCheckItemCode;
@@ -174,9 +185,7 @@ export async function saveSelfCheckAnswers(
   return data;
 }
 
-export async function getSelfCheckAnswers(
-  auditId: number,
-): Promise<SelfCheckAnswerResponse> {
+export async function getSelfCheckAnswers(auditId: number): Promise<SelfCheckAnswerResponse> {
   const { data } = await apiClient.get<SelfCheckAnswerResponse>(
     `/audits/${auditId}/self-check-answers`,
   );
@@ -186,13 +195,25 @@ export async function getSelfCheckAnswers(
 
 export type RegulationComplianceStatus = 'COMPLIANT' | 'NON_COMPLIANT';
 
+// 조항 하나가 여러 자가점검 문항에, 문항마다 다른 항으로 걸릴 수 있어(예: 제34조는 위험관리
+// 문항엔 "①1호", 관리감독 문항엔 "①4호") 문항·항을 쌍으로 묶어서 받는다.
+// note는 그 문항·항이 왜 매칭됐는지에 대한 화면 표시용 요약 문구다(조 전체 요약인 summary와 달리
+// 항 단위로 정확하다).
+export interface MatchedChecklistItem {
+  itemCode: SelfCheckItemCode;
+  clauseNo: string | null;
+  note: string;
+}
+
 export interface RegulationMappingItem {
   mappingId: number;
   regulation: string;
   article: string;
   content: string;
+  summary: string;
   compliance: RegulationComplianceStatus;
   evidence: string;
+  matchedItems: MatchedChecklistItem[];
 }
 
 export interface RegulationMappingResponse {
@@ -200,9 +221,7 @@ export interface RegulationMappingResponse {
   mappings: RegulationMappingItem[];
 }
 
-export async function getRegulationMappings(
-  auditId: number,
-): Promise<RegulationMappingResponse> {
+export async function getRegulationMappings(auditId: number): Promise<RegulationMappingResponse> {
   const { data } = await apiClient.get<RegulationMappingResponse>(
     `/audits/${auditId}/regulation-mappings`,
   );

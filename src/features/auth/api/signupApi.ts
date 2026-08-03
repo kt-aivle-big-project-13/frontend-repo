@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { apiClient } from '../../../shared/api/client';
+import { apiClient, extractApiErrorMessage } from '../../../shared/api/client';
 
 // 이메일 인증번호 발송 요청
 export interface SendVerificationCodeRequest {
@@ -39,28 +38,8 @@ export interface SignupResponse {
   message: string;
 }
 
-// 백엔드 공통 오류 응답
-interface ApiErrorResponse {
-  code?: string;
-  message?: string;
-  status?: number;
-}
-
-// Axios 오류 메시지 처리 함수
-export function getApiErrorMessage(
-  error: unknown,
-  fallbackMessage: string,
-): string {
-  if (axios.isAxiosError<ApiErrorResponse>(error)) {
-    return error.response?.data?.message ?? fallbackMessage;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallbackMessage;
-}
+// Axios 오류 메시지 처리 함수 (shared/api/client의 공용 구현)
+export const getApiErrorMessage = extractApiErrorMessage;
 
 // 이메일 인증번호 발송
 export async function sendVerificationCode({

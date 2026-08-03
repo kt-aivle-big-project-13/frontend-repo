@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 
 import { changeMyPassword, verifyCurrentPassword } from '../../../../features/my-page/api/myPageApi';
+import { extractApiErrorMessage } from '../../../../shared/api/client';
 import PasswordField from '../../../../shared/ui/PasswordField';
 
 const HAS_LETTER = /[A-Za-z]/;
@@ -43,11 +44,7 @@ function PasswordChangeCard() {
       await verifyCurrentPassword({ currentPassword });
       setIsVerified(true);
     } catch (err) {
-      const message = axios.isAxiosError(err)
-        ? (err.response?.data as { message?: string } | undefined)?.message
-        : undefined;
-
-      setVerifyError(message ?? '현재 비밀번호가 일치하지 않습니다.');
+      setVerifyError(extractApiErrorMessage(err, '현재 비밀번호가 일치하지 않습니다.'));
     } finally {
       setIsVerifying(false);
     }
@@ -81,11 +78,7 @@ function PasswordChangeCard() {
       setNewPassword('');
       setNewPasswordConfirm('');
     } catch (err) {
-      const message = axios.isAxiosError(err)
-        ? (err.response?.data as { message?: string } | undefined)?.message
-        : undefined;
-
-      setError(message ?? '비밀번호 변경에 실패했습니다.');
+      setError(extractApiErrorMessage(err, '비밀번호 변경에 실패했습니다.'));
 
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         setIsVerified(false);

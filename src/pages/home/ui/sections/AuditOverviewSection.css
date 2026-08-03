@@ -101,14 +101,20 @@
   overflow: hidden;
   color: #202938;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.audit-overview-section__list-version {
+  color: #9099a8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .audit-overview-section__list-date {
   flex-shrink: 0;
-  width: 80px;
+  width: 118px;
   color: #9099a8;
   font-size: 12px;
   text-align: right;
@@ -141,44 +147,119 @@
   color: #9099a8;
 }
 
-.audit-overview-section__progress {
+.audit-overview-section__progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.audit-overview-section__progress-item {
   display: block;
-  margin: -4px;
-  padding: 4px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
   border-radius: 8px;
+  background-color: #f7f8fa;
   color: inherit;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
 }
 
-.audit-overview-section__progress:hover {
+a.audit-overview-section__progress-item:hover {
+  border-color: #2d67e8;
   background-color: #eef4ff;
 }
 
-.audit-overview-section__progress:focus-visible {
+a.audit-overview-section__progress-item:focus-visible {
   outline: 3px solid rgb(45 103 232 / 25%);
   outline-offset: 2px;
 }
 
-.audit-overview-section__progress-track {
-  height: 8px;
-  border-radius: 4px;
-  background-color: #eef0f3;
+.audit-overview-section__progress-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.audit-overview-section__progress-name {
   overflow: hidden;
-}
-
-.audit-overview-section__progress-bar {
-  height: 100%;
-  border-radius: 4px;
-  background-color: #2d67e8;
-}
-
-.audit-overview-section__progress-label {
-  margin: 14px 0 0;
-  color: #6b7684;
+  color: #202938;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-overview-section__progress-version {
+  color: #9099a8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.audit-overview-section__progress-date {
+  flex-shrink: 0;
+  color: #9099a8;
+  font-size: 12px;
+}
+
+.audit-overview-section__progress-meta-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.audit-overview-section__progress-meta {
+  margin: 0;
+  overflow: hidden;
+  color: #6b7684;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-overview-section__progress-meta + .audit-overview-section__progress-meta {
+  margin-top: 2px;
+}
+
+.audit-overview-section__progress-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audit-overview-section__progress-result-button {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.audit-overview-section__progress-result-button:hover {
+  background-color: #244fb8;
+}
+
+/* 아직 분석 진행중인 감사 — 클릭은 가능하지만(체크리스트/진행상황 페이지로 이동)
+   "결과 확인"과는 시각적으로 구분되도록 톤을 낮춘다. */
+.audit-overview-section__progress-result-button--pending {
+  background-color: #dde2ea;
+  color: #6b7684;
+}
+
+.audit-overview-section__progress-result-button--pending:hover {
+  background-color: #cdd3dd;
 }
 
 .audit-overview-section__empty {

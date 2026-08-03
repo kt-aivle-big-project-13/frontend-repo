@@ -1,26 +1,15 @@
 .version-history-section {
   padding: 24px;
   border: 1.5px solid #eef0f3;
-  border-radius: 12px;
+  border-radius: 14px;
   background-color: #ffffff;
 }
 
 .version-history-section__title {
   margin: 0 0 16px;
   color: #202938;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
-}
-
-.version-history-section__empty {
-  margin: 0;
-  padding: 28px 16px;
-  border: 1px dashed #d9dee6;
-  border-radius: 8px;
-  background-color: #f7f8fa;
-  color: #9099a8;
-  font-size: 13px;
-  text-align: center;
 }
 
 .version-history-section__list {
@@ -35,40 +24,69 @@
 .version-history-section__row {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   padding: 16px 18px;
   border-radius: 8px;
   background-color: #f7f8fa;
+  cursor: pointer;
 }
 
 .version-history-section__row--current {
   background-color: #eef4ff;
 }
 
-.version-history-section__version {
-  flex-shrink: 0;
-  width: 28px;
+.version-history-section__status {
+  margin: 0;
+  padding: 28px 16px;
+  border: 1px dashed #d9dee6;
+  border-radius: 8px;
+  background-color: #f7f8fa;
   color: #9099a8;
   font-size: 13px;
+  text-align: center;
+}
+
+/* 홈 화면 audit-overview-section__list-item과 동일한 패턴: 이름은 flex:1로 늘어나고
+   날짜·상태는 고정폭으로 오른쪽에 정렬된다. */
+.version-history-section__version {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #202938;
+  font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .version-history-section__version--current {
   color: #2d67e8;
 }
 
-.version-history-section__date {
-  flex-shrink: 0;
-  width: 100px;
-  color: #6b7684;
-  font-size: 13px;
+.version-history-section__version-tag {
+  color: #9099a8;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.version-history-section__summary {
-  flex: 1;
-  min-width: 0;
-  color: #202938;
-  font-size: 13.5px;
+.version-history-section__date {
+  flex-shrink: 0;
+  width: 118px;
+  color: #9099a8;
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.version-history-section__status-badge {
+  flex-shrink: 0;
+  display: inline-block;
+  margin-left: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .version-history-section__link {

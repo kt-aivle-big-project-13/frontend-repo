@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Tooltip } from 'antd';
 
 import {
+  cancelAudit,
   getAudits,
   getRegulationMappings,
   getSelfCheckAnswers,
+  retryAudit,
   saveSelfCheckAnswers,
   waitForRegulationMappings,
   RegulationMappingTimeoutError,
@@ -13,7 +16,7 @@ import {
   type RegulationMappingItem,
   type SelfCheckItemCode,
 } from '../../../../features/audit/api/auditApi';
-import { markAuditResultsViewed } from '../../../../features/audit/model/viewedAuditResults';
+import { extractApiErrorMessage } from '../../../../shared/api/client';
 import StepIndicator from '../StepIndicator';
 
 import './AuditFlow.css';
@@ -54,6 +57,13 @@ const SELF_CHECK_ITEMS: SelfCheckItem[] = [
   },
 ];
 
+// 매칭 조항 배지에 "1번" 식으로 표시할 문항 번호. 백엔드는 itemCode만 내려주므로
+// SELF_CHECK_ITEMS 배열 순서를 그대로 번호로 쓴다.
+const CHECKLIST_ITEM_NUMBERS: Record<SelfCheckItemCode, number> = SELF_CHECK_ITEMS.reduce(
+  (numbers, item, index) => ({ ...numbers, [item.id]: index + 1 }),
+  {} as Record<SelfCheckItemCode, number>,
+);
+
 const DEFAULT_SELF_CHECK: Record<SelfCheckItemCode, SelfCheckAnswer> = {
   NOTICE: null,
   OBJECTION: null,
@@ -73,6 +83,10 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const [status, setStatus] = useState<AuditStatus | null>(null);
   const [runningStep, setRunningStep] = useState(2);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   const [selfCheckAnswers, setSelfCheckAnswers] =
     useState<Record<SelfCheckItemCode, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
@@ -88,8 +102,9 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   // 제출 여부와 무관하게 결과 확인으로 넘어갈 수 있다.
   const [skipSelfCheck, setSkipSelfCheck] = useState(false);
 
-  const isAnalyzed = isDone && status !== 'FAILED';
+  const isAnalyzed = isDone && status !== 'FAILED' && status !== 'CANCELLED';
   const isFailed = isDone && status === 'FAILED';
+  const isCancelled = isDone && status === 'CANCELLED';
 
   // auditId가 바뀌면(다른 감사의 체크리스트 페이지로 바로 이동) 이전 감사의 진행/자가점검
   // 상태가 잠시 남아있지 않도록 렌더링 중에 바로 리셋한다.
@@ -100,6 +115,10 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     setStatus(null);
     setRunningStep(2);
     setPollError(null);
+    setIsCancelling(false);
+    setCancelError(null);
+    setIsRetrying(false);
+    setRetryError(null);
     setSelfCheckAnswers(DEFAULT_SELF_CHECK);
     setIsSelfCheckSubmitted(false);
     setSelfCheckError(null);
@@ -178,9 +197,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     };
   }, [auditId]);
 
-  const answeredCount = Object.values(selfCheckAnswers).filter(
-    (answer) => answer !== null,
-  ).length;
+  const answeredCount = Object.values(selfCheckAnswers).filter((answer) => answer !== null).length;
   const unansweredCount = SELF_CHECK_ITEMS.length - answeredCount;
   const isSelfCheckComplete = unansweredCount === 0;
 
@@ -219,11 +236,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       if (error instanceof RegulationMappingTimeoutError) {
         setIsMappingPending(true);
       } else {
-        setSelfCheckError(
-          error instanceof Error
-            ? error.message
-            : '매칭 조항 조회 중 오류가 발생했습니다.',
-        );
+        setSelfCheckError(extractApiErrorMessage(error, '매칭 조항 조회 중 오류가 발생했습니다.'));
       }
     } finally {
       if (auditIdRef.current === id) setIsLoadingMatches(false);
@@ -231,7 +244,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   };
 
   const handleSelfCheckSubmit = async () => {
-    if (!isAnalyzed || !isSelfCheckComplete || isSelfCheckSubmitting) return;
+    if (!isSelfCheckComplete || isSelfCheckSubmitting) return;
 
     const submittedAuditId = auditId;
 
@@ -251,11 +264,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       await loadMatchedArticles(submittedAuditId);
     } catch (error) {
       if (auditIdRef.current === submittedAuditId) {
-        setSelfCheckError(
-          error instanceof Error
-            ? error.message
-            : '규제 자가 점검 제출 중 오류가 발생했습니다.',
-        );
+        setSelfCheckError(extractApiErrorMessage(error, '규제 자가 점검 제출 중 오류가 발생했습니다.'));
       }
     } finally {
       if (auditIdRef.current === submittedAuditId) setIsSelfCheckSubmitting(false);
@@ -267,20 +276,86 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     loadMatchedArticles(auditId);
   };
 
+  // 취소 성공 시 다음 폴링 응답을 기다리지 않고 바로 상태를 CANCELLED로 반영해
+  // 폴링 useEffect(의존값 isDone)가 즉시 정리되도록 한다. 다른 감사 화면으로 이미
+  // 넘어간 뒤에 이전 요청의 응답이 늦게 와서 지금 화면 상태를 덮어쓰지 않도록
+  // 요청 시작 시점의 auditId와 최신 auditId(ref)가 같을 때만 반영한다.
+  const handleCancel = async () => {
+    if (isCancelling) return;
+
+    const submittedAuditId = auditId;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      await cancelAudit(submittedAuditId);
+      if (auditIdRef.current !== submittedAuditId) return;
+
+      setStatus('CANCELLED');
+      setIsDone(true);
+    } catch (error) {
+      if (auditIdRef.current === submittedAuditId) {
+        setCancelError(error instanceof Error ? error.message : '감사 취소 중 오류가 발생했습니다.');
+      }
+    } finally {
+      if (auditIdRef.current === submittedAuditId) setIsCancelling(false);
+    }
+  };
+
+  // 재시도 성공 시 isDone을 다시 false로 되돌려 폴링 useEffect(의존값 isDone)가
+  // 처음부터 다시 돌게 한다. handleCancel과 동일하게 요청 시작 시점의 auditId와
+  // 최신 auditId(ref)가 같을 때만 반영해 다른 감사 화면으로 넘어간 뒤 늦게 온
+  // 응답이 지금 화면을 덮어쓰지 않게 한다.
+  const handleRetry = async () => {
+    if (isRetrying) return;
+
+    const submittedAuditId = auditId;
+
+    setIsRetrying(true);
+    setRetryError(null);
+
+    try {
+      await retryAudit(submittedAuditId);
+      if (auditIdRef.current !== submittedAuditId) return;
+
+      setIsDone(false);
+      setStatus(null);
+      setRunningStep(2);
+      setPollError(null);
+    } catch (error) {
+      if (auditIdRef.current === submittedAuditId) {
+        setRetryError(error instanceof Error ? error.message : '감사 재시도 중 오류가 발생했습니다.');
+      }
+    } finally {
+      if (auditIdRef.current === submittedAuditId) setIsRetrying(false);
+    }
+  };
+
   return (
     <div className="audit-execution-section">
       <StepIndicator doneSteps={[1, 2]} activeSteps={[3]} />
 
-      {isFailed ? (
-        <p className="audit-execution-section__empty" role="alert">
-          감사 분석이 실패했습니다. 백엔드·AI 서버 로그를 확인해주세요.
-        </p>
+      {isFailed || isCancelled ? (
+        <>
+          <p className="audit-execution-section__empty" role="alert">
+            {isFailed
+              ? '감사 분석이 실패했습니다. 백엔드·AI 서버 로그를 확인해주세요.'
+              : '감사를 취소했습니다.'}
+          </p>
+          <div className="audit-execution-section__retry-bar">
+            <button
+              type="button"
+              className="audit-execution-section__retry-button"
+              disabled={isRetrying}
+              onClick={handleRetry}
+            >
+              {isRetrying ? '재시도하는 중…' : '재시도'}
+            </button>
+          </div>
+        </>
       ) : (
-        <div
-          className="audit-execution-section__loading"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="audit-execution-section__loading" role="status" aria-live="polite">
           {isAnalyzed ? (
             <span className="audit-execution-section__status-check" aria-hidden="true">
               ✓
@@ -334,6 +409,15 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                   Fairlearn 공정성 분석
                 </li>
               </ul>
+
+              <button
+                type="button"
+                className="audit-execution-section__cancel-button"
+                disabled={isCancelling}
+                onClick={handleCancel}
+              >
+                {isCancelling ? '취소하는 중…' : '감사 취소'}
+              </button>
             </div>
           )}
         </div>
@@ -345,17 +429,25 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
         </p>
       )}
 
+      {cancelError && (
+        <p className="audit-execution-section__empty" role="alert">
+          {cancelError}
+        </p>
+      )}
+
+      {retryError && (
+        <p className="audit-execution-section__empty" role="alert">
+          {retryError}
+        </p>
+      )}
+
       <section className="audit-execution-section__result-card">
-        <h2 className="audit-execution-section__result-title">
-          자가점검 및 법령 매칭
-        </h2>
+        <h2 className="audit-execution-section__result-title">자가점검 및 법령 매칭</h2>
 
         <div className="audit-execution-section__step4-grid">
           <div className="audit-execution-section__self-check">
             <div className="audit-execution-section__self-check-header">
-              <h3 className="audit-execution-section__self-check-title">
-                규제 자가점검 (5항목)
-              </h3>
+              <h3 className="audit-execution-section__self-check-title">규제 자가점검 (5항목)</h3>
               <span className="audit-execution-section__self-check-count">
                 {answeredCount}/{SELF_CHECK_ITEMS.length} 응답
               </span>
@@ -370,12 +462,8 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               {SELF_CHECK_ITEMS.map((item) => (
                 <li key={item.id} className="audit-execution-section__self-check-item">
                   <div className="audit-execution-section__self-check-item-text">
-                    <p className="audit-execution-section__self-check-question">
-                      {item.question}
-                    </p>
-                    <p className="audit-execution-section__self-check-location">
-                      {item.location}
-                    </p>
+                    <p className="audit-execution-section__self-check-question">{item.question}</p>
+                    <p className="audit-execution-section__self-check-location">{item.location}</p>
                   </div>
                   <div className="audit-execution-section__answer-group">
                     <button
@@ -401,13 +489,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
 
             <div className="audit-execution-section__self-check-footer">
               {isSelfCheckSubmitted ? (
-                <span className="audit-execution-section__self-check-submitted">
-                  제출 완료
-                </span>
-              ) : !isAnalyzed ? (
-                <span className="audit-execution-section__self-check-remaining">
-                  분석 완료 후 제출 가능합니다.
-                </span>
+                <span className="audit-execution-section__self-check-submitted">제출 완료</span>
               ) : (
                 <span className="audit-execution-section__self-check-remaining">
                   {unansweredCount > 0
@@ -420,7 +502,6 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                 className="audit-execution-section__submit-button"
                 disabled={
                   skipSelfCheck ||
-                  !isAnalyzed ||
                   !isSelfCheckComplete ||
                   isSelfCheckSubmitted ||
                   isSelfCheckSubmitting
@@ -443,9 +524,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               매칭 조항 (실제 조항명·원문 인용)
             </h3>
             {isLoadingMatches ? (
-              <p className="audit-execution-section__empty">
-                매칭 조항을 불러오는 중입니다…
-              </p>
+              <p className="audit-execution-section__empty">매칭 조항을 불러오는 중입니다…</p>
             ) : isMappingPending ? (
               <div className="audit-execution-section__empty">
                 <p>매칭 조항을 아직 생성하는 중입니다. 잠시 후 다시 조회해주세요.</p>
@@ -465,16 +544,50 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               </p>
             ) : (
               <ul className="audit-execution-section__matched-list">
-                {matchedArticles.map((article) => (
-                  <li key={article.mappingId} className="audit-execution-section__matched-item">
-                    <p className="audit-execution-section__matched-title">
-                      {article.regulation} {article.article}
-                    </p>
-                    <p className="audit-execution-section__matched-quote">
-                      「{article.content}」
-                    </p>
-                  </li>
-                ))}
+                {/* 조항 하나가 여러 문항에, 문항마다 다른 항으로 걸릴 수 있어(예: 제34조는
+                    위험관리 문항엔 ①1호, 관리감독 문항엔 ①4호) 문항당 한 줄로 펼쳐서 보여준다.
+                    제목엔 그 줄에 해당하는 항 번호까지 정확히 표시하고, 배지엔 문항 번호만 표시한다.
+                    배지 번호(체크리스트 문항 순서) 기준으로 정렬해 1번→5번 순으로 묶여 보이게 한다. */}
+                {matchedArticles
+                  .flatMap((article) =>
+                    article.matchedItems.map((matched) => ({ article, matched })),
+                  )
+                  .sort(
+                    (a, b) =>
+                      CHECKLIST_ITEM_NUMBERS[a.matched.itemCode] -
+                      CHECKLIST_ITEM_NUMBERS[b.matched.itemCode],
+                  )
+                  .map(({ article, matched }) => (
+                    <li
+                      key={`${article.mappingId}-${matched.itemCode}`}
+                      className="audit-execution-section__matched-item"
+                    >
+                      <div className="audit-execution-section__matched-header">
+                        <p className="audit-execution-section__matched-title">
+                          {article.regulation} {article.article}
+                          {matched.clauseNo ? ` ${matched.clauseNo}` : ''}
+                          <Tooltip
+                            title={article.content}
+                            placement="top"
+                            trigger={['hover', 'focus']}
+                            styles={{ root: { maxWidth: 420 } }}
+                          >
+                            <button
+                              type="button"
+                              className="audit-execution-section__matched-help"
+                              aria-label="조항 원문 보기"
+                            >
+                              ?
+                            </button>
+                          </Tooltip>
+                        </p>
+                        <span className="audit-execution-section__matched-badge">
+                          {CHECKLIST_ITEM_NUMBERS[matched.itemCode]}번
+                        </span>
+                      </div>
+                      <p className="audit-execution-section__matched-quote">{matched.note}</p>
+                    </li>
+                  ))}
               </ul>
             )}
           </div>
@@ -495,11 +608,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
           type="button"
           className="audit-execution-section__run-button"
           disabled={!isAnalyzed || (!skipSelfCheck && !isSelfCheckSubmitted)}
-          onClick={() => {
-            // 홈 화면 "최근 감사 이력"은 결과를 실제로 확인한 감사만 보여준다.
-            markAuditResultsViewed(auditId);
-            navigate(`/audit/${auditId}/results`);
-          }}
+          onClick={() => navigate(`/audit/${auditId}/results`)}
         >
           결과 확인
         </button>

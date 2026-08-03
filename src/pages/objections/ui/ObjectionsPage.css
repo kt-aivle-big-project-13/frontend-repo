@@ -1,0 +1,1343 @@
+/* 전체 요소 크기 계산 방식 */
+.objections-page,
+.objections-page * {
+  box-sizing: border-box;
+}
+
+/* 이의제기 목록 페이지 전체 영역 */
+.objections-page {
+  min-height: calc(100vh - 70px);
+  padding: 48px 10% 80px;
+  background-color: #ffffff;
+  color: #202938;
+}
+
+/* 목록 페이지 내부 영역 */
+.objections-page__inner {
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* 페이지 제목 영역 */
+.objections-page__page-header {
+  margin-bottom: 28px;
+}
+
+/* 이의제기 상단 분류 문구 */
+.objections-page__page-header > span {
+  color: #7d96bd;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 제목과 전체 건수 영역 */
+.objections-page__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 6px;
+}
+
+/* 고객 이의제기 목록 제목 */
+.objections-page__title-row h1 {
+  margin: 0;
+  color: #202938;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* 목록 페이지 설명 문구 */
+.objections-page__title-row p {
+  margin: 8px 0 0;
+  color: #6b7684;
+  font-size: 13px;
+}
+
+/* 제목 우측 액션 영역 (업로드 버튼 + 전체 건수 배지) */
+.objections-page__title-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  margin-top: 42px;
+}
+
+/* CSV 업로드 버튼과 도움말 버튼 영역 */
+.objections-page__upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 이의제기 CSV와 연결할 대상 모델 선택 */
+.objections-page__model-select {
+  min-width: 210px;
+  height: 36px;
+  padding: 0 36px 0 12px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.objections-page__model-select:hover {
+  border-color: #8eacf2;
+}
+
+.objections-page__model-select:focus {
+  border-color: #2d67e8;
+  box-shadow: 0 0 0 3px rgb(45 103 232 / 12%);
+}
+
+.objections-page__model-select:disabled {
+  background-color: #f4f6f9;
+  color: #8791a5;
+  cursor: not-allowed;
+}
+
+/* CSV 업로드 버튼 */
+.objections-page__upload-button {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 8px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* CSV 업로드 버튼 마우스 오버 */
+.objections-page__upload-button:hover {
+  background-color: #244fb8;
+}
+
+/* 업로드 중인 CSV 업로드 버튼 */
+.objections-page__upload-button:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* CSV 업로드 도움말 버튼 */
+.objections-page__upload-help-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #d8dee8;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #6b7684;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* CSV 업로드 도움말 버튼 마우스 오버 */
+.objections-page__upload-help-button:hover {
+  border-color: #2d67e8;
+  color: #2d67e8;
+}
+
+/* CSV 업로드 도움말 내용 */
+.objections-page__upload-guide {
+  width: min(420px, calc(100vw - 48px));
+  max-height: 60vh;
+  overflow-y: auto;
+  color: #4d5765;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* CSV 업로드 도움말 제목 */
+.objections-page__upload-guide > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #202938;
+  font-size: 14px;
+}
+
+/* CSV 업로드 도움말 목록 */
+.objections-page__upload-guide ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* CSV 업로드 도움말 항목 간격 */
+.objections-page__upload-guide li + li {
+  margin-top: 7px;
+}
+
+/* CSV 컬럼 목록과 작성일시 예시 */
+.objections-page__upload-guide-detail {
+  display: block;
+  margin-top: 3px;
+  color: #667085;
+  overflow-wrap: anywhere;
+}
+
+/* 도움말 내부 코드 형식 */
+.objections-page__upload-guide code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+  color: #2d67e8;
+  font-family: inherit;
+}
+
+/* 전체 이의제기 건수 배지 */
+.objections-page__title-actions > strong {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: #edf4ff;
+  color: #2d67e8;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* 목록과 상세 패널 배치 */
+.objections-page__workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 0;
+  transition:
+    grid-template-columns 0.3s ease,
+    gap 0.3s ease;
+}
+
+/* 상세 패널이 열린 상태 */
+.objections-page__workspace--detail-open {
+  grid-template-columns:
+    minmax(320px, 0.38fr)
+    minmax(0, 1fr);
+  gap: 20px;
+}
+
+/* 상세 패널이 닫히는 상태 */
+.objections-page__workspace--detail-closing {
+  grid-template-columns:
+    minmax(320px, 0.38fr)
+    minmax(0, 1fr);
+  gap: 20px;
+}
+
+/* 목록 로딩 안내 */
+.objections-page__loading {
+  padding: 60px 20px;
+  border: 1.5px solid #eef0f3;
+  border-radius: 14px;
+  color: #9099a8;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+/* 이의제기 목록 카드 */
+.objection-list {
+  min-width: 0;
+  padding: 20px;
+  overflow: hidden;
+  border: 1.5px solid #eef0f3;
+  border-radius: 14px;
+  background-color: #ffffff;
+  transition:
+    padding 0.3s ease,
+    width 0.3s ease;
+}
+
+/* 검색창과 정렬 버튼 영역 */
+.objection-list__toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    110px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  transition:
+    gap 0.3s ease,
+    margin 0.3s ease;
+}
+
+/* 건수와 정렬 버튼을 감싸는 영역 */
+.objection-list__toolbar-bottom {
+  display: contents;
+}
+
+/* 상세 화면의 전체 이의제기 건수 */
+.objection-list__total-count {
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: #edf4ff;
+  color: #2d67e8;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* 검색창 전체 영역 */
+.objection-list__search {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+/* 검색창 포커스 */
+.objection-list__search:focus-within {
+  border-color: #2d67e8;
+  box-shadow: 0 0 0 3px rgb(45 103 232 / 10%);
+}
+
+/* 검색 아이콘 */
+.objection-list__search-icon {
+  flex-shrink: 0;
+  color: #9099a8;
+  font-size: 15px;
+}
+
+/* 검색어 입력창 */
+.objection-list__search input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #202938;
+  font-size: 13px;
+}
+
+/* 검색창 안내 문구 */
+.objection-list__search input::placeholder {
+  color: #9099a8;
+}
+
+/* 정렬 드롭다운 영역 */
+.objection-list__sort-wrapper {
+  position: relative;
+  width: 110px;
+  height: 40px;
+}
+
+/* 최신순 및 오래된순 선택창 */
+.objection-list__sort-select {
+  width: 100%;
+  height: 100%;
+  padding: 0 36px 0 14px;
+  border: none;
+  border-radius: 8px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* 정렬 선택창 마우스 오버 */
+.objection-list__sort-select:hover {
+  background-color: #244fb8;
+}
+
+/* 정렬 선택창 포커스 */
+.objection-list__sort-select:focus {
+  background-color: #244fb8;
+  box-shadow: 0 0 0 3px rgb(45 103 232 / 12%);
+}
+
+/* 정렬 드롭다운 항목 */
+.objection-list__sort-select option {
+  background-color: #ffffff;
+  color: #202938;
+}
+
+/* 정렬 드롭다운 화살표 */
+.objection-list__sort-arrow {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  color: #ffffff;
+  font-size: 10px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* 이의제기 목록 영역 */
+.objection-list__items {
+  border-top: 1px solid #f2f4f7;
+  border-bottom: 1px solid #f2f4f7;
+}
+
+/* 이의제기 한 건의 목록 행 */
+.objection-list__item {
+  display: grid;
+  width: 100%;
+  min-height: 60px;
+  grid-template-columns:
+    88px
+    minmax(0, 1fr)
+    82px
+    92px
+    20px;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 1px solid #f2f4f7;
+  background-color: #ffffff;
+  color: #202938;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    min-height 0.3s ease,
+    padding 0.3s ease,
+    gap 0.3s ease;
+}
+
+/* 목록 마지막 행 */
+.objection-list__item:last-child {
+  border-bottom: none;
+}
+
+/* 목록 행 마우스 오버 */
+.objection-list__item:hover {
+  background-color: #edf4ff;
+}
+
+/* 선택된 목록 행 */
+.objection-list__item--selected {
+  background-color: #f5f8ff;
+}
+
+/* 고객명 배지 */
+.objection-list__customer {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background-color: #f0f3f7;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  transition:
+    padding 0.3s ease,
+    font-size 0.3s ease,
+    background-color 0.3s ease;
+}
+
+/* 이의제기 제목 영역 */
+.objection-list__main {
+  min-width: 0;
+}
+
+/* 이의제기 제목 */
+.objection-list__title {
+  display: block;
+  overflow: hidden;
+  color: #202938;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    font-size 0.3s ease,
+    white-space 0.3s ease;
+}
+
+/* 제목 앞의 제목 표시 */
+.objection-list__title-label {
+  margin-right: 6px;
+  color: #202938;
+  font-weight: 600;
+}
+
+/* 실제 제목 내용 */
+.objection-list__title-content {
+  color: #202938;
+  font-weight: 600;
+}
+
+/* 심사 상태 배지 공통 */
+.objection-list__status {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* 심사대기 배지 */
+.objection-list__status--waiting {
+  background-color: #fff7df;
+  color: #e18400;
+}
+
+/* 답변완료 배지 */
+.objection-list__status--completed {
+  background-color: #ebfbf2;
+  color: #16a05d;
+}
+
+/* 이의제기 작성일 */
+.objection-list__date {
+  color: #6b7684;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 제목 없는 항목 작성일 */
+.objection-list__date--empty {
+  grid-column: 4 / 6;
+  justify-self: end;
+}
+
+/* 상세 열기 화살표 */
+.objection-list__arrow {
+  color: #9099a8;
+  font-size: 12px;
+}
+
+/* 축소 목록의 상태와 날짜 영역 */
+.objection-list__compact-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  animation: objection-compact-meta-enter 0.25s ease;
+}
+
+/* 축소 목록 작성일 */
+.objection-list__compact-meta time {
+  color: #6b7684;
+  font-size: 12px;
+}
+
+/* 축소 목록 정보 등장 효과 */
+@keyframes objection-compact-meta-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 상세가 열린 왼쪽 목록 카드 */
+.objection-list--compact {
+  padding: 16px;
+}
+
+/* 축소 목록 검색 및 정렬 영역 */
+.objection-list--compact .objection-list__toolbar {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+/* 축소 목록의 건수와 정렬 버튼 영역 */
+.objection-list--compact .objection-list__toolbar-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 축소 목록 정렬 버튼 */
+.objection-list--compact .objection-list__sort-wrapper {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+/* 축소된 이의제기 목록 행 */
+.objection-list--compact .objection-list__item {
+  min-height: 78px;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+/* 축소 목록 고객명 */
+.objection-list--compact .objection-list__customer {
+  width: fit-content;
+  padding: 0;
+  background: transparent;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+/* 축소 목록 제목 */
+.objection-list--compact .objection-list__title {
+  white-space: normal;
+}
+
+/* 검색 결과 없음 안내 */
+.objection-list__empty {
+  margin: 0;
+  padding: 60px 20px;
+  color: #9099a8;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+/* 목록 페이지네이션 영역 */
+.objection-list__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 20px;
+}
+
+/* 페이지 번호 및 이동 버튼 */
+.objection-list__pagination button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #dde2ea;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #4d5765;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* 페이지 버튼 마우스 오버 */
+.objection-list__pagination button:hover:not(:disabled) {
+  border-color: #2d67e8;
+  color: #2d67e8;
+}
+
+/* 비활성화된 페이지 버튼 */
+.objection-list__pagination button:disabled {
+  color: #c8d0dc;
+  cursor: not-allowed;
+}
+
+/* 현재 페이지 버튼 */
+.objection-list__pagination .objection-list__page--active {
+  border-color: #2d67e8;
+  background-color: #2d67e8;
+  color: #ffffff;
+}
+
+/* 상세 패널 등장 영역 */
+.objections-page__detail-wrapper {
+  min-width: 0;
+  opacity: 0;
+  transform: translateX(24px);
+  animation: objection-detail-open 0.3s ease forwards;
+}
+
+/* 상세 패널 종료 영역 */
+.objections-page__detail-wrapper--closing {
+  pointer-events: none;
+  animation: objection-detail-close 0.3s ease forwards;
+}
+
+/* 상세 패널 열기 효과 */
+@keyframes objection-detail-open {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 상세 패널 닫기 효과 */
+@keyframes objection-detail-close {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+/* 이의제기 상세 패널 */
+.objection-detail {
+  min-width: 0;
+  padding: 24px;
+  border: 1.5px solid #eef0f3;
+  border-radius: 14px;
+  background-color: #ffffff;
+}
+
+/* 상세 패널 상단 영역 */
+.objection-detail__header {
+  display: grid;
+  position: relative;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  padding-right: 46px;
+}
+
+/* 상세 패널 고객명 */
+.objection-detail__header h2 {
+  margin: 0;
+  color: #202938;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* 이의제기 유형 배지 영역 */
+.objection-detail__tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 이의제기 유형과 고영향 AI 배지 */
+.objection-detail__case-tag,
+.objection-detail__ai-tag {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 이의제기 유형 배지 */
+.objection-detail__case-tag {
+  background-color: #fef3f2;
+  color: #d92d20;
+}
+
+/* 고영향 AI 배지 */
+.objection-detail__ai-tag {
+  background-color: #edf4ff;
+  color: #2d67e8;
+}
+
+/* 이의제기 번호와 작성일 */
+.objection-detail__meta {
+  color: #6b7684;
+  font-size: 12px;
+  text-align: right;
+}
+
+/* 상세 정보 각 줄 */
+.objection-detail__meta p {
+  margin: 0 0 4px;
+}
+
+/* 이의제기 번호 */
+.objection-detail__meta strong {
+  color: #4d5765;
+}
+
+/* 상세 패널 닫기 버튼 */
+.objection-detail__close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #6b7684;
+  cursor: pointer;
+}
+
+/* 닫기 버튼 마우스 오버 */
+.objection-detail__close:hover {
+  border-color: #2d67e8;
+  color: #2d67e8;
+}
+
+/* 상세 패널 구분선 */
+.objection-detail__divider {
+  height: 1px;
+  margin: 20px 0;
+  background-color: #f2f4f7;
+}
+
+/* 고객 제기 내용 제목 */
+.objection-detail__customer-content h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 고객 제기 내용 Q 아이콘 */
+.objection-detail__question-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background-color: #202938;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* 제목과 내용 입력 영역 간격 */
+.objection-detail__content-field + .objection-detail__content-field {
+  margin-top: 12px;
+}
+
+/* 제목 및 내용 라벨 */
+.objection-detail__field-label {
+  display: block;
+  margin-bottom: 7px;
+  color: #202938;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 고객 이의제기 제목과 내용 박스 공통 */
+.objection-detail__title-box,
+.objection-detail__content-box {
+  min-height: 52px;
+  padding: 13px 14px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #f9fafb;
+
+  /* 제목과 내용 글자 스타일 통일 */
+  color: #4d5765;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* SHAP 판단 근거 영역 */
+.objection-detail__analysis {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #d9e5ff;
+  border-radius: 10px;
+  background-color: #fbfdff;
+}
+
+/* 주요 판단 근거 변수 제목 */
+.objection-detail__analysis-label {
+  margin: 0 0 8px;
+  color: #6b7684;
+  font-size: 12px;
+}
+
+/* 주요 판단 근거 변수 목록 */
+.objection-detail__contributors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 판단 근거 변수 배지 */
+.objection-detail__contributor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid #dde2ea;
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: #202938;
+  font-size: 12px;
+}
+
+/* 판단 근거 변수 색상 점 */
+.objection-detail__contributor-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.objection-detail__contributor-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background-color: #2d67e8;
+}
+
+/* 판단 근거 없음 안내 */
+.objection-detail__no-contributor {
+  color: #9099a8;
+  font-size: 12px;
+}
+.objection-detail__model-evidence-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  color: #4d5765;
+  font-size: 12px;
+}
+
+.objection-detail__model-evidence-heading strong {
+  color: #2d67e8;
+  font-weight: 700;
+}
+
+.objection-detail__model-evidence-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.objection-detail__model-evidence-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 54px 92px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e1e7f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.objection-detail__model-evidence-rank {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #edf4ff;
+  color: #2d67e8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.objection-detail__model-evidence-name {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.objection-detail__model-evidence-name strong {
+  color: #202938;
+  font-size: 12px;
+}
+
+.objection-detail__model-evidence-name span {
+  overflow: hidden;
+  color: #9099a8;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objection-detail__model-evidence-ratio {
+  color: #2d67e8;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.objection-detail__model-evidence-direction {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.objection-detail__model-evidence-direction--increase {
+  color: #d92d20;
+}
+
+.objection-detail__model-evidence-direction--decrease {
+  color: #16805b;
+}
+
+.objection-detail__model-evidence-empty {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px dashed #d8dee8;
+  border-radius: 8px;
+  color: #9099a8;
+  font-size: 12px;
+  text-align: center;
+}
+
+.objection-detail__model-evidence-notice {
+  margin: 8px 0 0;
+  color: #7a8493;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* 담당자 판단 근거 제목 영역 */
+.objection-detail__basis-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  color: #6b7684;
+  font-size: 12px;
+}
+
+/* 담당자 판단 근거 자동작성 배지 */
+.objection-detail__basis-heading span:last-child {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* 담당자 판단 근거 내용 박스 */
+.objection-detail__basis {
+  min-height: 72px;
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #4d5765;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 처리 결과 선택 영역 */
+.objection-detail__decision {
+  margin-top: 16px;
+}
+
+/* 처리 결과 선택 안내 문구 */
+.objection-detail__decision > p {
+  margin: 0 0 8px;
+  color: #6b7684;
+  font-size: 12px;
+}
+
+/* 거절 유지와 재심사 버튼 영역 */
+.objection-detail__decision-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* 처리 결과 선택 버튼 공통 */
+.objection-detail__decision-button {
+  display: flex;
+  min-height: 66px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+/* 처리 결과 버튼 제목 */
+.objection-detail__decision-button strong {
+  font-size: 13.5px;
+}
+
+/* 처리 결과 버튼 설명 */
+.objection-detail__decision-button span {
+  color: #9099a8;
+  font-size: 11px;
+}
+
+/* 선택된 거절 유지 버튼 */
+.objection-detail__decision-button--reject.objection-detail__decision-button--selected {
+  border: 1.5px solid #d92d20;
+  background-color: #fef3f2;
+  color: #d92d20;
+}
+
+/* 선택된 재심사 버튼 */
+.objection-detail__decision-button--review.objection-detail__decision-button--selected {
+  border: 1.5px solid #16a05d;
+  background-color: #ebfbf2;
+  color: #16a05d;
+}
+
+/* 문서 생성하기 버튼 */
+.objection-detail__create-button {
+  display: flex;
+  width: 100%;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* 문서 생성 버튼 마우스 오버 */
+.objection-detail__create-button:hover {
+  background-color: #244fb8;
+}
+
+/* 비활성화된 문서 생성 버튼 */
+.objection-detail__create-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 답변완료 안내 */
+.objection-detail__completed-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #b7ebc8;
+  border-radius: 8px;
+  background-color: #effcf4;
+  color: #16a05d;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* 답변완료 처리 결과 영역 */
+.objection-detail__completed {
+  margin-top: 16px;
+}
+
+/* 최종 처리 결과 제목 */
+.objection-detail__completed-title {
+  margin: 0 0 8px;
+  color: #6b7684;
+  font-size: 12px;
+}
+
+/* 최종 처리 결과 카드 */
+.objection-detail__completed-result {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #f0c7c2;
+  border-radius: 8px;
+  background-color: #fff7f6;
+}
+
+/* 최종 처리 결과 값 */
+.objection-detail__completed-result strong {
+  color: #d92d20;
+  font-size: 14px;
+}
+
+/* 이메일 발송 완료 문구 */
+.objection-detail__completed-result span {
+  color: #6b7684;
+  font-size: 12px;
+}
+
+/* 이메일 발송 정보 */
+.objection-detail__dispatch-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 18px;
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #f9fafb;
+}
+
+/* 이메일 발송 정보 한 항목 */
+.objection-detail__dispatch-info > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 이메일 발송 정보 항목명 */
+.objection-detail__dispatch-info dt {
+  min-width: 64px;
+  color: #9099a8;
+  font-size: 11.5px;
+}
+
+/* 이메일 발송 정보 값 */
+.objection-detail__dispatch-info dd {
+  margin: 0;
+  color: #4d5765;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 이메일 발송 정보 없음 */
+.objection-detail__completed-empty {
+  padding: 18px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  color: #9099a8;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* 발송된 대응문서 보기 버튼 */
+.objection-detail__view-button {
+  display: flex;
+  width: 100%;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  border: 1px solid #2d67e8;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #2d67e8;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* 대응문서 보기 버튼 마우스 오버 */
+.objection-detail__view-button:hover {
+  background-color: #2d67e8;
+  color: #ffffff;
+}
+
+/* 사용자 모션 최소화 설정 */
+@media (prefers-reduced-motion: reduce) {
+  .objections-page__workspace,
+  .objection-list,
+  .objection-list__toolbar,
+  .objection-list__sort-select,
+  .objection-list__item,
+  .objection-list__customer,
+  .objection-list__title {
+    transition: none;
+  }
+
+  .objections-page__detail-wrapper,
+  .objections-page__detail-wrapper--closing,
+  .objection-list__compact-meta {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* 태블릿 및 모바일 화면 */
+@media (max-width: 900px) {
+  /* 모바일 페이지 여백 */
+  .objections-page {
+    padding: 32px 24px 60px;
+  }
+
+  /* 모바일 제목 우측 액션 영역 */
+  .objections-page__title-actions {
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  /* 모바일 목록과 상세 패널 배치 */
+  .objections-page__workspace--detail-open,
+  .objections-page__workspace--detail-closing {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* 모바일 검색과 정렬 영역 */
+  .objection-list__toolbar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  /* 모바일 정렬 버튼 */
+  .objection-list__sort-wrapper {
+    width: 110px;
+    justify-self: end;
+  }
+
+  /* 모바일 목록 행 */
+  .objection-list__item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  /* 모바일에서 상태와 날짜 숨김 */
+  .objection-list__status,
+  .objection-list__date,
+  .objection-list__arrow {
+    display: none;
+  }
+
+  /* 모바일 상세 패널 상단 */
+  .objection-detail__header {
+    grid-template-columns: 1fr;
+  }
+
+  /* 모바일 상세 정보 정렬 */
+  .objection-detail__meta {
+    text-align: left;
+  }
+
+  /* 모바일 처리 결과 버튼 */
+  .objection-detail__decision-options {
+    grid-template-columns: 1fr;
+  }
+
+  /* 모바일 이메일 발송 정보 */
+  .objection-detail__dispatch-info {
+    grid-template-columns: 1fr;
+  }
+}

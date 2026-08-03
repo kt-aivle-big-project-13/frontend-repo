@@ -308,10 +308,7 @@ function SignupForm() {
         navigate('/login', { replace: true });
       }, 1000);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : '회원가입에 실패했습니다.';
-
-      setSubmitError(errorMessage);
+      setSubmitError(getApiErrorMessage(error, '회원가입에 실패했습니다.'));
     }
   };
 
@@ -471,11 +468,12 @@ function SignupForm() {
             autoComplete="new-password"
             disabled={isSubmitting}
             aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? 'signup-password-error' : undefined}
             {...register('password')}
           />
 
           {errors.password?.message && (
-            <p className="auth-form__field-error" role="alert">
+            <p id="signup-password-error" className="auth-form__field-error" role="alert">
               {errors.password.message}
             </p>
           )}
@@ -490,11 +488,14 @@ function SignupForm() {
             autoComplete="new-password"
             disabled={isSubmitting}
             aria-invalid={Boolean(errors.passwordConfirm)}
+            aria-describedby={
+              errors.passwordConfirm ? 'signup-password-confirm-error' : undefined
+            }
             {...register('passwordConfirm')}
           />
 
           {errors.passwordConfirm?.message && (
-            <p className="auth-form__field-error" role="alert">
+            <p id="signup-password-confirm-error" className="auth-form__field-error" role="alert">
               {errors.passwordConfirm.message}
             </p>
           )}

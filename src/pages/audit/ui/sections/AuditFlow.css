@@ -26,6 +26,10 @@
   font-weight: 800;
 }
 
+.audit-execution-section__upload-title--standalone {
+  margin-bottom: 18px;
+}
+
 .audit-execution-section__mode-toggle {
   display: inline-flex;
   flex-shrink: 0;
@@ -73,6 +77,52 @@
   border-radius: 8px;
   color: #202938;
   font-size: 13px;
+}
+
+.audit-execution-section__text-input--invalid {
+  border-color: #d92d20;
+}
+
+.audit-execution-section__field-error {
+  margin: -8px 0 16px;
+  color: #d92d20;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.audit-execution-section__duplicate-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 1000;
+  padding: 12px 22px;
+  border-radius: 8px;
+  background-color: #d92d20;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  animation: audit-execution-section-toast-fade 2.5s ease forwards;
+}
+
+@keyframes audit-execution-section-toast-fade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
 }
 
 .audit-execution-section__select {
@@ -142,6 +192,150 @@
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.audit-execution-section__combobox {
+  position: relative;
+  flex: 1;
+}
+
+.audit-execution-section__combobox-input {
+  margin-bottom: 0;
+}
+
+.audit-execution-section__combobox-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  overflow-y: auto;
+  width: 100%;
+  max-height: 220px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0 8px 24px rgb(31 50 81 / 12%);
+}
+
+.audit-execution-section__combobox-option {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: #202938;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.audit-execution-section__combobox-option:hover {
+  background-color: #eef4ff;
+  color: #2d67e8;
+}
+
+.audit-execution-section__combobox-empty {
+  padding: 8px 10px;
+  color: #9099a8;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.audit-execution-section__version-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 16px;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.audit-execution-section__version-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background-color: #f2f4f7;
+  color: #6b7684;
+  font-weight: 700;
+}
+
+.audit-execution-section__version-arrow {
+  color: #9099a8;
+}
+
+.audit-execution-section__version-input {
+  width: 100px;
+  padding: 6px 10px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.audit-execution-section__version-input--invalid {
+  border-color: #d92d20;
+}
+
+.audit-execution-section__version-error {
+  margin: -8px 0 16px;
+  color: #d92d20;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.audit-execution-section__reuse-panel {
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #dde2ea;
+  border-radius: 10px;
+  background-color: #f7f8fa;
+}
+
+.audit-execution-section__reuse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.audit-execution-section__reuse-label {
+  color: #202938;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.audit-execution-section__reuse-switch {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2d67e8;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.audit-execution-section__reuse-switch:hover {
+  text-decoration: underline;
+}
+
+.audit-execution-section__reuse-switch--back {
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.audit-execution-section__reuse-meta {
+  margin: 0 0 14px;
+  color: #9099a8;
+  font-size: 12px;
+}
+
+.audit-execution-section__tag--readonly {
+  cursor: default;
 }
 
 .audit-execution-section__sensitive-input-row .audit-execution-section__text-input {
@@ -288,7 +482,11 @@
 }
 
 .audit-execution-section__result-title {
+  display: block;
   margin: 0 0 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background-color: #f2f4f7;
   color: #202938;
   font-size: 15px;
   font-weight: 800;
@@ -705,11 +903,58 @@
   margin-bottom: 0;
 }
 
+.audit-execution-section__matched-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
 .audit-execution-section__matched-title {
-  margin: 0 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
   color: #202938;
   font-size: 12.5px;
   font-weight: 700;
+}
+
+.audit-execution-section__matched-help {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1px solid #c1c7d0;
+  border-radius: 50%;
+  background: none;
+  color: #6b7684;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.audit-execution-section__matched-help:hover {
+  border-color: #2d67e8;
+  color: #2d67e8;
+}
+
+.audit-execution-section__matched-badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background-color: #eef1ff;
+  color: #4b5fd6;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .audit-execution-section__matched-quote {
@@ -727,7 +972,7 @@
 
 .audit-execution-section__deliverable-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-bottom: 16px;
 }
@@ -738,43 +983,41 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  padding: 16px;
+  min-width: 0;
+  padding: 18px;
   border: 1.5px solid #eef0f3;
-  border-radius: 10px;
+  border-radius: 12px;
   background-color: #ffffff;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.audit-execution-section__deliverable-card:hover {
+  border-color: #2d67e8;
 }
 
 .audit-execution-section__deliverable-card--selected {
   border-color: #2d67e8;
+  background-color: #f5f8ff;
 }
 
 .audit-execution-section__deliverable-file {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.audit-execution-section__deliverable-file--pdf {
-  background-color: #fef3f2;
-  color: #d92d20;
-}
-
-.audit-execution-section__deliverable-file--word {
-  background-color: #eef4ff;
-  color: #2d67e8;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background-color: #2d67e8;
 }
 
 .audit-execution-section__deliverable-label {
   color: #202938;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 
@@ -949,6 +1192,61 @@
 .audit-execution-section__progress-step--done .audit-execution-section__progress-step-dot {
   border-color: #21a666;
   background-color: #21a666;
+}
+
+.audit-execution-section__cancel-button {
+  align-self: center;
+  padding: 10px 20px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #4d5765;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.audit-execution-section__cancel-button:hover:not(:disabled) {
+  border-color: #d92d20;
+  background-color: #fef3f2;
+  color: #d92d20;
+}
+
+.audit-execution-section__cancel-button:disabled {
+  color: #c8d0dc;
+  cursor: not-allowed;
+}
+
+.audit-execution-section__retry-bar {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.audit-execution-section__retry-button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.audit-execution-section__retry-button:hover:not(:disabled) {
+  background-color: #244fb8;
+}
+
+.audit-execution-section__retry-button:disabled {
+  background-color: #c8d0dc;
+  cursor: not-allowed;
 }
 
 @keyframes audit-execution-section-pulse {
