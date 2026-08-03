@@ -136,7 +136,10 @@ function normalizeModelName(value: string): string {
   return value.trim().toLowerCase();
 }
 
-const DUPLICATE_TOAST_MS = 2500;
+const MODEL_NAME_TOAST_MS = 2500;
+
+// 백엔드 ai_models.model_name 컬럼 길이(varchar(100))와 맞춘다 — 넘으면 DB 저장 시 500 에러가 난다.
+const MODEL_NAME_MAX_LENGTH = 100;
 
 function AuditExecutionSection() {
   const navigate = useNavigate();
@@ -182,7 +185,7 @@ function AuditExecutionSection() {
   const [existingModelNames, setExistingModelNames] = useState<Set<string>>(
     () => new Set(),
   );
-  const [showDuplicateNameToast, setShowDuplicateNameToast] = useState(false);
+  const [modelNameToast, setModelNameToast] = useState<string | null>(null);
 
   const modelFileInputRef = useRef<HTMLInputElement>(null);
   const auditDatasetFileInputRef = useRef<HTMLInputElement>(null);
@@ -219,10 +222,19 @@ function AuditExecutionSection() {
     return existingModelNames.has(normalized);
   }, [modelMode, modelName, existingModelNames]);
 
-  const duplicateToastTimeoutRef = useRef<number | undefined>(undefined);
+  // 모델명 길이는 모드와 무관하게 검증한다 — 버전업에서도 이 입력값이 그대로 저장된다.
+  const isModelNameTooLong = modelName.length > MODEL_NAME_MAX_LENGTH;
+  const isModelNameInvalid = isDuplicateModelName || isModelNameTooLong;
+  const modelNameErrorMessage = isDuplicateModelName
+    ? '이미 감사한 모델과 이름이 중복됩니다. 다른 모델명을 입력해주세요.'
+    : isModelNameTooLong
+      ? `모델명은 ${MODEL_NAME_MAX_LENGTH}자를 초과할 수 없습니다. (현재 ${modelName.length}자)`
+      : null;
+
+  const modelNameToastTimeoutRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    return () => window.clearTimeout(duplicateToastTimeoutRef.current);
+    return () => window.clearTimeout(modelNameToastTimeoutRef.current);
   }, []);
 
   const handleModelNameChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -232,13 +244,20 @@ function AuditExecutionSection() {
     const normalized = normalizeModelName(value);
     const duplicate =
       modelMode === 'new' && normalized.length > 0 && existingModelNames.has(normalized);
-    if (!duplicate) return;
+    const tooLong = value.length > MODEL_NAME_MAX_LENGTH;
 
-    setShowDuplicateNameToast(true);
-    window.clearTimeout(duplicateToastTimeoutRef.current);
-    duplicateToastTimeoutRef.current = window.setTimeout(
-      () => setShowDuplicateNameToast(false),
-      DUPLICATE_TOAST_MS,
+    const toastMessage = duplicate
+      ? '이미 등록된 모델명입니다. 다른 이름을 입력해주세요.'
+      : tooLong
+        ? `모델명은 ${MODEL_NAME_MAX_LENGTH}자를 초과할 수 없습니다.`
+        : null;
+    if (!toastMessage) return;
+
+    setModelNameToast(toastMessage);
+    window.clearTimeout(modelNameToastTimeoutRef.current);
+    modelNameToastTimeoutRef.current = window.setTimeout(
+      () => setModelNameToast(null),
+      MODEL_NAME_TOAST_MS,
     );
   };
 
@@ -400,7 +419,7 @@ function AuditExecutionSection() {
 
   const handleStartAudit = async () => {
     if (isSubmitting) return;
-    if (isDuplicateModelName) return;
+    if (isModelNameInvalid) return;
     if (!willReuseModel && !modelFile) return;
     if (isUpdateMode && !selectedPreviousModelId) return;
     if (!willReuseDataset && !auditDatasetFile) return;
@@ -494,7 +513,7 @@ function AuditExecutionSection() {
   const isStartDisabled =
     (!willReuseModel && !modelFile) ||
     isSubmitting ||
-    isDuplicateModelName ||
+    isModelNameInvalid ||
     (isUpdateMode && !selectedPreviousModelId) ||
     (isUpdateMode && newVersion.trim().length === 0) ||
     isVersionSameAsPrevious ||
@@ -601,16 +620,14 @@ function AuditExecutionSection() {
           <input
             id="model-name"
             type="text"
-            className={`audit-execution-section__text-input${isDuplicateModelName ? ' audit-execution-section__text-input--invalid' : ''}`}
+            className={`audit-execution-section__text-input${isModelNameInvalid ? ' audit-execution-section__text-input--invalid' : ''}`}
             value={modelName}
             onChange={handleModelNameChange}
             placeholder="모델명을 입력해주세요"
           />
 
-          {isDuplicateModelName && (
-            <p className="audit-execution-section__field-error">
-              이미 감사한 모델과 이름이 중복됩니다. 다른 모델명을 입력해주세요.
-            </p>
+          {modelNameErrorMessage && (
+            <p className="audit-execution-section__field-error">{modelNameErrorMessage}</p>
           )}
 
           {willReuseModel && selectedPreviousModel ? (
@@ -885,9 +902,9 @@ function AuditExecutionSection() {
         </p>
       )}
 
-      {showDuplicateNameToast && (
+      {modelNameToast && (
         <div className="audit-execution-section__duplicate-toast" role="alert">
-          이미 등록된 모델명입니다. 다른 이름을 입력해주세요.
+          {modelNameToast}
         </div>
       )}
     </div>
