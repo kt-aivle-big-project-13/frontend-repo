@@ -68,6 +68,10 @@
 }
 
 .reports-section__final-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 12px 20px;
   border: none;
   border-radius: 8px;
@@ -76,6 +80,15 @@
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.reports-section__final-button-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+  user-select: none;
 }
 
 .reports-section__final-button:hover {

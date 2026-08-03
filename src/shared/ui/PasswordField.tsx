@@ -43,6 +43,7 @@ interface PasswordFieldProps {
   ariaInvalid?: boolean;
   ariaDescribedBy?: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
 }
 
 function PasswordField({
@@ -54,6 +55,7 @@ function PasswordField({
   ariaInvalid,
   ariaDescribedBy,
   onChange,
+  onBlur,
 }: PasswordFieldProps) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -103,6 +105,7 @@ function PasswordField({
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedBy}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
       />
       <button
         type="button"
