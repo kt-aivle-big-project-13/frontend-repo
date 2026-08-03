@@ -5,6 +5,14 @@ export type GroundingStatus =
   | 'PARTIAL'
   | 'NOT_GROUNDED';
 
+// 근거 충실도는 GROUNDED/PARTIAL/NOT_GROUNDED 영어 코드 그대로 오므로, 화면에는
+// 한글 라벨로 바꿔 보여준다.
+export const GROUNDING_STATUS_LABEL: Record<GroundingStatus, string> = {
+  GROUNDED: '근거 충분',
+  PARTIAL: '근거 일부',
+  NOT_GROUNDED: '근거 부족',
+};
+
 export type CitationType =
   | 'AUDIT_METRIC'
   | 'GROUP_STAT'
