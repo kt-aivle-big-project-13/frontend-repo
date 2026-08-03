@@ -1,3 +1,5 @@
+import { isAxiosError } from 'axios';
+
 import { apiClient } from '../../../shared/api/client';
 
 export type ReportFormat = 'PDF' | 'WORD' | 'HTML';
@@ -67,12 +69,56 @@ interface ReportMetadataResponse {
   generatedAt: string;
 }
 
+interface ApiErrorResponse {
+  code?: string;
+}
+
+// 아직 산출물을 만든 적이 없을 때만 내려오는 도메인 오류 코드(REPORT_NOT_FOUND).
+// 감사 자체가 없는 경우처럼 다른 이유로도 404가 오므로 상태 코드만으로 판단하면
+// 없는 감사에 생성 요청을 보내게 된다.
+const REPORT_NOT_FOUND_CODE = 'EM017';
+
+async function findLatestReport(
+  getLatest: (format: ReportFormat) => Promise<ReportMetadataResponse>,
+  format: ReportFormat,
+): Promise<ReportMetadataResponse | null> {
+  try {
+    return await getLatest(format);
+  } catch (error) {
+    if (
+      isAxiosError<ApiErrorResponse>(error) &&
+      error.response?.status === 404 &&
+      error.response.data?.code === REPORT_NOT_FOUND_CODE
+    ) {
+      return null;
+    }
+
+    // 그 밖의 오류(다른 404, 권한, 서버 장애)는 그대로 던져 호출부가 실패로 처리하게 둔다.
+    throw error;
+  }
+}
+
 async function generateAndDownloadReport(options: {
   format: ReportFormat;
   generate: () => Promise<void>;
   getLatest: (format: ReportFormat) => Promise<ReportMetadataResponse>;
   download: (reportId: number) => Promise<void>;
 }): Promise<void> {
+  // 이미 만들어 둔 산출물이 있으면 다시 만들지 않는다. 생성은 AI 서버 호출이라 오래 걸리고,
+  // 호출할 때마다 S3 객체와 DB 행이 새로 쌓인다.
+  //
+  // 백엔드는 생성이 끝난 뒤에야 행을 남기므로(ReportEntity.create 가 COMPLETED 로 고정)
+  // 조회된 산출물은 사실상 항상 완료 상태다. 아래 상태 확인은 방어적 장치이고, 완료가
+  // 아니면 내려받을 파일이 없으므로 다시 만든다.
+  // 훗날 백엔드가 GENERATING 을 남기는 비동기 생성으로 바뀌면, 그때는 재생성이 아니라
+  // 완료될 때까지 기다리도록 이 분기를 나눠야 한다.
+  const existing = await findLatestReport(options.getLatest, options.format);
+
+  if (existing?.status === 'COMPLETED') {
+    await options.download(existing.reportId);
+    return;
+  }
+
   await options.generate();
   const metadata = await options.getLatest(options.format);
   await options.download(metadata.reportId);
