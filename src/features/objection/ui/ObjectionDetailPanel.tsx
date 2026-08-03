@@ -41,6 +41,11 @@ function ObjectionDetailPanel({
   // 답변완료 상태 확인
   const isCompleted = objection.status === 'COMPLETED';
 
+  // 전역 SHAP 근거를 순위순으로 정렬한 뒤 TOP 5만 표시
+  const topModelEvidence = [...(objection.globalModelEvidence ?? [])]
+    .sort((first, second) => first.rank - second.rank)
+    .slice(0, 5);
+
   return (
     <section className="objection-detail">
       {/* 상세 패널 상단 정보 */}
@@ -131,9 +136,9 @@ function ObjectionDetailPanel({
           {objection.modelName && <strong>{objection.modelName}</strong>}
         </div>
 
-        {objection.globalModelEvidence?.length ? (
+        {topModelEvidence.length ? (
           <div className="objection-detail__model-evidence-list">
-            {objection.globalModelEvidence.map((evidence) => (
+            {topModelEvidence.map((evidence) => (
               <div
                 key={`${evidence.rank}-${evidence.feature}`}
                 className="objection-detail__model-evidence-item"
@@ -154,8 +159,12 @@ function ObjectionDetailPanel({
                     'objection-detail__model-evidence-direction',
                     evidence.direction === 'RISK_INCREASE'
                       ? 'objection-detail__model-evidence-direction--increase'
-                      : 'objection-detail__model-evidence-direction--decrease',
-                  ].join(' ')}
+                      : evidence.direction === 'RISK_DECREASE'
+                        ? 'objection-detail__model-evidence-direction--decrease'
+                        : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   {evidence.direction === 'RISK_INCREASE'
                     ? '위험 증가 경향'
