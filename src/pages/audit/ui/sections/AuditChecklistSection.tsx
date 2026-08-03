@@ -15,6 +15,7 @@ import {
   type RegulationMappingItem,
   type SelfCheckItemCode,
 } from '../../../../features/audit/api/auditApi';
+import { extractApiErrorMessage } from '../../../../shared/api/client';
 import StepIndicator from '../StepIndicator';
 
 import './AuditFlow.css';
@@ -230,9 +231,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       if (error instanceof RegulationMappingTimeoutError) {
         setIsMappingPending(true);
       } else {
-        setSelfCheckError(
-          error instanceof Error ? error.message : '매칭 조항 조회 중 오류가 발생했습니다.',
-        );
+        setSelfCheckError(extractApiErrorMessage(error, '매칭 조항 조회 중 오류가 발생했습니다.'));
       }
     } finally {
       if (auditIdRef.current === id) setIsLoadingMatches(false);
@@ -260,9 +259,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       await loadMatchedArticles(submittedAuditId);
     } catch (error) {
       if (auditIdRef.current === submittedAuditId) {
-        setSelfCheckError(
-          error instanceof Error ? error.message : '규제 자가 점검 제출 중 오류가 발생했습니다.',
-        );
+        setSelfCheckError(extractApiErrorMessage(error, '규제 자가 점검 제출 중 오류가 발생했습니다.'));
       }
     } finally {
       if (auditIdRef.current === submittedAuditId) setIsSelfCheckSubmitting(false);

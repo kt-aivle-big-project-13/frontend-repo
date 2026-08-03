@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, type SubmitHandler } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
-import PasswordField from '../../../shared/ui/PasswordField';
 import '../../../shared/ui/authForm.css';
 import {
   confirmVerificationCode,
@@ -309,10 +308,7 @@ function SignupForm() {
         navigate('/login', { replace: true });
       }, 1000);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : '회원가입에 실패했습니다.';
-
-      setSubmitError(errorMessage);
+      setSubmitError(getApiErrorMessage(error, '회원가입에 실패했습니다.'));
     }
   };
 
@@ -466,74 +462,40 @@ function SignupForm() {
         <div className="auth-form__field">
           <label htmlFor="signup-password">비밀번호</label>
 
-          <Controller
-            name="password"
-            control={control}
-            render={({ field }) => (
-              <PasswordField
-                id="signup-password"
-                name={field.name}
-                value={field.value}
-                disabled={isSubmitting}
-                autoComplete="new-password"
-                ariaInvalid={Boolean(errors.password)}
-                ariaDescribedBy={
-                  errors.password
-                    ? 'signup-password-error'
-                    : undefined
-                }
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-              />
-            )}
+          <input
+            id="signup-password"
+            type="password"
+            autoComplete="new-password"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? 'signup-password-error' : undefined}
+            {...register('password')}
           />
 
           {errors.password?.message && (
-            <p
-              id="signup-password-error"
-              className="auth-form__field-error"
-              role="alert"
-            >
+            <p id="signup-password-error" className="auth-form__field-error" role="alert">
               {errors.password.message}
             </p>
           )}
         </div>
-        
-        <div className="auth-form__field">
-          <label htmlFor="signup-password-confirm">
-            비밀번호 확인
-          </label>
 
-          <Controller
-            name="passwordConfirm"
-            control={control}
-            render={({ field }) => (
-              <PasswordField
-                id="signup-password-confirm"
-                name={field.name}
-                value={field.value}
-                disabled={isSubmitting}
-                autoComplete="new-password"
-                ariaInvalid={Boolean(
-                  errors.passwordConfirm,
-                )}
-                ariaDescribedBy={
-                  errors.passwordConfirm
-                    ? 'signup-password-confirm-error'
-                    : undefined
-                }
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-              />
-            )}
+        <div className="auth-form__field">
+          <label htmlFor="signup-password-confirm">비밀번호 확인</label>
+
+          <input
+            id="signup-password-confirm"
+            type="password"
+            autoComplete="new-password"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(errors.passwordConfirm)}
+            aria-describedby={
+              errors.passwordConfirm ? 'signup-password-confirm-error' : undefined
+            }
+            {...register('passwordConfirm')}
           />
 
           {errors.passwordConfirm?.message && (
-            <p
-              id="signup-password-confirm-error"
-              className="auth-form__field-error"
-              role="alert"
-            >
+            <p id="signup-password-confirm-error" className="auth-form__field-error" role="alert">
               {errors.passwordConfirm.message}
             </p>
           )}

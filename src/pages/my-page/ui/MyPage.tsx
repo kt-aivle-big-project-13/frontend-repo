@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { Modal, message } from 'antd';
 
 import { useAuthStore } from '../../../entities/user/model/authStore';
@@ -10,6 +9,7 @@ import {
   withdraw,
   type MyProfileResponse,
 } from '../../../features/my-page/api/myPageApi';
+import { extractApiErrorMessage } from '../../../shared/api/client';
 import PasswordField from '../../../shared/ui/PasswordField';
 import MainLayout from '../../../widgets/layout/ui/MainLayout';
 
@@ -71,11 +71,7 @@ function MyPage() {
       navigate('/');
       message.success('회원 탈퇴가 완료되었습니다.');
     } catch (error: unknown) {
-      const apiMessage = axios.isAxiosError(error)
-        ? (error.response?.data as { message?: string } | undefined)?.message
-        : undefined;
-
-      setWithdrawError(apiMessage ?? '회원 탈퇴에 실패했습니다.');
+      setWithdrawError(extractApiErrorMessage(error, '회원 탈퇴에 실패했습니다.'));
     } finally {
       setIsWithdrawing(false);
     }
