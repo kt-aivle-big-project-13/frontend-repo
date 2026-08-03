@@ -8,6 +8,7 @@ export const STATUS_LABEL: Record<AuditStatus, string> = {
   IN_PROGRESS: '분석 중',
   UNCONFIRMED: '미확인',
   FAILED: '분석 실패',
+  CANCELLED: '취소됨',
 };
 
 export const STATUS_TEXT_COLOR: Record<AuditStatus, string> = {
@@ -18,6 +19,7 @@ export const STATUS_TEXT_COLOR: Record<AuditStatus, string> = {
   IN_PROGRESS: '#2d67e8',
   UNCONFIRMED: '#6b7684',
   FAILED: '#d93e44',
+  CANCELLED: '#6b7684',
 };
 
 export const STATUS_BG_COLOR: Record<AuditStatus, string> = {
@@ -28,6 +30,7 @@ export const STATUS_BG_COLOR: Record<AuditStatus, string> = {
   IN_PROGRESS: '#eef4ff',
   UNCONFIRMED: '#f7f8fa',
   FAILED: '#feecea',
+  CANCELLED: '#f7f8fa',
 };
 
 export function formatAuditDate(completedAt: string | null): string {

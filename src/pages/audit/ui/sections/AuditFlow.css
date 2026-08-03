@@ -1194,6 +1194,33 @@
   background-color: #21a666;
 }
 
+.audit-execution-section__cancel-button {
+  align-self: center;
+  padding: 10px 20px;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #4d5765;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.audit-execution-section__cancel-button:hover:not(:disabled) {
+  border-color: #d92d20;
+  background-color: #fef3f2;
+  color: #d92d20;
+}
+
+.audit-execution-section__cancel-button:disabled {
+  color: #c8d0dc;
+  cursor: not-allowed;
+}
+
 @keyframes audit-execution-section-pulse {
   0%,
   100% {
