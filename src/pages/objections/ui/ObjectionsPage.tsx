@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { message } from 'antd';
+import { Popover, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -27,6 +27,59 @@ const ITEMS_PER_PAGE = 10;
 
 // 상세 패널 닫기 애니메이션 시간
 const DETAIL_ANIMATION_DURATION = 300;
+
+// CSV 최대 업로드 크기: 200MB
+const MAX_CSV_FILE_SIZE = 200 * 1024 * 1024;
+
+// 도움말 내용
+function CsvUploadGuide() {
+  return (
+    <div className="objections-page__upload-guide">
+      <strong>CSV 업로드 안내</strong>
+
+      <ul>
+        <li>
+          파일은 <code>.csv</code> 확장자, UTF-8 인코딩, 200MB 이하로
+          준비해주세요. UTF-8 BOM은 자동으로 제거됩니다.
+        </li>
+
+        <li>
+          헤더는 다음 8개 컬럼으로 구성해주세요.
+          <span className="objections-page__upload-guide-detail">
+            고객_이름, 이의제기_번호, 거절_금융기준, 제목, 내용,
+            주요_판단_근거_변수, 담당자_판단_근거, 작성일시
+          </span>
+        </li>
+
+        <li>
+          고객_이름, 거절_금융기준, 제목, 내용, 작성일시는 반드시
+          입력해야 합니다.
+        </li>
+
+        <li>
+          길이 제한은 이의제기_번호 20자, 고객_이름 50자,
+          거절_금융기준 100자, 제목 200자입니다.
+        </li>
+
+        <li>
+          작성일시는 <code>yyyy-MM-dd H:mm</code> 형식으로 입력해주세요.
+          <span className="objections-page__upload-guide-detail">
+            예: 2026-07-31 9:54
+          </span>
+        </li>
+
+        <li>
+          이의제기_번호는 파일 안에서 중복될 수 없으며, 기존에 등록된
+          번호도 사용할 수 없습니다.
+        </li>
+
+        <li>
+          한 행이라도 검증에 실패하면 파일 전체가 저장되지 않습니다.
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 function ObjectionsPage() {
   const navigate = useNavigate();
@@ -213,12 +266,26 @@ function ObjectionsPage() {
   // 신용감사 결과 CSV 업로드
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+
+    // 같은 파일을 다시 선택해도 change 이벤트가 발생하도록 초기화
     event.target.value = '';
 
     if (!file) {
       return;
     }
 
+    // csv 확장자 검사
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      message.error('.csv 형식의 파일만 업로드할 수 있습니다.');
+      return;
+    }
+
+    // 파일 크기 검사
+    if (file.size > MAX_CSV_FILE_SIZE) {
+      message.error('파일 크기는 200MB 이하여야 합니다.');
+      return;
+    }
+    
     try {
       setIsUploading(true);
 
@@ -227,7 +294,16 @@ function ObjectionsPage() {
       message.success(`이의제기 ${result.importedCount}건이 등록되었습니다.`);
       loadObjections();
     } catch (error: unknown) {
-      message.error(extractErrorMessage(error, 'CSV 업로드에 실패했습니다.'));
+      const errorMessage = extractErrorMessage(error, 'CSV 업로드에 실패했습니다.');
+
+      if (errorMessage.includes('CSV 헤더가 올바르지 않습니다')) {
+        message.error(
+          'CSV 헤더가 올바르지 않습니다. 도움말에서 지정된 8개 헤더 항목을 확인해주세요.',
+        );
+        return;
+      }
+
+      message.error(errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -251,18 +327,34 @@ function ObjectionsPage() {
               </div>
 
               <div className="objections-page__title-actions">
-                {/* 신용감사 결과 CSV 업로드 */}
-                <label className="objections-page__upload-button">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(event) => void handleFileChange(event)}
-                    disabled={isUploading}
-                    hidden
-                  />
-                  {isUploading ? '업로드 중...' : '신용감사 결과 업로드'}
-                </label>
+                <div className="objections-page__upload-actions">
+                  {/* 신용감사 결과 CSV 업로드 */}
+                  <label className="objections-page__upload-button">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={(event) => void handleFileChange(event)}
+                      disabled={isUploading}
+                      hidden
+                    />
+                    {isUploading ? '업로드 중...' : '신용감사 결과 업로드'}
+                  </label>
 
+                  <Popover
+                    content={<CsvUploadGuide />}
+                    trigger="click"
+                    placement="bottomRight"
+                  >
+                    <button
+                      type="button"
+                      className="objections-page__upload-help-button"
+                      aria-label="신용감사 결과 CSV 업로드 도움말"
+                    >
+                      ?
+                    </button>
+                  </Popover>
+                  
+                </div>
                 {/* 상세 패널이 닫혀 있을 때만 상단에 전체 건수 표시 */}
                 {!isDetailVisible && <strong>{objections.length}건</strong>}
               </div>
