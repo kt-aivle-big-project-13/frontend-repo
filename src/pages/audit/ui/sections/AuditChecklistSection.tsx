@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tooltip } from 'antd';
 
 import {
+  cancelAudit,
   getAudits,
   getRegulationMappings,
   getSelfCheckAnswers,
@@ -80,6 +81,8 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const [status, setStatus] = useState<AuditStatus | null>(null);
   const [runningStep, setRunningStep] = useState(2);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const [selfCheckAnswers, setSelfCheckAnswers] =
     useState<Record<SelfCheckItemCode, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
@@ -95,8 +98,9 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   // 제출 여부와 무관하게 결과 확인으로 넘어갈 수 있다.
   const [skipSelfCheck, setSkipSelfCheck] = useState(false);
 
-  const isAnalyzed = isDone && status !== 'FAILED';
+  const isAnalyzed = isDone && status !== 'FAILED' && status !== 'CANCELLED';
   const isFailed = isDone && status === 'FAILED';
+  const isCancelled = isDone && status === 'CANCELLED';
 
   // auditId가 바뀌면(다른 감사의 체크리스트 페이지로 바로 이동) 이전 감사의 진행/자가점검
   // 상태가 잠시 남아있지 않도록 렌더링 중에 바로 리셋한다.
@@ -107,6 +111,8 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     setStatus(null);
     setRunningStep(2);
     setPollError(null);
+    setIsCancelling(false);
+    setCancelError(null);
     setSelfCheckAnswers(DEFAULT_SELF_CHECK);
     setIsSelfCheckSubmitted(false);
     setSelfCheckError(null);
@@ -268,6 +274,25 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     loadMatchedArticles(auditId);
   };
 
+  // 취소 성공 시 다음 폴링 응답을 기다리지 않고 바로 상태를 CANCELLED로 반영해
+  // 폴링 useEffect(의존값 isDone)가 즉시 정리되도록 한다.
+  const handleCancel = async () => {
+    if (isCancelling) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      await cancelAudit(auditId);
+      setStatus('CANCELLED');
+      setIsDone(true);
+    } catch (error) {
+      setCancelError(error instanceof Error ? error.message : '감사 취소 중 오류가 발생했습니다.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   return (
     <div className="audit-execution-section">
       <StepIndicator doneSteps={[1, 2]} activeSteps={[3]} />
@@ -275,6 +300,10 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       {isFailed ? (
         <p className="audit-execution-section__empty" role="alert">
           감사 분석이 실패했습니다. 백엔드·AI 서버 로그를 확인해주세요.
+        </p>
+      ) : isCancelled ? (
+        <p className="audit-execution-section__empty" role="alert">
+          감사를 취소했습니다.
         </p>
       ) : (
         <div className="audit-execution-section__loading" role="status" aria-live="polite">
@@ -331,6 +360,15 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                   Fairlearn 공정성 분석
                 </li>
               </ul>
+
+              <button
+                type="button"
+                className="audit-execution-section__cancel-button"
+                disabled={isCancelling}
+                onClick={handleCancel}
+              >
+                {isCancelling ? '취소하는 중…' : '감사 취소'}
+              </button>
             </div>
           )}
         </div>
@@ -339,6 +377,12 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       {pollError && (
         <p className="audit-execution-section__empty" role="alert">
           {pollError}
+        </p>
+      )}
+
+      {cancelError && (
+        <p className="audit-execution-section__empty" role="alert">
+          {cancelError}
         </p>
       )}
 

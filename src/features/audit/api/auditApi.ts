@@ -3,7 +3,7 @@ import { apiClient } from '../../../shared/api/client';
 export type ThresholdMethod = 'VALIDATION_DATASET' | 'MANUAL';
 
 export type AuditStatus =
-  'PENDING' | 'IN_PROGRESS' | 'COMPLIANT' | 'WARNING' | 'NON_COMPLIANT' | 'UNCONFIRMED' | 'FAILED';
+  'PENDING' | 'IN_PROGRESS' | 'COMPLIANT' | 'WARNING' | 'NON_COMPLIANT' | 'UNCONFIRMED' | 'FAILED' | 'CANCELLED';
 
 export const TERMINAL_STATUSES: AuditStatus[] = [
   'COMPLIANT',
@@ -11,6 +11,7 @@ export const TERMINAL_STATUSES: AuditStatus[] = [
   'NON_COMPLIANT',
   'UNCONFIRMED',
   'FAILED',
+  'CANCELLED',
 ];
 
 export interface StartAuditRequest {
@@ -34,6 +35,11 @@ export async function startAudit(request: StartAuditRequest): Promise<StartAudit
   const { data } = await apiClient.post<StartAuditResponse>('/audits', request);
 
   return data;
+}
+
+// 진행 중인 분석 요청 자체를 끊지는 않는 soft cancel이라, 204 No Content로 응답한다.
+export async function cancelAudit(auditId: number): Promise<void> {
+  await apiClient.post(`/audits/${auditId}/cancel`);
 }
 
 export interface AuditSummary {

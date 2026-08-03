@@ -52,6 +52,9 @@ const STATUS_DISPLAY: Record<AuditStatus, DisplayStatus | null> = {
   // AI 서버 연동 실패 등 분석 자체가 안 된 상태 - 규정 미충족(NON_COMPLIANT)과
   // 다른 라벨/색으로 구분해서 실제 판정처럼 오해하지 않도록 한다.
   FAILED: '분석 오류',
+  // 사용자가 직접 취소한 감사도 판정이 없으므로, selectRecentAudits에서 애초에
+  // 제외된다. PENDING/IN_PROGRESS와 마찬가지로 이 목록엔 노출되지 않는다.
+  CANCELLED: null,
 };
 
 // 비로그인 시 데모 미리보기용 더미 데이터.
@@ -140,6 +143,7 @@ function toInProgressAudits(audits: AuditSummary[]): InProgressAudit[] {
         audit.status === 'PENDING' ||
         audit.status === 'IN_PROGRESS' ||
         (audit.status !== 'FAILED' &&
+          audit.status !== 'CANCELLED' &&
           TERMINAL_STATUSES.includes(audit.status) &&
           !viewedIds.has(audit.auditId)),
     )
