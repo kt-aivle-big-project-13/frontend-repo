@@ -824,16 +824,6 @@
   font-size: 11px;
 }
 
-.audit-execution-section__self-check-group-body {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.audit-execution-section__self-check-group-body--open {
-  max-height: 2400px;
-}
-
 .audit-execution-section__self-check-group-title {
   flex-shrink: 0;
   color: #202938;
@@ -958,7 +948,7 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .audit-execution-section__answer-pair {
@@ -970,7 +960,7 @@
 .audit-execution-section__answer-na-slot {
   display: flex;
   flex-shrink: 0;
-  width: 74px;
+  width: 60px;
 }
 
 .audit-execution-section__answer-na-placeholder {
@@ -980,16 +970,20 @@
 }
 
 .audit-execution-section__answer {
-  width: 74px;
-  padding: 6px 0;
+  padding: 5px 10px;
   border: none;
   border-radius: 6px;
   background-color: #f2f4f7;
   color: #6b7684;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   text-align: center;
   cursor: pointer;
+}
+
+.audit-execution-section__answer-na-slot .audit-execution-section__answer {
+  width: 100%;
+  padding: 5px 4px;
 }
 
 .audit-execution-section__answer:disabled {

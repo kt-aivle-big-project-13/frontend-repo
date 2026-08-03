@@ -537,9 +537,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                       </span>
                     </button>
 
-                    <div
-                      className={`audit-execution-section__self-check-group-body${isOpen ? ' audit-execution-section__self-check-group-body--open' : ''}`}
-                    >
+                    {isOpen && (
                       <ul className="audit-execution-section__self-check-list">
                         {items.map((item) => {
                           const answer = selfCheckAnswers[item.code];
@@ -615,7 +613,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                           );
                         })}
                       </ul>
-                    </div>
+                    )}
                   </div>
                 );
               })}
