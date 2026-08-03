@@ -34,6 +34,15 @@ interface ObjectionSummaryDto {
   submittedAt: string;
 }
 
+interface ObjectionModelEvidenceDto {
+  rank: number;
+  feature: string;
+  displayName: string;
+  meanAbsShap: number;
+  contributionRatio: number;
+  direction: 'RISK_INCREASE' | 'RISK_DECREASE' | null;
+}
+
 // 백엔드 이의제기 상세 응답
 interface ObjectionDetailDto extends ObjectionSummaryDto {
   content: string;
@@ -41,6 +50,7 @@ interface ObjectionDetailDto extends ObjectionSummaryDto {
   modelName: string | null;
   shapEvidence: string | null;
   staffNote: string | null;
+  globalModelEvidence: ObjectionModelEvidenceDto[];
   decision: ObjectionDecisionDto | null;
   draftContent: string | null;
   approvedAt: string | null;
@@ -72,15 +82,11 @@ function toDecision(reviewResult: ObjectionReviewResult): ObjectionDecisionDto {
   return reviewResult === 'RE_REVIEW' ? 'REEXAMINATION' : 'REJECT_MAINTAIN';
 }
 
-type ContributorLevelInternal = ObjectionContributor['level'];
-
 // "부채비율 82%; 신용점수 812점" 같은 CSV 원문을 화면에 표시할 판단 근거 칩으로 변환
 function parseContributors(shapEvidence: string | null): ObjectionContributor[] {
   if (!shapEvidence) {
     return [];
   }
-
-  const levels: ContributorLevelInternal[] = ['HIGH', 'MEDIUM', 'LOW'];
 
   return shapEvidence
     .split(';')
@@ -92,10 +98,9 @@ function parseContributors(shapEvidence: string | null): ObjectionContributor[] 
       const value = lastSpaceIndex === -1 ? '-' : part.slice(lastSpaceIndex + 1);
 
       return {
-        feature: `shap-${index}`,
+        feature: `case-evidence-${index}`,
         label: label || part,
         value,
-        level: levels[Math.min(index, levels.length - 1)],
       };
     });
 }
@@ -129,7 +134,10 @@ function toDetail(dto: ObjectionDetailDto): ObjectionDetail {
   return {
     ...toSummary(dto),
     content: dto.content,
+    modelId: dto.modelId,
+    modelName: dto.modelName,
     contributors: parseContributors(dto.shapEvidence),
+    globalModelEvidence: dto.globalModelEvidence ?? [],
     reviewBasis: dto.staffNote ?? '',
     completionInfo: toCompletionInfo(dto),
   };
@@ -137,30 +145,27 @@ function toDetail(dto: ObjectionDetailDto): ObjectionDetail {
 
 // 이의제기 목록 조회
 export async function fetchObjections(): Promise<ObjectionSummary[]> {
-  const { data } = await apiClient.get<PageResponse<ObjectionSummaryDto>>(
-    '/objections',
-    { params: { page: 1, size: 100, sort: 'latest' } },
-  );
+  const { data } = await apiClient.get<PageResponse<ObjectionSummaryDto>>('/objections', {
+    params: { page: 1, size: 100, sort: 'latest' },
+  });
 
   return data.content.map(toSummary);
 }
 
 // 특정 이의제기 상세 조회
-export async function fetchObjectionDetail(
-  objectionId: number,
-): Promise<ObjectionDetail> {
-  const { data } = await apiClient.get<ObjectionDetailDto>(
-    `/objections/${objectionId}`,
-  );
+export async function fetchObjectionDetail(objectionId: number): Promise<ObjectionDetail> {
+  const { data } = await apiClient.get<ObjectionDetailDto>(`/objections/${objectionId}`);
 
   return toDetail(data);
 }
 
 // 이의제기 신용감사 결과 CSV 업로드 (다건 일괄 등록)
 export async function importObjectionsCsv(
+  modelId: number,
   file: File,
 ): Promise<ObjectionImportResult> {
   const formData = new FormData();
+  formData.append('modelId', String(modelId));
   formData.append('file', file);
 
   const { data } = await apiClient.post<{

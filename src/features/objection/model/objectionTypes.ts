@@ -4,9 +4,6 @@ export type ObjectionStatus = 'WAITING' | 'COMPLETED';
 // 담당자의 최종 처리 결과
 export type ObjectionReviewResult = 'REJECTED' | 'RE_REVIEW';
 
-// 판단 근거 변수의 영향 수준 (백엔드가 순위를 주지 않아 화면 표시 순서로 임의 부여)
-export type ContributorLevel = 'HIGH' | 'MEDIUM' | 'LOW';
-
 // 이의제기 목록에 표시할 기본 정보
 export interface ObjectionSummary {
   objectionId: number;
@@ -24,7 +21,16 @@ export interface ObjectionContributor {
   feature: string;
   label: string;
   value: string;
-  level: ContributorLevel;
+}
+
+// 모델 전체 감사에서 산출된 전역 SHAP 판단 경향
+export interface ObjectionModelEvidence {
+  rank: number;
+  feature: string;
+  displayName: string;
+  meanAbsShap: number;
+  contributionRatio: number;
+  direction: 'RISK_INCREASE' | 'RISK_DECREASE' | null;
 }
 
 // 답변완료 건의 처리 및 발송 정보
@@ -32,12 +38,18 @@ export interface ObjectionCompletionInfo {
   reviewResult: ObjectionReviewResult;
   dispatchedAt: string;
   recipientEmail: string;
+  reviewerName?: string;
 }
 
 // 이의제기 상세 정보
 export interface ObjectionDetail extends ObjectionSummary {
   content: string;
+  customerEmail?: string;
+  auditId?: number;
+  modelId?: number | null;
+  modelName: string | null;
   contributors: ObjectionContributor[];
+  globalModelEvidence?: ObjectionModelEvidence[];
   reviewBasis: string;
 
   // 답변완료 상태일 때만 존재
@@ -64,6 +76,8 @@ export interface ObjectionDispatchHistory {
   dispatchedAt: string;
   reviewResult: ObjectionReviewResult;
   status: 'DISPATCHED';
+  reviewerName?: string;
+  recipientEmail?: string;
 }
 
 // 이의제기 CSV 업로드 결과

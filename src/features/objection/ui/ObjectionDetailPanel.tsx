@@ -1,14 +1,7 @@
-import {
-  CheckOutlined,
-  CloseOutlined,
-  FileTextOutlined,
-} from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, FileTextOutlined } from '@ant-design/icons';
 
 import { maskEmail } from '../lib/maskEmail';
-import type {
-  ObjectionDetail,
-  ObjectionReviewResult,
-} from '../model/objectionTypes';
+import type { ObjectionDetail, ObjectionReviewResult } from '../model/objectionTypes';
 
 // 상세 패널에서 전달받는 값과 이벤트
 interface ObjectionDetailPanelProps {
@@ -34,12 +27,8 @@ function formatDateTime(value: string): string {
 }
 
 // 최종 처리 결과 한글 변환
-function getReviewResultLabel(
-  value: ObjectionReviewResult,
-): string {
-  return value === 'REJECTED'
-    ? '거절 유지'
-    : '재심사';
+function getReviewResultLabel(value: ObjectionReviewResult): string {
+  return value === 'REJECTED' ? '거절 유지' : '재심사';
 }
 
 function ObjectionDetailPanel({
@@ -52,6 +41,11 @@ function ObjectionDetailPanel({
   // 답변완료 상태 확인
   const isCompleted = objection.status === 'COMPLETED';
 
+  // 전역 SHAP 근거를 순위순으로 정렬한 뒤 TOP 5만 표시
+  const topModelEvidence = [...(objection.globalModelEvidence ?? [])]
+    .sort((first, second) => first.rank - second.rank)
+    .slice(0, 5);
+
   return (
     <section className="objection-detail">
       {/* 상세 패널 상단 정보 */}
@@ -61,15 +55,9 @@ function ObjectionDetailPanel({
 
           {/* 이의제기 유형 및 고영향 AI 배지 */}
           <div className="objection-detail__tags">
-            <span className="objection-detail__case-tag">
-              {objection.caseType}
-            </span>
+            <span className="objection-detail__case-tag">{objection.caseType}</span>
 
-            {objection.highImpactAi && (
-              <span className="objection-detail__ai-tag">
-                고영향 AI
-              </span>
-            )}
+            {objection.highImpactAi && <span className="objection-detail__ai-tag">고영향 AI</span>}
           </div>
         </div>
 
@@ -80,8 +68,7 @@ function ObjectionDetailPanel({
           </p>
 
           <p>
-            작성일시{' '}
-            <time>{formatDateTime(objection.createdAt)}</time>
+            작성일시 <time>{formatDateTime(objection.createdAt)}</time>
           </p>
         </div>
 
@@ -108,9 +95,7 @@ function ObjectionDetailPanel({
 
         {/* 이의제기 제목 */}
         <div className="objection-detail__content-field">
-          <strong className="objection-detail__field-label">
-            제목
-          </strong>
+          <strong className="objection-detail__field-label">제목</strong>
 
           <div className="objection-detail__title-box">
             {objection.title || '아직 작성된 제목이 없습니다.'}
@@ -119,9 +104,7 @@ function ObjectionDetailPanel({
 
         {/* 이의제기 내용 */}
         <div className="objection-detail__content-field">
-          <strong className="objection-detail__field-label">
-            내용
-          </strong>
+          <strong className="objection-detail__field-label">내용</strong>
 
           <div className="objection-detail__content-box">
             {objection.content || '아직 작성된 내용이 없습니다.'}
@@ -129,47 +112,86 @@ function ObjectionDetailPanel({
         </div>
       </section>
 
-      {/* SHAP 판단 근거 영역 */}
+      {/* 고객 건별 근거와 모델 전역 SHAP 판단 경향 */}
       <section className="objection-detail__analysis">
-        {/* 주요 판단 근거 변수 제목 */}
-        <p className="objection-detail__analysis-label">
-          주요 판단 근거
-        </p>
+        <p className="objection-detail__analysis-label">고객 건별 심사 근거</p>
 
-        {/* 주요 판단 근거 변수 목록 */}
         <div className="objection-detail__contributors">
           {objection.contributors.length === 0 ? (
             <span className="objection-detail__no-contributor">
-              연결된 판단 근거가 없습니다.
+              등록된 고객 건별 근거가 없습니다.
             </span>
           ) : (
             objection.contributors.map((contributor) => (
-              <span
-                key={contributor.feature}
-                className={`objection-detail__contributor objection-detail__contributor--${contributor.level.toLowerCase()}`}
-              >
-                <span
-                  className="objection-detail__contributor-dot"
-                  aria-hidden="true"
-                />
-
-                {contributor.label}{' '}
-                <strong>{contributor.value}</strong>
+              <span key={contributor.feature} className="objection-detail__contributor">
+                <span className="objection-detail__contributor-dot" aria-hidden="true" />
+                {contributor.label} <strong>{contributor.value}</strong>
               </span>
             ))
           )}
         </div>
 
-        {/* 담당자 판단 근거 제목 */}
-        <div className="objection-detail__basis-heading">
-          <span>담당자 판단 근거</span>
-          <span>✦ 자동작성</span>
+        <div className="objection-detail__model-evidence-heading">
+          <span>모델 전체 판단 경향</span>
+          {objection.modelName && <strong>{objection.modelName}</strong>}
         </div>
 
-        {/* 담당자 판단 근거 내용 */}
+        {topModelEvidence.length ? (
+          <div className="objection-detail__model-evidence-list">
+            {topModelEvidence.map((evidence) => (
+              <div
+                key={`${evidence.rank}-${evidence.feature}`}
+                className="objection-detail__model-evidence-item"
+              >
+                <span className="objection-detail__model-evidence-rank">{evidence.rank}</span>
+
+                <div className="objection-detail__model-evidence-name">
+                  <strong>{evidence.displayName}</strong>
+                  <span>{evidence.feature}</span>
+                </div>
+
+                <span className="objection-detail__model-evidence-ratio">
+                  {(evidence.contributionRatio * 100).toFixed(1)}%
+                </span>
+
+                <span
+                  className={[
+                    'objection-detail__model-evidence-direction',
+                    evidence.direction === 'RISK_INCREASE'
+                      ? 'objection-detail__model-evidence-direction--increase'
+                      : evidence.direction === 'RISK_DECREASE'
+                        ? 'objection-detail__model-evidence-direction--decrease'
+                        : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  {evidence.direction === 'RISK_INCREASE'
+                    ? '위험 증가 경향'
+                    : evidence.direction === 'RISK_DECREASE'
+                      ? '위험 감소 경향'
+                      : '방향 정보 없음'}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="objection-detail__model-evidence-empty">
+            완료된 감사의 전역 SHAP 판단 경향이 없습니다.
+          </div>
+        )}
+
+        <p className="objection-detail__model-evidence-notice">
+          모델 전체 감사 데이터에서 확인된 일반적인 판단 경향이며, 해당 고객의 개별 거절 원인을 직접
+          의미하지 않습니다.
+        </p>
+
+        <div className="objection-detail__basis-heading">
+          <span>담당자 판단 근거</span>
+        </div>
+
         <div className="objection-detail__basis">
-          {objection.reviewBasis ||
-            '자동 생성된 판단 근거가 없습니다.'}
+          {objection.reviewBasis || '등록된 담당자 판단 근거가 없습니다.'}
         </div>
       </section>
 
@@ -183,18 +205,12 @@ function ObjectionDetailPanel({
 
           {/* 완료된 처리 결과 및 이메일 발송 정보 */}
           <section className="objection-detail__completed">
-            <p className="objection-detail__completed-title">
-              최종 처리 결과
-            </p>
+            <p className="objection-detail__completed-title">최종 처리 결과</p>
 
             {objection.completionInfo ? (
               <>
                 <div className="objection-detail__completed-result">
-                  <strong>
-                    {getReviewResultLabel(
-                      objection.completionInfo.reviewResult,
-                    )}
-                  </strong>
+                  <strong>{getReviewResultLabel(objection.completionInfo.reviewResult)}</strong>
 
                   <span>고객 안내문 이메일 발송 완료</span>
                 </div>
@@ -202,11 +218,7 @@ function ObjectionDetailPanel({
                 <dl className="objection-detail__dispatch-info">
                   <div>
                     <dt>발송일시</dt>
-                    <dd>
-                      {formatDateTime(
-                        objection.completionInfo.dispatchedAt,
-                      )}
-                    </dd>
+                    <dd>{formatDateTime(objection.completionInfo.dispatchedAt)}</dd>
                   </div>
 
                   <div>
@@ -216,11 +228,7 @@ function ObjectionDetailPanel({
 
                   <div>
                     <dt>수신 이메일</dt>
-                    <dd>
-                      {maskEmail(
-                        objection.completionInfo.recipientEmail,
-                      )}
-                    </dd>
+                    <dd>{maskEmail(objection.completionInfo.recipientEmail)}</dd>
                   </div>
                 </dl>
               </>
@@ -252,9 +260,7 @@ function ObjectionDetailPanel({
               <button
                 type="button"
                 className={`objection-detail__decision-button objection-detail__decision-button--reject ${
-                  reviewResult === 'REJECTED'
-                    ? 'objection-detail__decision-button--selected'
-                    : ''
+                  reviewResult === 'REJECTED' ? 'objection-detail__decision-button--selected' : ''
                 }`}
                 onClick={() => onReviewResultChange('REJECTED')}
               >
@@ -266,9 +272,7 @@ function ObjectionDetailPanel({
               <button
                 type="button"
                 className={`objection-detail__decision-button objection-detail__decision-button--review ${
-                  reviewResult === 'RE_REVIEW'
-                    ? 'objection-detail__decision-button--selected'
-                    : ''
+                  reviewResult === 'RE_REVIEW' ? 'objection-detail__decision-button--selected' : ''
                 }`}
                 onClick={() => onReviewResultChange('RE_REVIEW')}
               >

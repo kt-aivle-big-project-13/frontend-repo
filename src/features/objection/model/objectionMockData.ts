@@ -12,8 +12,7 @@ export const objectionMockData: ObjectionDetail[] = [
     customerName: '조영',
     customerEmail: 'joyoung@example.com',
     title: '왜 거절이 됐나!',
-    content:
-      '저는 신용 점수가 800점 이상인데 왜 거절되었죠?',
+    content: '저는 신용 점수가 800점 이상인데 왜 거절되었죠?',
     status: 'WAITING',
     createdAt: '2026-07-31T10:01:00',
     caseType: '대출 심사 거절 건',
@@ -25,19 +24,16 @@ export const objectionMockData: ObjectionDetail[] = [
         feature: 'debtRatio',
         label: '부채비율',
         value: '82%',
-        level: 'HIGH',
       },
       {
         feature: 'delinquencyHistory',
         label: '연체이력',
         value: '2건 / 6개월',
-        level: 'MEDIUM',
       },
       {
         feature: 'creditScore',
         label: '신용점수',
         value: '812점',
-        level: 'LOW',
       },
     ],
     reviewBasis:
@@ -49,8 +45,7 @@ export const objectionMockData: ObjectionDetail[] = [
     customerName: '황민',
     customerEmail: 'hwangmin@example.com',
     title: '날 승인해 달라!',
-    content:
-      '소득도 충분하고 연체 이력도 없는데 대출이 거절된 이유를 알고 싶습니다.',
+    content: '소득도 충분하고 연체 이력도 없는데 대출이 거절된 이유를 알고 싶습니다.',
     status: 'WAITING',
     createdAt: '2026-07-30T15:20:00',
     caseType: '대출 심사 거절 건',
@@ -62,19 +57,16 @@ export const objectionMockData: ObjectionDetail[] = [
         feature: 'employmentPeriod',
         label: '재직기간',
         value: '8개월',
-        level: 'HIGH',
       },
       {
         feature: 'incomeStability',
         label: '소득 안정성',
         value: '주의',
-        level: 'MEDIUM',
       },
       {
         feature: 'existingLoan',
         label: '기존 대출',
         value: '2건',
-        level: 'MEDIUM',
       },
     ],
     reviewBasis:
@@ -86,8 +78,7 @@ export const objectionMockData: ObjectionDetail[] = [
     customerName: '김다',
     customerEmail: 'kinda@example.com',
     title: '한도가 왜 이렇게 낮은가요',
-    content:
-      '기존에 안내받은 금액보다 승인 한도가 낮게 책정된 이유가 궁금합니다.',
+    content: '기존에 안내받은 금액보다 승인 한도가 낮게 책정된 이유가 궁금합니다.',
     status: 'COMPLETED',
     createdAt: '2026-07-28T09:52:00',
     caseType: '대출 한도 이의제기',
@@ -99,19 +90,16 @@ export const objectionMockData: ObjectionDetail[] = [
         feature: 'debtServiceRatio',
         label: '원리금 상환비율',
         value: '47%',
-        level: 'HIGH',
       },
       {
         feature: 'loanBalance',
         label: '기존 대출 잔액',
         value: '3,100만원',
-        level: 'MEDIUM',
       },
       {
         feature: 'annualIncome',
         label: '연소득',
         value: '4,200만원',
-        level: 'LOW',
       },
     ],
     reviewBasis:
@@ -129,8 +117,7 @@ export const objectionMockData: ObjectionDetail[] = [
     customerName: '김다',
     customerEmail: 'kimda2@example.com',
     title: '서류를 다시 확인해주세요',
-    content:
-      '제출한 소득 증빙 서류가 정상적으로 반영되었는지 다시 확인해주세요.',
+    content: '제출한 소득 증빙 서류가 정상적으로 반영되었는지 다시 확인해주세요.',
     status: 'COMPLETED',
     createdAt: '2026-07-26T16:10:00',
     caseType: '서류 재검토 요청',
@@ -142,13 +129,11 @@ export const objectionMockData: ObjectionDetail[] = [
         feature: 'incomeDocument',
         label: '소득 증빙',
         value: '일부 누락',
-        level: 'HIGH',
       },
       {
         feature: 'employmentStatus',
         label: '재직 상태',
         value: '재직',
-        level: 'LOW',
       },
     ],
     reviewBasis:
@@ -166,8 +151,7 @@ export const objectionMockData: ObjectionDetail[] = [
     customerName: '김석',
     customerEmail: 'kimseok@example.com',
     title: '금리가 타행보다 높습니다',
-    content:
-      '동일한 조건인데 다른 금융기관보다 금리가 높게 산정된 이유를 확인하고 싶습니다.',
+    content: '동일한 조건인데 다른 금융기관보다 금리가 높게 산정된 이유를 확인하고 싶습니다.',
     status: 'WAITING',
     createdAt: '2026-07-24T13:45:00',
     caseType: '금리 산정 이의제기',
@@ -179,19 +163,16 @@ export const objectionMockData: ObjectionDetail[] = [
         feature: 'collateral',
         label: '담보 여부',
         value: '무담보',
-        level: 'HIGH',
       },
       {
         feature: 'creditGrade',
         label: '신용등급',
         value: '4등급',
-        level: 'MEDIUM',
       },
       {
         feature: 'loanPeriod',
         label: '대출기간',
         value: '60개월',
-        level: 'MEDIUM',
       },
     ],
     reviewBasis:
@@ -200,10 +181,7 @@ export const objectionMockData: ObjectionDetail[] = [
 ];
 
 // 생성된 대응문서 목업 데이터
-export const objectionDocumentMockData: Record<
-  number,
-  ObjectionDocument
-> = {
+export const objectionDocumentMockData: Record<number, ObjectionDocument> = {
   412: {
     objectionId: 412,
     objectionNo: '2026-0412',
