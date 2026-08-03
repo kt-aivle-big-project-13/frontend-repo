@@ -19,6 +19,8 @@ import {
   type DatasetSummaryResponse,
 } from '../../../../features/audit/api/modelApi';
 import { startAudit } from '../../../../features/audit/api/auditApi';
+import { extractApiErrorMessage } from '../../../../shared/api/client';
+import { useSubmissionLockStore } from '../../../../shared/model/submissionLockStore';
 import StepIndicator from '../StepIndicator';
 
 import './AuditFlow.css';
@@ -143,6 +145,8 @@ const MODEL_NAME_MAX_LENGTH = 100;
 
 function AuditExecutionSection() {
   const navigate = useNavigate();
+  const lockSubmission = useSubmissionLockStore((state) => state.lock);
+  const unlockSubmission = useSubmissionLockStore((state) => state.unlock);
   const [searchParams] = useSearchParams();
   const assessmentIdParam = searchParams.get('assessmentId');
   const parsedAssessmentId = Number(assessmentIdParam);
@@ -202,6 +206,10 @@ function AuditExecutionSection() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSubmitting]);
+
+  // 컴포넌트가 사라질 때(성공 시 체크리스트 페이지로 이동 등) 잠금이 걸린 채로 남지
+  // 않도록 안전망으로 한 번 더 해제한다.
+  useEffect(() => () => unlockSubmission(), [unlockSubmission]);
 
   useEffect(() => {
     getModels()
@@ -423,6 +431,10 @@ function AuditExecutionSection() {
 
     setIsSubmitting(true);
     setSubmitError(null);
+    // 모델 업로드 → 데이터셋 업로드 → 감사 시작까지 여러 단계의 요청이 이어지는 동안
+    // 로그아웃하면, 그 뒤에 나가는 요청이 401로 실패해 앞 단계(모델 생성 등)만 반영된
+    // 채로 남을 수 있다. 그래서 이 구간 동안은 로그아웃을 막아둔다.
+    lockSubmission();
 
     try {
       const model = await uploadModel(
@@ -482,12 +494,10 @@ function AuditExecutionSection() {
       // 자가점검 체크리스트를 함께 작성할 수 있게 한다.
       navigate(`/audit/${started.auditId}`);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : '감사 시작 중 오류가 발생했습니다.',
-      );
+      setSubmitError(extractApiErrorMessage(error, '감사 시작 중 오류가 발생했습니다.'));
       setIsSubmitting(false);
+    } finally {
+      unlockSubmission();
     }
   };
 

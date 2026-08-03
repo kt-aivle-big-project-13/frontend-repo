@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-import { apiClient } from '../../../shared/api/client';
+import { apiClient, extractApiErrorMessage } from '../../../shared/api/client';
 
 import type {
   ObjectionCompletionInfo,
@@ -62,23 +60,8 @@ interface ObjectionDocumentDto {
   letterBody: string;
 }
 
-// 백엔드가 GlobalExceptionHandler로 내려주는 에러 응답 형태
-interface ApiErrorResponse {
-  message?: string;
-}
-
-// axios 에러에서 백엔드가 내려준 실제 에러 메시지를 꺼낸다.
-export function extractErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError<ApiErrorResponse>(error) && error.response?.data?.message) {
-    return error.response.data.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-}
+// axios 에러에서 백엔드가 내려준 실제 에러 메시지를 꺼낸다 (shared/api/client의 공용 구현).
+export const extractErrorMessage = extractApiErrorMessage;
 
 // 백엔드 ObjectionDecision <-> 프론트 ObjectionReviewResult 매핑
 function toReviewResult(decision: ObjectionDecisionDto): ObjectionReviewResult {

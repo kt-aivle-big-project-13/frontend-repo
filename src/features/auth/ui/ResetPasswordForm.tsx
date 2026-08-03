@@ -8,6 +8,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
+import { extractApiErrorMessage } from '../../../shared/api/client';
 import '../../../shared/ui/authForm.css';
 import { resetPassword } from '../api/passwordApi';
 
@@ -172,12 +173,7 @@ function ResetPasswordForm({
         });
       }, 1000);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : '비밀번호 변경에 실패했습니다.';
-
-      setSubmitError(errorMessage);
+      setSubmitError(extractApiErrorMessage(error, '비밀번호 변경에 실패했습니다.'));
     }
   };
 

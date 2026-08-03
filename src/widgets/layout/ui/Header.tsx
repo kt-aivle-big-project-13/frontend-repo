@@ -6,6 +6,7 @@ import AuthGatedLink from '../../../entities/user/ui/AuthGatedLink';
 import Avatar from '../../../shared/ui/Avatar';
 import { maskName } from '../../../shared/lib/maskName';
 import { logout } from '../../../features/auth/api/loginApi';
+import { useSubmissionLockStore } from '../../../shared/model/submissionLockStore';
 import {
   hasInProgressAudit,
   useAuditsPolling,
@@ -38,11 +39,19 @@ function Header() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const isSubmissionLocked = useSubmissionLockStore((state) => state.isLocked);
   const isAuthenticated = Boolean(user);
   const audits = useAuditsPolling(isAuthenticated);
   const isAuditRunning = isAuthenticated && hasInProgressAudit(audits);
 
   const handleLogout = () => {
+    // 모델 업로드~감사 시작처럼 여러 단계 요청이 진행 중일 때 로그아웃하면 토큰이
+    // 무효화되어 뒤 단계 요청이 401로 실패하고, 앞 단계만 반영된 채 남을 수 있다.
+    if (isSubmissionLocked) {
+      message.warning('제출이 진행 중입니다. 완료된 후 다시 시도해주세요.');
+      return;
+    }
+
     Modal.confirm({
       title: '로그아웃',
       content: '로그아웃 하시겠습니까?',
