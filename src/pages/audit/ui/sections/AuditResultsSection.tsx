@@ -288,7 +288,12 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
           </div>
 
           <FairnessTable results={fairnessResults} isLoading={false} error={null} />
-          <ReportsSection auditId={auditId} />
+          {/* 사전진단을 건너뛴 감사(assessmentId 없음)에는 사전진단 보고서를 만들 수 없다.
+              요약을 아직 못 받아온 경우엔 판단할 수 없으므로 기존대로 노출한다. */}
+          <ReportsSection
+            auditId={auditId}
+            hasPreDiagnosis={auditSummary ? auditSummary.assessmentId !== null : true}
+          />
           <VersionHistorySection audits={versionHistory} currentAuditId={auditId} isLoading={false} />
         </div>
       )}
