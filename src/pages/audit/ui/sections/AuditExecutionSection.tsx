@@ -132,6 +132,12 @@ function formatUploadedAt(value: string): string {
   return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function normalizeModelName(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+const DUPLICATE_TOAST_MS = 2500;
+
 function AuditExecutionSection() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -171,6 +177,13 @@ function AuditExecutionSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // 신규 모델명이 기존에 감사했던 모델과 겹치는지 검증하기 위한 기존 모델명 목록.
+  // 모드/선택과 무관하게 마운트 시 한 번만 가져온다.
+  const [existingModelNames, setExistingModelNames] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [showDuplicateNameToast, setShowDuplicateNameToast] = useState(false);
+
   const modelFileInputRef = useRef<HTMLInputElement>(null);
   const auditDatasetFileInputRef = useRef<HTMLInputElement>(null);
   const validationDatasetFileInputRef = useRef<HTMLInputElement>(null);
@@ -187,6 +200,47 @@ function AuditExecutionSection() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSubmitting]);
+
+  useEffect(() => {
+    getModels()
+      .then((models) =>
+        setExistingModelNames(
+          new Set(models.map((model) => normalizeModelName(model.modelName))),
+        ),
+      )
+      .catch(() => setExistingModelNames(new Set()));
+  }, []);
+
+  // 신규 등록 모드에서만 검증한다 — 버전업은 이전 모델과 같은 이름을 이어받는 게 정상 흐름이다.
+  const isDuplicateModelName = useMemo(() => {
+    if (modelMode !== 'new') return false;
+    const normalized = normalizeModelName(modelName);
+    if (!normalized) return false;
+    return existingModelNames.has(normalized);
+  }, [modelMode, modelName, existingModelNames]);
+
+  const duplicateToastTimeoutRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    return () => window.clearTimeout(duplicateToastTimeoutRef.current);
+  }, []);
+
+  const handleModelNameChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setModelName(value);
+
+    const normalized = normalizeModelName(value);
+    const duplicate =
+      modelMode === 'new' && normalized.length > 0 && existingModelNames.has(normalized);
+    if (!duplicate) return;
+
+    setShowDuplicateNameToast(true);
+    window.clearTimeout(duplicateToastTimeoutRef.current);
+    duplicateToastTimeoutRef.current = window.setTimeout(
+      () => setShowDuplicateNameToast(false),
+      DUPLICATE_TOAST_MS,
+    );
+  };
 
   const selectedPreviousModel = useMemo(
     () => previousModels.find((model) => model.modelId === selectedPreviousModelId) ?? null,
@@ -346,6 +400,7 @@ function AuditExecutionSection() {
 
   const handleStartAudit = async () => {
     if (isSubmitting) return;
+    if (isDuplicateModelName) return;
     if (!willReuseModel && !modelFile) return;
     if (isUpdateMode && !selectedPreviousModelId) return;
     if (!willReuseDataset && !auditDatasetFile) return;
@@ -439,6 +494,7 @@ function AuditExecutionSection() {
   const isStartDisabled =
     (!willReuseModel && !modelFile) ||
     isSubmitting ||
+    isDuplicateModelName ||
     (isUpdateMode && !selectedPreviousModelId) ||
     (isUpdateMode && newVersion.trim().length === 0) ||
     isVersionSameAsPrevious ||
@@ -545,11 +601,17 @@ function AuditExecutionSection() {
           <input
             id="model-name"
             type="text"
-            className="audit-execution-section__text-input"
+            className={`audit-execution-section__text-input${isDuplicateModelName ? ' audit-execution-section__text-input--invalid' : ''}`}
             value={modelName}
-            onChange={(event) => setModelName(event.target.value)}
+            onChange={handleModelNameChange}
             placeholder="모델명을 입력해주세요"
           />
+
+          {isDuplicateModelName && (
+            <p className="audit-execution-section__field-error">
+              이미 감사한 모델과 이름이 중복됩니다. 다른 모델명을 입력해주세요.
+            </p>
+          )}
 
           {willReuseModel && selectedPreviousModel ? (
             <div className="audit-execution-section__reuse-panel">
@@ -821,6 +883,12 @@ function AuditExecutionSection() {
         <p className="audit-execution-section__empty" role="alert">
           {submitError}
         </p>
+      )}
+
+      {showDuplicateNameToast && (
+        <div className="audit-execution-section__duplicate-toast" role="alert">
+          이미 등록된 모델명입니다. 다른 이름을 입력해주세요.
+        </div>
       )}
     </div>
   );
