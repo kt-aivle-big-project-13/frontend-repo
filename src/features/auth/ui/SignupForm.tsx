@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, useWatch, type SubmitHandler } from 'react-hook-form';
+import { Controller, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
+import PasswordField from '../../../shared/ui/PasswordField';
 import '../../../shared/ui/authForm.css';
 import {
   confirmVerificationCode,
@@ -465,36 +466,72 @@ function SignupForm() {
         <div className="auth-form__field">
           <label htmlFor="signup-password">비밀번호</label>
 
-          <input
-            id="signup-password"
-            type="password"
-            autoComplete="new-password"
-            disabled={isSubmitting}
-            aria-invalid={Boolean(errors.password)}
-            {...register('password')}
+          <Controller
+            name="password"
+            control={control}
+            render={({ field }) => (
+              <PasswordField
+                id="signup-password"
+                name={field.name}
+                value={field.value}
+                disabled={isSubmitting}
+                autoComplete="new-password"
+                ariaInvalid={Boolean(errors.password)}
+                ariaDescribedBy={
+                  errors.password
+                    ? 'signup-password-error'
+                    : undefined
+                }
+                onChange={field.onChange}
+              />
+            )}
           />
 
           {errors.password?.message && (
-            <p className="auth-form__field-error" role="alert">
+            <p
+              id="signup-password-error"
+              className="auth-form__field-error"
+              role="alert"
+            >
               {errors.password.message}
             </p>
           )}
         </div>
-
+        
         <div className="auth-form__field">
-          <label htmlFor="signup-password-confirm">비밀번호 확인</label>
+          <label htmlFor="signup-password-confirm">
+            비밀번호 확인
+          </label>
 
-          <input
-            id="signup-password-confirm"
-            type="password"
-            autoComplete="new-password"
-            disabled={isSubmitting}
-            aria-invalid={Boolean(errors.passwordConfirm)}
-            {...register('passwordConfirm')}
+          <Controller
+            name="passwordConfirm"
+            control={control}
+            render={({ field }) => (
+              <PasswordField
+                id="signup-password-confirm"
+                name={field.name}
+                value={field.value}
+                disabled={isSubmitting}
+                autoComplete="new-password"
+                ariaInvalid={Boolean(
+                  errors.passwordConfirm,
+                )}
+                ariaDescribedBy={
+                  errors.passwordConfirm
+                    ? 'signup-password-confirm-error'
+                    : undefined
+                }
+                onChange={field.onChange}
+              />
+            )}
           />
 
           {errors.passwordConfirm?.message && (
-            <p className="auth-form__field-error" role="alert">
+            <p
+              id="signup-password-confirm-error"
+              className="auth-form__field-error"
+              role="alert"
+            >
               {errors.passwordConfirm.message}
             </p>
           )}
