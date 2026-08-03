@@ -791,10 +791,7 @@
 }
 
 .audit-execution-section__self-check-groups {
-  max-height: 520px;
   margin: 0 0 16px;
-  padding-right: 4px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
