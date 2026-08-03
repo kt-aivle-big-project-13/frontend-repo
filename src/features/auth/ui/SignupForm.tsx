@@ -483,6 +483,7 @@ function SignupForm() {
                     : undefined
                 }
                 onChange={field.onChange}
+                onBlur={field.onBlur}
               />
             )}
           />
@@ -522,6 +523,7 @@ function SignupForm() {
                     : undefined
                 }
                 onChange={field.onChange}
+                onBlur={field.onBlur}
               />
             )}
           />
