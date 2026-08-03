@@ -216,7 +216,14 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
             className="reports-section__final-button"
             disabled={pendingKey === 'final-report'}
           >
-            최종 보고서 다운로드 ↓
+            <span>최종 보고서 다운로드</span>
+
+            <img
+              src="/download-icon-2.png"
+              alt=""
+              className="reports-section__final-button-icon"
+              aria-hidden="true"
+            />
           </button>
         </Popover>
       </div>
