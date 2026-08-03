@@ -147,6 +147,17 @@ function AuditExecutionSection() {
   const navigate = useNavigate();
   const lockSubmission = useSubmissionLockStore((state) => state.lock);
   const unlockSubmission = useSubmissionLockStore((state) => state.unlock);
+
+  // 제출이 백그라운드에서 끝났을 때, 사용자가 이미 이 화면을 벗어났다면(홈 등 다른 곳으로
+  // 이동) STEP3로 강제 이동시키지 않기 위한 마운트 여부 추적. handleStartAudit은 일반
+  // 비동기 함수라 컴포넌트가 언마운트돼도 계속 실행되므로, 완료 시점에 이 값을 확인한다.
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const [searchParams] = useSearchParams();
   const assessmentIdParam = searchParams.get('assessmentId');
   const parsedAssessmentId = Number(assessmentIdParam);
@@ -206,10 +217,6 @@ function AuditExecutionSection() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSubmitting]);
-
-  // 컴포넌트가 사라질 때(성공 시 체크리스트 페이지로 이동 등) 잠금이 걸린 채로 남지
-  // 않도록 안전망으로 한 번 더 해제한다.
-  useEffect(() => () => unlockSubmission(), [unlockSubmission]);
 
   useEffect(() => {
     getModels()
@@ -492,11 +499,17 @@ function AuditExecutionSection() {
       // 실제 SHAP/Fairlearn 분석은 오래 걸릴 수 있어, 여기서 기다리는 대신
       // STEP3(체크리스트 작성) 페이지로 바로 이동해 분석 진행 상황을 보여주면서
       // 자가점검 체크리스트를 함께 작성할 수 있게 한다.
-      navigate(`/audit/${started.auditId}`);
+      // 다만 사용자가 제출 도중 이미 이 화면을 벗어났다면(예: 홈으로 이동) 뒤늦게
+      // 끝난 응답 때문에 지금 보고 있는 화면을 강제로 바꿔버리면 안 되므로, 마운트된
+      // 상태일 때만 이동한다. 감사 자체는 이미 서버에 저장됐으니 나중에 "최근 감사"/
+      // "진행중 감사" 목록에서 확인할 수 있다.
+      if (isMountedRef.current) {
+        navigate(`/audit/${started.auditId}`);
+      }
     } catch (error) {
       setSubmitError(extractApiErrorMessage(error, '감사 시작 중 오류가 발생했습니다.'));
-      setIsSubmitting(false);
     } finally {
+      setIsSubmitting(false);
       unlockSubmission();
     }
   };

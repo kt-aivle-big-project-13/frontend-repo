@@ -468,11 +468,12 @@ function SignupForm() {
             autoComplete="new-password"
             disabled={isSubmitting}
             aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? 'signup-password-error' : undefined}
             {...register('password')}
           />
 
           {errors.password?.message && (
-            <p className="auth-form__field-error" role="alert">
+            <p id="signup-password-error" className="auth-form__field-error" role="alert">
               {errors.password.message}
             </p>
           )}
@@ -487,11 +488,14 @@ function SignupForm() {
             autoComplete="new-password"
             disabled={isSubmitting}
             aria-invalid={Boolean(errors.passwordConfirm)}
+            aria-describedby={
+              errors.passwordConfirm ? 'signup-password-confirm-error' : undefined
+            }
             {...register('passwordConfirm')}
           />
 
           {errors.passwordConfirm?.message && (
-            <p className="auth-form__field-error" role="alert">
+            <p id="signup-password-confirm-error" className="auth-form__field-error" role="alert">
               {errors.passwordConfirm.message}
             </p>
           )}
