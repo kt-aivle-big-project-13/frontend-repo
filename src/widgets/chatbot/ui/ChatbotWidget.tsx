@@ -149,18 +149,6 @@ function ChatbotWidget() {
       messageList.scrollHeight;
   }, [messages, isSending]);
 
-  // 로그아웃하면 이전 사용자의 챗봇 대화와 입력 내용을 초기화
-  useEffect(() => {
-    if (isAuthenticated) {
-      return;
-    }
-
-    setIsOpen(false);
-    setInput('');
-    setMessages([]);
-    setIsSending(false);
-  }, [isAuthenticated]);
-
   return (
     <div className="chatbot-widget">
       {isOpen && (

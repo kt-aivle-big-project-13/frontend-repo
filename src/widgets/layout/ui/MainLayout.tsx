@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { useAuthStore } from '../../../entities/user/model/authStore';
 import LoginPromptToast from '../../../entities/user/ui/LoginPromptToast';
 import ChatbotWidget from '../../chatbot/ui/ChatbotWidget';
 
@@ -12,9 +13,13 @@ interface MainLayoutProps {
   children: ReactNode;
 }
 
-function MainLayout({
-  children,
-}: MainLayoutProps) {
+function MainLayout({ children }: MainLayoutProps) {
+  const chatbotSessionKey = useAuthStore((state) =>
+    state.accessToken && state.user
+      ? `authenticated-${state.user.id}`
+      : 'unauthenticated',
+  );
+
   return (
     <div className="main-layout">
       <Header />
@@ -25,7 +30,7 @@ function MainLayout({
 
       <Footer />
       <LoginPromptToast />
-      <ChatbotWidget />
+      <ChatbotWidget key={chatbotSessionKey} />
     </div>
   );
 }
