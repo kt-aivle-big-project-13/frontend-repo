@@ -1221,6 +1221,34 @@
   cursor: not-allowed;
 }
 
+.audit-execution-section__retry-bar {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.audit-execution-section__retry-button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2d67e8;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.audit-execution-section__retry-button:hover:not(:disabled) {
+  background-color: #244fb8;
+}
+
+.audit-execution-section__retry-button:disabled {
+  background-color: #c8d0dc;
+  cursor: not-allowed;
+}
+
 @keyframes audit-execution-section-pulse {
   0%,
   100% {
