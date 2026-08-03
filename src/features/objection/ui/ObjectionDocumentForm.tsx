@@ -3,10 +3,7 @@ import { ReloadOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Input, Modal, message } from 'antd';
 
 import { maskEmail } from '../lib/maskEmail';
-import type {
-  ObjectionDocument,
-  ObjectionReviewResult,
-} from '../model/objectionTypes';
+import type { ObjectionDocument, ObjectionReviewResult } from '../model/objectionTypes';
 
 // 이메일 형식 검증용 정규식 (간단한 형식 확인 용도)
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,9 +25,7 @@ interface ObjectionDocumentFormProps {
 }
 
 // 처리 결과 코드를 한글 문구로 변환
-function getReviewResultLabel(
-  value: ObjectionReviewResult,
-): string {
+function getReviewResultLabel(value: ObjectionReviewResult): string {
   return value === 'REJECTED' ? '거절 유지' : '재심사';
 }
 
@@ -103,15 +98,9 @@ function ObjectionDocumentForm({
     <section className="objection-document-form">
       {/* 대응문서 검토 카드 상단 */}
       <header className="objection-document-form__header">
-        <h2>
-          {isCompleted
-            ? '③ 발송된 설명문 확인'
-            : '③ 설명문 초안 — 담당자 검토'}
-        </h2>
+        <h2>{isCompleted ? '③ 발송된 설명문 확인' : '③ 설명문 초안 — 담당자 검토'}</h2>
 
-        <span>
-          처리 결과: {getReviewResultLabel(document.reviewResult)}
-        </span>
+        <span>처리 결과: {getReviewResultLabel(document.reviewResult)}</span>
       </header>
 
       {/* 카드 상단 구분선 */}
@@ -120,28 +109,20 @@ function ObjectionDocumentForm({
       {/* 판단 근거 설명 영역 */}
       <div className="objection-document-form__field">
         <div className="objection-document-form__label">
-          <span>판단 근거 설명 (SHAP, If-Then)</span>
-          <small>✦ 자동 작성</small>
+          <span>담당자 판정 근거</span>
+          <small>검토 대상</small>
         </div>
 
-        <div className="objection-document-form__explanation">
-          {document.explanation}
-        </div>
+        <div className="objection-document-form__explanation">{document.explanation}</div>
       </div>
 
       {/* 고객 안내문 영역 */}
       <div className="objection-document-form__field">
         <div className="objection-document-form__label-row">
           <div className="objection-document-form__label">
-            <span>
-              {isCompleted
-                ? '발송된 고객 안내문'
-                : '고객 안내문 초안 (LLM)'}
-            </span>
+            <span>{isCompleted ? '발송된 고객 안내문' : 'AI 생성 고객 안내문 초안'}</span>
 
-            <small>
-              {isCompleted ? '✦ 발송 완료' : '✦ 자동 초안'}
-            </small>
+            <small>{isCompleted ? '✦ 발송 완료' : '✦ 자동 초안'}</small>
           </div>
 
           {/* 답변대기 건에서만 직접입력 및 재생성 표시 */}
@@ -149,18 +130,12 @@ function ObjectionDocumentForm({
             <div className="objection-document-form__controls">
               <Checkbox
                 checked={isDirectInput}
-                onChange={(event) =>
-                  onDirectInputChange(event.target.checked)
-                }
+                onChange={(event) => onDirectInputChange(event.target.checked)}
               >
                 직접입력
               </Checkbox>
 
-              <Button
-                icon={<ReloadOutlined />}
-                loading={isRegenerating}
-                onClick={onRegenerate}
-              >
+              <Button icon={<ReloadOutlined />} loading={isRegenerating} onClick={onRegenerate}>
                 재생성
               </Button>
             </div>
@@ -171,9 +146,7 @@ function ObjectionDocumentForm({
         <Input.TextArea
           className={[
             'objection-document-form__letter',
-            isCompleted
-              ? 'objection-document-form__letter--completed'
-              : '',
+            isCompleted ? 'objection-document-form__letter--completed' : '',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -193,8 +166,7 @@ function ObjectionDocumentForm({
       {isCompleted ? (
         /* 답변완료 문서 안내 */
         <div className="objection-document-form__readonly-notice">
-          이미 고객 이메일로 발송된 대응문서입니다. 내용은 수정하거나
-          재발송할 수 없습니다.
+          이미 고객 이메일로 발송된 대응문서입니다. 내용은 수정하거나 재발송할 수 없습니다.
         </div>
       ) : (
         /* 발송 동의 및 발송 버튼 */
@@ -202,9 +174,7 @@ function ObjectionDocumentForm({
           <Checkbox
             checked={agreed}
             disabled={!letterBody.trim()}
-            onChange={(event) =>
-              onAgreementChange(event.target.checked)
-            }
+            onChange={(event) => onAgreementChange(event.target.checked)}
           >
             내용을 검토했으며 발송에 동의합니다.
           </Checkbox>
@@ -236,9 +206,7 @@ function ObjectionDocumentForm({
           type="email"
           value={emailInput}
           placeholder="example@email.com"
-          status={
-            emailInput.trim() && !isEmailValid ? 'error' : undefined
-          }
+          status={emailInput.trim() && !isEmailValid ? 'error' : undefined}
           onChange={(event) => setEmailInput(event.target.value)}
           onPressEnter={handleConfirmEmail}
           autoFocus
@@ -262,8 +230,7 @@ function ObjectionDocumentForm({
         onCancel={() => setIsConfirmModalOpen(false)}
       >
         <p>
-          <strong>{maskEmail(confirmedEmail)}</strong>(으)로 대응문서를
-          발송합니다.
+          <strong>{maskEmail(confirmedEmail)}</strong>(으)로 대응문서를 발송합니다.
         </p>
         <p>정말 발송하시겠습니까?</p>
       </Modal>

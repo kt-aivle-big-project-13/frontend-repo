@@ -15,6 +15,8 @@ import type {
   ObjectionSummary,
 } from '../../../features/objection/model/objectionTypes';
 
+import { getModels, type ModelSummaryResponse } from '../../../features/audit/api/modelApi';
+
 import ObjectionDetailPanel from '../../../features/objection/ui/ObjectionDetailPanel';
 import ObjectionList from '../../../features/objection/ui/ObjectionList';
 
@@ -39,43 +41,34 @@ function CsvUploadGuide() {
 
       <ul>
         <li>
-          파일은 <code>.csv</code> 확장자, UTF-8 인코딩, 200MB 이하로
-          준비해주세요. UTF-8 BOM은 자동으로 제거됩니다.
+          파일은 <code>.csv</code> 확장자, UTF-8 인코딩, 200MB 이하로 준비해주세요. UTF-8 BOM은
+          자동으로 제거됩니다.
         </li>
 
         <li>
           헤더는 다음 8개 컬럼으로 구성해주세요.
           <span className="objections-page__upload-guide-detail">
-            고객_이름, 이의제기_번호, 거절_금융기준, 제목, 내용,
-            주요_판단_근거_변수, 담당자_판단_근거, 작성일시
+            고객_이름, 이의제기_번호, 거절_금융기준, 제목, 내용, 주요_판단_근거_변수,
+            담당자_판단_근거, 작성일시
           </span>
         </li>
 
-        <li>
-          고객_이름, 거절_금융기준, 제목, 내용, 작성일시는 반드시
-          입력해야 합니다.
-        </li>
+        <li>고객_이름, 거절_금융기준, 제목, 내용, 작성일시는 반드시 입력해야 합니다.</li>
 
         <li>
-          길이 제한은 이의제기_번호 20자, 고객_이름 50자,
-          거절_금융기준 100자, 제목 200자입니다.
+          길이 제한은 이의제기_번호 20자, 고객_이름 50자, 거절_금융기준 100자, 제목 200자입니다.
         </li>
 
         <li>
           작성일시는 <code>yyyy-MM-dd H:mm</code> 형식으로 입력해주세요.
-          <span className="objections-page__upload-guide-detail">
-            예: 2026-07-31 9:54
-          </span>
+          <span className="objections-page__upload-guide-detail">예: 2026-07-31 9:54</span>
         </li>
 
         <li>
-          이의제기_번호는 파일 안에서 중복될 수 없으며, 기존에 등록된
-          번호도 사용할 수 없습니다.
+          이의제기_번호는 파일 안에서 중복될 수 없으며, 기존에 등록된 번호도 사용할 수 없습니다.
         </li>
 
-        <li>
-          한 행이라도 검증에 실패하면 파일 전체가 저장되지 않습니다.
-        </li>
+        <li>한 행이라도 검증에 실패하면 파일 전체가 저장되지 않습니다.</li>
       </ul>
     </div>
   );
@@ -91,19 +84,16 @@ function ObjectionsPage() {
   const [objections, setObjections] = useState<ObjectionSummary[]>([]);
 
   // 현재 선택된 이의제기 ID
-  const [selectedObjectionId, setSelectedObjectionId] =
-    useState<number | null>(null);
+  const [selectedObjectionId, setSelectedObjectionId] = useState<number | null>(null);
 
   // 선택된 이의제기의 상세 정보 (선택 시 별도 조회)
-  const [selectedObjection, setSelectedObjection] =
-    useState<ObjectionDetail | null>(null);
+  const [selectedObjection, setSelectedObjection] = useState<ObjectionDetail | null>(null);
 
   // 상세 정보 로딩 상태
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   // 담당자가 선택한 처리 결과
-  const [reviewResult, setReviewResult] =
-    useState<ObjectionReviewResult>('REJECTED');
+  const [reviewResult, setReviewResult] = useState<ObjectionReviewResult>('REJECTED');
 
   // 상세 패널 닫기 애니메이션 상태
   const [isDetailClosing, setIsDetailClosing] = useState(false);
@@ -123,6 +113,10 @@ function ObjectionsPage() {
   // CSV 업로드 상태
   const [isUploading, setIsUploading] = useState(false);
 
+  const [models, setModels] = useState<ModelSummaryResponse[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
+  const [isModelsLoading, setIsModelsLoading] = useState(true);
+
   // 이의제기 목록 조회
   const loadObjections = () => {
     setIsLoading(true);
@@ -130,9 +124,7 @@ function ObjectionsPage() {
     fetchObjections()
       .then(setObjections)
       .catch((error: unknown) => {
-        message.error(
-          extractErrorMessage(error, '이의제기 목록을 불러오지 못했습니다.'),
-        );
+        message.error(extractErrorMessage(error, '이의제기 목록을 불러오지 못했습니다.'));
       })
       .finally(() => {
         setIsLoading(false);
@@ -141,6 +133,21 @@ function ObjectionsPage() {
 
   useEffect(() => {
     loadObjections();
+
+    getModels()
+      .then((loadedModels) => {
+        setModels(loadedModels);
+
+        if (loadedModels.length === 1) {
+          setSelectedModelId(loadedModels[0].modelId);
+        }
+      })
+      .catch((error: unknown) => {
+        message.error(extractErrorMessage(error, '모델 목록을 불러오지 못했습니다.'));
+      })
+      .finally(() => {
+        setIsModelsLoading(false);
+      });
   }, []);
 
   // 컴포넌트 종료 시 타이머 제거
@@ -168,17 +175,12 @@ function ObjectionsPage() {
       const firstTime = new Date(first.createdAt).getTime();
       const secondTime = new Date(second.createdAt).getTime();
 
-      return sortDescending
-        ? secondTime - firstTime
-        : firstTime - secondTime;
+      return sortDescending ? secondTime - firstTime : firstTime - secondTime;
     });
   }, [objections, searchKeyword, sortDescending]);
 
   // 전체 페이지 수
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredObjections.length / ITEMS_PER_PAGE),
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredObjections.length / ITEMS_PER_PAGE));
 
   // 현재 페이지에 표시할 목록
   const visibleObjections = filteredObjections.slice(
@@ -217,9 +219,7 @@ function ObjectionsPage() {
     fetchObjectionDetail(objectionId)
       .then(setSelectedObjection)
       .catch((error: unknown) => {
-        message.error(
-          extractErrorMessage(error, '이의제기 상세 정보를 불러오지 못했습니다.'),
-        );
+        message.error(extractErrorMessage(error, '이의제기 상세 정보를 불러오지 못했습니다.'));
         setSelectedObjectionId(null);
       })
       .finally(() => {
@@ -252,7 +252,7 @@ function ObjectionsPage() {
 
     const selectedReviewResult =
       selectedObjection.status === 'COMPLETED'
-        ? selectedObjection.completionInfo?.reviewResult ?? 'REJECTED'
+        ? (selectedObjection.completionInfo?.reviewResult ?? 'REJECTED')
         : reviewResult;
 
     navigate(`/objections/${selectedObjection.objectionId}/document`, {
@@ -285,11 +285,15 @@ function ObjectionsPage() {
       message.error('파일 크기는 200MB 이하여야 합니다.');
       return;
     }
-    
+
+    if (selectedModelId === null) {
+      message.warning('이의제기와 연결할 모델을 먼저 선택해주세요.');
+      return;
+    }
     try {
       setIsUploading(true);
 
-      const result = await importObjectionsCsv(file);
+      const result = await importObjectionsCsv(selectedModelId, file);
 
       message.success(`이의제기 ${result.importedCount}건이 등록되었습니다.`);
       loadObjections();
@@ -321,30 +325,44 @@ function ObjectionsPage() {
               <div>
                 <h1>고객 이의제기 목록</h1>
 
-                <p>
-                  접수된 이의제기를 확인하고 대응문서를 생성하세요
-                </p>
+                <p>접수된 이의제기를 확인하고 대응문서를 생성하세요</p>
               </div>
 
               <div className="objections-page__title-actions">
+                <select
+                  className="objections-page__model-select"
+                  value={selectedModelId ?? ''}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSelectedModelId(value ? Number(value) : null);
+                  }}
+                  disabled={isModelsLoading || isUploading}
+                  aria-label="이의제기 대상 모델"
+                >
+                  <option value="">
+                    {isModelsLoading ? '모델 불러오는 중...' : '대상 모델 선택'}
+                  </option>
+
+                  {models.map((model) => (
+                    <option key={model.modelId} value={model.modelId}>
+                      {model.modelName} · {model.currentVersion}
+                    </option>
+                  ))}
+                </select>
+
                 <div className="objections-page__upload-actions">
-                  {/* 신용감사 결과 CSV 업로드 */}
                   <label className="objections-page__upload-button">
                     <input
                       type="file"
                       accept=".csv"
                       onChange={(event) => void handleFileChange(event)}
-                      disabled={isUploading}
+                      disabled={isUploading || selectedModelId === null}
                       hidden
                     />
                     {isUploading ? '업로드 중...' : '신용감사 결과 업로드'}
                   </label>
 
-                  <Popover
-                    content={<CsvUploadGuide />}
-                    trigger="click"
-                    placement="bottomRight"
-                  >
+                  <Popover content={<CsvUploadGuide />} trigger="click" placement="bottomRight">
                     <button
                       type="button"
                       className="objections-page__upload-help-button"
@@ -353,9 +371,8 @@ function ObjectionsPage() {
                       ?
                     </button>
                   </Popover>
-                  
                 </div>
-                {/* 상세 패널이 닫혀 있을 때만 상단에 전체 건수 표시 */}
+
                 {!isDetailVisible && <strong>{objections.length}건</strong>}
               </div>
             </div>
@@ -363,20 +380,14 @@ function ObjectionsPage() {
 
           {isLoading ? (
             // 목록 로딩 화면
-            <div className="objections-page__loading">
-              이의제기 목록을 불러오는 중입니다.
-            </div>
+            <div className="objections-page__loading">이의제기 목록을 불러오는 중입니다.</div>
           ) : (
             // 목록과 상세 패널 영역
             <div
               className={[
                 'objections-page__workspace',
-                isDetailVisible
-                  ? 'objections-page__workspace--detail-open'
-                  : '',
-                isDetailClosing
-                  ? 'objections-page__workspace--detail-closing'
-                  : '',
+                isDetailVisible ? 'objections-page__workspace--detail-open' : '',
+                isDetailClosing ? 'objections-page__workspace--detail-closing' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -402,9 +413,7 @@ function ObjectionsPage() {
                 <div
                   className={[
                     'objections-page__detail-wrapper',
-                    isDetailClosing
-                      ? 'objections-page__detail-wrapper--closing'
-                      : '',
+                    isDetailClosing ? 'objections-page__detail-wrapper--closing' : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
