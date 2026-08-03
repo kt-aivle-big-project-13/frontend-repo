@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import LoginPromptToast from '../../../entities/user/ui/LoginPromptToast';
+import ChatbotWidget from '../../chatbot/ui/ChatbotWidget';
 
 import Footer from './Footer';
 import Header from './Header';
@@ -11,13 +12,20 @@ interface MainLayoutProps {
   children: ReactNode;
 }
 
-function MainLayout({ children }: MainLayoutProps) {
+function MainLayout({
+  children,
+}: MainLayoutProps) {
   return (
     <div className="main-layout">
       <Header />
-      <main className="main-layout__content">{children}</main>
+
+      <main className="main-layout__content">
+        {children}
+      </main>
+
       <Footer />
       <LoginPromptToast />
+      <ChatbotWidget />
     </div>
   );
 }
