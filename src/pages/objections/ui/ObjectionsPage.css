@@ -63,6 +63,13 @@
   margin-top: 42px;
 }
 
+/* CSV 업로드 버튼과 도움말 버튼 영역 */
+.objections-page__upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* CSV 업로드 버튼 */
 .objections-page__upload-button {
   display: inline-flex;
@@ -88,6 +95,75 @@
 .objections-page__upload-button:has(input:disabled) {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* CSV 업로드 도움말 버튼 */
+.objections-page__upload-help-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #d8dee8;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #6b7684;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* CSV 업로드 도움말 버튼 마우스 오버 */
+.objections-page__upload-help-button:hover {
+  border-color: #2d67e8;
+  color: #2d67e8;
+}
+
+/* CSV 업로드 도움말 내용 */
+.objections-page__upload-guide {
+  width: min(420px, calc(100vw - 48px));
+  max-height: 60vh;
+  overflow-y: auto;
+  color: #4d5765;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* CSV 업로드 도움말 제목 */
+.objections-page__upload-guide > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #202938;
+  font-size: 14px;
+}
+
+/* CSV 업로드 도움말 목록 */
+.objections-page__upload-guide ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* CSV 업로드 도움말 항목 간격 */
+.objections-page__upload-guide li + li {
+  margin-top: 7px;
+}
+
+/* CSV 컬럼 목록과 작성일시 예시 */
+.objections-page__upload-guide-detail {
+  display: block;
+  margin-top: 3px;
+  color: #667085;
+  overflow-wrap: anywhere;
+}
+
+/* 도움말 내부 코드 형식 */
+.objections-page__upload-guide code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+  color: #2d67e8;
+  font-family: inherit;
 }
 
 /* 전체 이의제기 건수 배지 */
