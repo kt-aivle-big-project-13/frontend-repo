@@ -202,21 +202,41 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
 
   const handleSelfCheckAnswer = (code: string, answer: SelfCheckAnswer) => {
     setIsSelfCheckSubmitted(false);
+
     // 이미 선택된 답변을 다시 누르면 선택을 해제한다(토글) — 해제하면 미응답으로 돌아간다.
-    setSelfCheckAnswers((prev) => ({ ...prev, [code]: prev[code] === answer ? null : answer }));
+    const nextAnswer = selfCheckAnswers[code] === answer ? null : answer;
+    const nextAnswers = { ...selfCheckAnswers, [code]: nextAnswer };
+    setSelfCheckAnswers(nextAnswers);
     // 답변을 바꾸면 이전 제출 기준으로 나온 매칭 조항은 더 이상 유효하지 않으므로 같이 지운다.
     setMatchedArticles([]);
+
+    // 그룹의 모든 문항에 응답하면 그 그룹은 접고 다음 그룹을 자동으로 펼쳐서, 21문항을
+    // 순서대로 이어서 응답하기 쉽게 한다.
+    const item = SELF_CHECK_ITEMS.find((selfCheckItem) => selfCheckItem.code === code);
+    if (!item) return;
+
+    const groupItems = SELF_CHECK_ITEMS.filter(
+      (selfCheckItem) => selfCheckItem.category === item.category,
+    );
+    const isGroupComplete = groupItems.every(
+      (selfCheckItem) => nextAnswers[selfCheckItem.code] !== null,
+    );
+
+    if (isGroupComplete) {
+      const nextCategory = CATEGORY_ORDER[CATEGORY_ORDER.indexOf(item.category) + 1];
+      setOpenCategories((prev) => {
+        const next = new Set(prev);
+        next.delete(item.category);
+        if (nextCategory) next.add(nextCategory);
+        return next;
+      });
+    }
   };
 
-  // 자가점검 건너뛰기를 체크하면 더 이상 응답을 사용하지 않으므로, 이미 선택해둔 버튼의
-  // 강조 표시도 함께 해제한다(체크 후에도 이전 선택이 눌린 채로 보이던 버그 수정).
+  // 건너뛰기는 응답 자체를 지우지 않는다 — 잘못 눌렀다가 다시 해제했을 때 이미 고른 답변이
+  // 그대로 남아있어야 하기 때문이다(체크된 동안은 버튼이 disabled라 편집만 막힌다).
   const handleSkipSelfCheckChange = (checked: boolean) => {
     setSkipSelfCheck(checked);
-    if (checked) {
-      setSelfCheckAnswers(EMPTY_SELF_CHECK_ANSWERS);
-      setIsSelfCheckSubmitted(false);
-      setMatchedArticles([]);
-    }
   };
 
   // 매핑 생성이 제한 시간 내에 안 끝나면(RegulationMappingTimeoutError) 실제로 매핑이
@@ -468,6 +488,13 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               <span className="audit-execution-section__self-check-count">
                 {answeredCount}/{TOTAL_SELF_CHECK_ITEM_COUNT} 응답
               </span>
+            </div>
+
+            <div className="audit-execution-section__self-check-progress-track">
+              <div
+                className="audit-execution-section__self-check-progress-fill"
+                style={{ width: `${(answeredCount / TOTAL_SELF_CHECK_ITEM_COUNT) * 100}%` }}
+              />
             </div>
 
             <p className="audit-execution-section__self-check-desc">
