@@ -151,8 +151,14 @@ function AuditExecutionSection() {
   // 제출이 백그라운드에서 끝났을 때, 사용자가 이미 이 화면을 벗어났다면(홈 등 다른 곳으로
   // 이동) STEP3로 강제 이동시키지 않기 위한 마운트 여부 추적. handleStartAudit은 일반
   // 비동기 함수라 컴포넌트가 언마운트돼도 계속 실행되므로, 완료 시점에 이 값을 확인한다.
+  //
+  // StrictMode(개발 모드)는 마운트 시 이 effect를 설치→정리→재설치 순으로 한 번 더 실행해
+  // 정리 누락을 잡아낸다. 설치 시점에 true로 재설정하지 않으면, 그 시뮬레이션 도중 정리
+  // 단계에서 false로 바뀐 값이 그대로 남아 실제로는 계속 마운트돼 있는 동안에도 영구히
+  // false로 고정되어 navigate()가 다시는 실행되지 않는다.
   const isMountedRef = useRef(true);
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
