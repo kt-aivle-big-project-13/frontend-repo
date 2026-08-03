@@ -132,6 +132,15 @@ function formatUploadedAt(value: string): string {
   return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+// 대소문자와 공백 표기 차이(예: "My Model" vs "mymodel")를 모두 무시하고 비교하기 위해
+// 앞뒤 공백만 지우는 trim이 아니라 모든 공백을 제거한다.
+function normalizeModelName(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, '');
+}
+
+// 백엔드 ai_models.model_name 컬럼 길이(varchar(100))와 맞춘다 — 넘으면 DB 저장 시 500 에러가 난다.
+const MODEL_NAME_MAX_LENGTH = 100;
+
 function AuditExecutionSection() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -171,6 +180,12 @@ function AuditExecutionSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // 신규 모델명이 기존에 감사했던 모델과 겹치는지 검증하기 위한 기존 모델명 목록.
+  // 모드/선택과 무관하게 마운트 시 한 번만 가져온다.
+  const [existingModelNames, setExistingModelNames] = useState<Set<string>>(
+    () => new Set(),
+  );
+
   const modelFileInputRef = useRef<HTMLInputElement>(null);
   const auditDatasetFileInputRef = useRef<HTMLInputElement>(null);
   const validationDatasetFileInputRef = useRef<HTMLInputElement>(null);
@@ -188,10 +203,51 @@ function AuditExecutionSection() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSubmitting]);
 
+  useEffect(() => {
+    getModels()
+      .then((models) =>
+        setExistingModelNames(
+          new Set(models.map((model) => normalizeModelName(model.modelName))),
+        ),
+      )
+      .catch(() => setExistingModelNames(new Set()));
+  }, []);
+
   const selectedPreviousModel = useMemo(
     () => previousModels.find((model) => model.modelId === selectedPreviousModelId) ?? null,
     [previousModels, selectedPreviousModelId],
   );
+
+  // 모델명 입력을 비워두면 업로드한 파일명(또는 재사용 중인 이전 모델명)이 실제 저장되는 이름이
+  // 된다 (handleStartAudit 참고). 중복/길이 검증이 화면에 보이는 입력값만 보고 판단하면, 입력칸을
+  // 비운 채 파일명만으로 검증을 우회할 수 있으므로 반드시 이 값을 기준으로 검증해야 한다.
+  const fallbackModelName = modelFile?.name ?? selectedPreviousModel?.modelName ?? '';
+  const effectiveModelName = modelName || fallbackModelName;
+
+  // 신규 등록 모드에서만 검증한다 — 버전업은 이전 모델과 같은 이름을 이어받는 게 정상 흐름이다.
+  const isDuplicateModelName = useMemo(() => {
+    if (modelMode !== 'new') return false;
+    const normalized = normalizeModelName(effectiveModelName);
+    if (!normalized) return false;
+    return existingModelNames.has(normalized);
+  }, [modelMode, effectiveModelName, existingModelNames]);
+
+  // 모델명 길이는 모드와 무관하게 검증한다 — 버전업에서도 이 입력값이 그대로 저장된다.
+  const isModelNameTooLong = effectiveModelName.length > MODEL_NAME_MAX_LENGTH;
+  const isModelNameInvalid = isDuplicateModelName || isModelNameTooLong;
+  const modelNameErrorMessage = isDuplicateModelName
+    ? '이미 감사한 모델과 이름이 중복됩니다. 다른 모델명을 입력해주세요.'
+    : isModelNameTooLong
+      ? `모델명은 ${MODEL_NAME_MAX_LENGTH}자를 초과할 수 없습니다. (현재 ${effectiveModelName.length}자)`
+      : null;
+
+  // 토스트는 글자 수 같은 세부 수치 없이 고정된 문구로 띄운다 — modelNameErrorMessage를 그대로
+  // key로 쓰면 초과 상태에서 타이핑할 때마다(글자 수가 바뀌므로) 매번 다시 애니메이션된다.
+  const modelNameToastMessage = isDuplicateModelName
+    ? '이미 등록된 모델명입니다. 다른 이름을 입력해주세요.'
+    : isModelNameTooLong
+      ? `모델명은 ${MODEL_NAME_MAX_LENGTH}자를 초과할 수 없습니다.`
+      : null;
 
   const handleModelModeChange = (mode: ModelMode) => {
     setModelMode(mode);
@@ -346,6 +402,7 @@ function AuditExecutionSection() {
 
   const handleStartAudit = async () => {
     if (isSubmitting) return;
+    if (isModelNameInvalid) return;
     if (!willReuseModel && !modelFile) return;
     if (isUpdateMode && !selectedPreviousModelId) return;
     if (!willReuseDataset && !auditDatasetFile) return;
@@ -368,11 +425,9 @@ function AuditExecutionSection() {
     setSubmitError(null);
 
     try {
-      const fallbackModelName = modelFile?.name ?? selectedPreviousModel?.modelName ?? '';
-
       const model = await uploadModel(
         willReuseModel ? null : modelFile,
-        modelName || fallbackModelName,
+        effectiveModelName,
         modelType,
         isUpdateMode
           ? {
@@ -391,7 +446,7 @@ function AuditExecutionSection() {
         datasetId = dataset.datasetId;
       }
 
-      const auditName = modelName || fallbackModelName;
+      const auditName = effectiveModelName;
 
       // Validation 데이터셋을 켠 경우에만 별도로 올려서 임계값 산출에 쓰고,
       // 안 켠 경우(기본값)는 기존과 동일하게 MANUAL + 0.5 고정 임계값을 쓴다.
@@ -439,6 +494,7 @@ function AuditExecutionSection() {
   const isStartDisabled =
     (!willReuseModel && !modelFile) ||
     isSubmitting ||
+    isModelNameInvalid ||
     (isUpdateMode && !selectedPreviousModelId) ||
     (isUpdateMode && newVersion.trim().length === 0) ||
     isVersionSameAsPrevious ||
@@ -545,11 +601,19 @@ function AuditExecutionSection() {
           <input
             id="model-name"
             type="text"
-            className="audit-execution-section__text-input"
+            className={`audit-execution-section__text-input${isModelNameInvalid ? ' audit-execution-section__text-input--invalid' : ''}`}
             value={modelName}
             onChange={(event) => setModelName(event.target.value)}
             placeholder="모델명을 입력해주세요"
+            aria-invalid={isModelNameInvalid}
+            aria-describedby={modelNameErrorMessage ? 'model-name-error' : undefined}
           />
+
+          {modelNameErrorMessage && (
+            <p id="model-name-error" className="audit-execution-section__field-error">
+              {modelNameErrorMessage}
+            </p>
+          )}
 
           {willReuseModel && selectedPreviousModel ? (
             <div className="audit-execution-section__reuse-panel">
@@ -821,6 +885,19 @@ function AuditExecutionSection() {
         <p className="audit-execution-section__empty" role="alert">
           {submitError}
         </p>
+      )}
+
+      {modelNameToastMessage && (
+        // key로 메시지 자체를 써서, 새로운 오류가 뜰 때마다(중복 → 길이초과 등) 페이드인 애니메이션이
+        // 다시 재생되게 한다. 오류가 해소되면 이 블록 자체가 사라지므로 토스트가 곧바로 함께 사라진다
+        // (별도 타이머 상태 없이 검증 결과 하나로 항상 동기화된다).
+        <div
+          key={modelNameToastMessage}
+          className="audit-execution-section__duplicate-toast"
+          role="alert"
+        >
+          {modelNameToastMessage}
+        </div>
       )}
     </div>
   );
