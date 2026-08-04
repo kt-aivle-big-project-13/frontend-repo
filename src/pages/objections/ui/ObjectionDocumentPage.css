@@ -68,12 +68,36 @@
 
 /* 로딩 및 오류 안내 영역 */
 .objection-document-page__loading {
+  display: flex;
+  min-height: 160px;
   padding: 60px 20px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
   border: 1.5px solid #eef0f3;
   border-radius: 14px;
   color: #9099a8;
   font-size: 13.5px;
   text-align: center;
+}
+
+/* 로딩 스피너 */
+.objection-document-page__spinner {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border: 3px solid #2d67e8;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: objection-document-spinner 0.8s linear infinite;
+}
+
+/* 로딩 스피너 회전 */
+@keyframes objection-document-spinner {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 대응문서 검토 카드 */
