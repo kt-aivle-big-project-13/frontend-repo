@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   getAudits,
@@ -158,6 +159,8 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
   const [auditSummary, setAuditSummary] = useState<AuditSummary | null>(null);
   const [versionHistory, setVersionHistory] = useState<AuditSummary[]>([]);
 
+  const navigate = useNavigate();
+
   // auditId가 바뀌면(다른 감사의 결과 페이지로 바로 이동) 이전 감사의 결과가 잠시
   // 남아있지 않도록 렌더링 중에 바로 리셋한다.
   const [prevAuditId, setPrevAuditId] = useState(auditId);
@@ -295,6 +298,16 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
             hasPreDiagnosis={auditSummary ? auditSummary.assessmentId !== null : true}
           />
           <VersionHistorySection audits={versionHistory} currentAuditId={auditId} isLoading={false} />
+          <div className="audit-results-detail__dashboard-area">
+            <button
+              type="button"
+              className="audit-results-detail__dashboard-button"
+              onClick={() => navigate('/dashboard')}
+            >
+              대시보드
+              <span aria-hidden="true">➔</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

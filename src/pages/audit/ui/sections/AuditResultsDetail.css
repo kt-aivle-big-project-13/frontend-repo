@@ -154,3 +154,30 @@
     grid-template-columns: 1fr;
   }
 }
+
+.audit-results-detail__dashboard-area {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+  margin-bottom: 8px;
+}
+
+.audit-results-detail__dashboard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 100px;
+  padding: 12px 24px;
+  border: 1.5px solid #2d67e8;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #2d67e8;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.audit-results-detail__dashboard-button:hover {
+  background-color: #eef4ff;
+}
