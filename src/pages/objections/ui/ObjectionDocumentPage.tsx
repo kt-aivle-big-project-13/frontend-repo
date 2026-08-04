@@ -256,6 +256,7 @@ function ObjectionDocumentPage() {
 
           {isLoading ? (
             <div className="objection-document-page__loading">
+              <div className="objection-document-page__spinner" role="status" aria-label="대응문서를 불러오는 중"/>
               대응문서를 불러오는 중입니다.
             </div>
           ) : document ? (
