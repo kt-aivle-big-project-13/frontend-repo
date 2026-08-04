@@ -29,6 +29,7 @@ export interface AuditResultDistribution {
 export interface ReviewRequiredModel {
   modelId: number;
   modelName: string;
+  version: string;
   issueCount: number;
   status: DashboardAuditStatus;
 }
@@ -49,6 +50,7 @@ export interface RecentAudit {
   auditId: number;
   modelId: number;
   modelName: string;
+  version: string;
   status: DashboardAuditStatus;
   keyRisk: string;
   completedAt: string;

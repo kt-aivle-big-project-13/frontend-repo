@@ -31,19 +31,19 @@ function DashboardSummarySection({ summary }: DashboardSummarySectionProps) {
       tone: 'default',
     },
     {
-      label: '정상',
+      label: '충족',
       value: String(summary.normalModelCount),
       icon: <CheckCircleOutlined />,
       tone: 'normal',
     },
     {
-      label: '검토 필요',
+      label: '주의',
       value: String(summary.reviewRequiredCount),
       icon: <WarningOutlined />,
       tone: 'review',
     },
     {
-      label: '기준 초과',
+      label: '추가 검토',
       value: String(summary.thresholdExceededCount),
       icon: <ExclamationCircleOutlined />,
       tone: 'exceeded',

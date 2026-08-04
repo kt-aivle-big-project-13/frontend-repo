@@ -4,6 +4,7 @@ import type {
   DashboardAuditStatus,
   RecentAudit,
 } from '../../../../features/dashboard/api/dashboardApi';
+import { formatModelVersion } from '../../../../features/dashboard/lib/formatModelVersion';
 
 import './RecentAuditsSection.css';
 
@@ -12,13 +13,31 @@ interface RecentAuditsSectionProps {
 }
 
 const STATUS_LABELS: Record<DashboardAuditStatus, string> = {
-  COMPLIANT: '정상',
-  WARNING: '검토 필요',
-  NON_COMPLIANT: '기준 초과',
+  COMPLIANT: '충족',
+  WARNING: '주의',
+  NON_COMPLIANT: '추가 검토',
 };
 
-function formatAuditId(auditId: number) {
-  return `A${String(auditId).padStart(4, '0')}`;
+const RISK_METRIC_LABELS: Record<string, string> = {
+  PROPORTIONAL_PARITY: '비례성 패리티',
+  DEMOGRAPHIC_PARITY: '인구통계학적 평등성',
+  EQUAL_OPPORTUNITY: '기회의 균등',
+  EQUALIZED_ODDS: '균등화 승산',
+  FPR_PARITY: '거짓 양성률 패리티',
+  FDR_PARITY: '거짓 발견율 패리티',
+  FOR_PARITY: '거짓 누락률 패리티',
+  SENSITIVE_CONTRIB: '민감변수 기여비율',
+  GLOBAL_STABILITY: '설명 일관성',
+  FIDELITY: '설명 충실성',
+};
+
+function formatKeyRisk(keyRisk: string) {
+  const translatedKeyRisk = keyRisk
+    .split(/(\s+)/)
+    .map((term) => RISK_METRIC_LABELS[term] ?? term)
+    .join('');
+
+  return translatedKeyRisk.replace(/(균등화 승산)\s+(-?\d+(?:\.\d+)?)/, '($1 $2)');
 }
 
 function formatCompletedAt(completedAt: string) {
@@ -48,7 +67,6 @@ function RecentAuditsSection({ audits }: RecentAuditsSectionProps) {
             <table className="recent-audits__table">
               <thead>
                 <tr>
-                  <th scope="col">감사 ID</th>
                   <th scope="col">모델명</th>
                   <th scope="col">종합판정</th>
                   <th scope="col">핵심 위험 신호</th>
@@ -57,31 +75,43 @@ function RecentAuditsSection({ audits }: RecentAuditsSectionProps) {
                 </tr>
               </thead>
               <tbody>
-                {audits.map((audit) => (
-                  <tr key={audit.auditId}>
-                    <td className="recent-audits__id">{formatAuditId(audit.auditId)}</td>
-                    <td className="recent-audits__model">{audit.modelName}</td>
-                    <td>
-                      <span
-                        className={`recent-audits__status recent-audits__status--${audit.status.toLowerCase()}`}
-                      >
-                        {STATUS_LABELS[audit.status]}
-                      </span>
-                    </td>
-                    <td className="recent-audits__risk" title={audit.keyRisk}>
-                      {audit.keyRisk}
-                    </td>
-                    <td className="recent-audits__date">{formatCompletedAt(audit.completedAt)}</td>
-                    <td>
-                      <Link
-                        to={`/audit/${audit.auditId}/results`}
-                        className="recent-audits__detail-link"
-                      >
-                        상세보기 ›
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {audits.map((audit) => {
+                  const keyRiskLabel = formatKeyRisk(audit.keyRisk);
+
+                  return (
+                    <tr key={audit.auditId}>
+                      <td className="recent-audits__model">
+                        {audit.modelName}
+                        {audit.version && (
+                          <span className="recent-audits__model-version">
+                            {formatModelVersion(audit.version)}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <span
+                          className={`recent-audits__status recent-audits__status--${audit.status.toLowerCase()}`}
+                        >
+                          {STATUS_LABELS[audit.status]}
+                        </span>
+                      </td>
+                      <td className="recent-audits__risk" title={keyRiskLabel}>
+                        {keyRiskLabel}
+                      </td>
+                      <td className="recent-audits__date">
+                        {formatCompletedAt(audit.completedAt)}
+                      </td>
+                      <td>
+                        <Link
+                          to={`/audit/${audit.auditId}/results`}
+                          className="recent-audits__detail-link"
+                        >
+                          상세보기 ›
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
