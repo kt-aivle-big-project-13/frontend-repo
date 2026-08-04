@@ -15,13 +15,9 @@ import {
   TERMINAL_STATUSES,
   type AuditStatus,
   type RegulationMappingItem,
+  type SelfCheckAnswerValue as ApiSelfCheckAnswerValue,
+  type SelfCheckItemCode as ApiSelfCheckItemCode,
 } from '../../../../features/audit/api/auditApi';
-import {
-  LEGACY_ITEM_CODE_MAP,
-  LEGACY_SUPPORTED_CODES,
-  REVERSE_LEGACY_ITEM_CODE_MAP,
-} from '../../../../features/audit/model/selfCheckLegacyMapping';
-import { getSelfCheckDraft, saveSelfCheckDraft } from '../../../../features/audit/model/selfCheckDraft';
 import {
   pregenerateChecklistReports,
   pregenerateSkippedChecklistReports,
@@ -166,35 +162,27 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     };
   }, [auditId, isDone]);
 
-  // 자가점검 21문항 응답 하이드레이션: 백엔드는 아직 5문항만 안다(selfCheckLegacyMapping
-  // 참고). 로컬에 임시 저장해둔 21문항 초안을 기본값으로 깔고, 그 중 백엔드가 아는 5문항은
-  // 서버에 실제로 저장된 값으로 덮어써 서버를 최종 근거로 삼는다.
+  // 자가점검 21문항 응답 하이드레이션: 서버에 실제로 저장된 값을 그대로 반영한다.
   useEffect(() => {
     let cancelled = false;
-    const draft = getSelfCheckDraft(auditId);
-    const draftHydrated = { ...EMPTY_SELF_CHECK_ANSWERS, ...draft };
 
     Promise.all([getSelfCheckAnswers(auditId), getRegulationMappings(auditId)])
       .then(([selfCheck, regulationMappings]) => {
         if (cancelled || auditIdRef.current !== auditId) return;
 
         if (selfCheck.answers.length > 0) {
+          const hydrated = { ...EMPTY_SELF_CHECK_ANSWERS };
           selfCheck.answers.forEach((item) => {
-            const newCode = REVERSE_LEGACY_ITEM_CODE_MAP[item.itemCode];
-            if (newCode) draftHydrated[newCode] = item.answer ? 'YES' : 'NO';
+            hydrated[item.itemCode] = item.answer;
           });
+          setSelfCheckAnswers(hydrated);
           setIsSelfCheckSubmitted(true);
         }
 
-        setSelfCheckAnswers(draftHydrated);
         setMatchedArticles(regulationMappings.mappings);
       })
       .catch(() => {
-        // 아직 제출 전이라 저장된 응답이 없는 정상적인 경우일 수 있으므로 조용히 무시하고
-        // 로컬 초안만 반영한다.
-        if (!cancelled && auditIdRef.current === auditId) {
-          setSelfCheckAnswers(draftHydrated);
-        }
+        // 아직 제출 전이라 저장된 응답이 없는 정상적인 경우일 수 있으므로 조용히 무시한다.
       });
 
     return () => {
@@ -294,11 +282,10 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   };
 
   // 미응답 상태로도 제출을 막지 않는다(건너뛰기 기능이 이미 있어 제출 자체를 차단할 필요는
-  // 없고, 미응답 개수는 경고 문구로만 안내한다). 다만 백엔드는 아직 21문항 중 5문항만 저장할
-  // 수 있어(selfCheckLegacyMapping), 그 5문항이 전부 예/아니오로 채워졌을 때만 실제 저장 +
-  // 법조문 매칭 재계산을 시도한다 — 나머지 16문항은 이 브랜치가 끝나기 전까지 로컬에만 남는다.
+  // 없고, 미응답 개수는 경고 문구로만 안내한다) — 백엔드가 부분 제출을 허용하므로 지금까지
+  // 응답한 항목만 그대로 보낸다.
   const handleSelfCheckSubmit = async () => {
-    if (isSelfCheckSubmitting) return;
+    if (isSelfCheckSubmitting || answeredCount === 0) return;
 
     const submittedAuditId = auditId;
 
@@ -306,26 +293,17 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     setSelfCheckError(null);
 
     try {
-      saveSelfCheckDraft(submittedAuditId, selfCheckAnswers);
-
-      const legacyReady = LEGACY_SUPPORTED_CODES.every((code) => {
-        const answer = selfCheckAnswers[code];
-        return answer === 'YES' || answer === 'NO';
-      });
-
-      if (legacyReady) {
-        const answers = LEGACY_SUPPORTED_CODES.map((code) => ({
-          itemCode: LEGACY_ITEM_CODE_MAP[code]!,
-          answer: selfCheckAnswers[code] === 'YES',
+      const answers = Object.entries(selfCheckAnswers)
+        .filter((entry): entry is [string, ApiSelfCheckAnswerValue] => entry[1] !== null)
+        .map(([code, answer]) => ({
+          itemCode: code as ApiSelfCheckItemCode,
+          answer,
         }));
 
-        await saveSelfCheckAnswers(submittedAuditId, answers);
-        if (auditIdRef.current !== submittedAuditId) return;
+      await saveSelfCheckAnswers(submittedAuditId, answers);
+      if (auditIdRef.current !== submittedAuditId) return;
 
-        await loadMatchedArticles(submittedAuditId);
-      } else {
-        setMatchedArticles([]);
-      }
+      await loadMatchedArticles(submittedAuditId);
 
       if (auditIdRef.current === submittedAuditId) {
         setIsSelfCheckSubmitted(true);
@@ -689,7 +667,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               <button
                 type="button"
                 className="audit-execution-section__submit-button"
-                disabled={skipSelfCheck || isSelfCheckSubmitting}
+                disabled={skipSelfCheck || isSelfCheckSubmitting || answeredCount === 0}
                 onClick={handleSelfCheckSubmit}
               >
                 {isSelfCheckSubmitting ? '제출 중…' : '제출'}
@@ -736,11 +714,10 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                   .flatMap((article) =>
                     article.matchedItems.map((matched) => ({ article, matched })),
                   )
-                  .sort((a, b) => {
-                    const aCode = REVERSE_LEGACY_ITEM_CODE_MAP[a.matched.itemCode] ?? '';
-                    const bCode = REVERSE_LEGACY_ITEM_CODE_MAP[b.matched.itemCode] ?? '';
-                    return (ITEM_ORDER_INDEX[aCode] ?? 0) - (ITEM_ORDER_INDEX[bCode] ?? 0);
-                  })
+                  .sort((a, b) =>
+                    (ITEM_ORDER_INDEX[a.matched.itemCode] ?? 0)
+                    - (ITEM_ORDER_INDEX[b.matched.itemCode] ?? 0),
+                  )
                   .map(({ article, matched }) => (
                     <li
                       key={`${article.mappingId}-${matched.itemCode}`}
@@ -766,7 +743,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                           </Tooltip>
                         </p>
                         <span className="audit-execution-section__matched-badge">
-                          {REVERSE_LEGACY_ITEM_CODE_MAP[matched.itemCode] ?? matched.itemCode}
+                          {matched.itemCode}
                         </span>
                       </div>
                       <p className="audit-execution-section__matched-quote">{matched.note}</p>
