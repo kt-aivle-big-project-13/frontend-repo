@@ -11,7 +11,7 @@
 
 .audit-overview-section__grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 20px;
   padding: 0px;
 }
