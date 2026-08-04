@@ -27,7 +27,26 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
   font-size: 17px;
+  line-height: 1;
+  overflow: visible;
+}
+
+.dashboard-summary__icon > .anticon {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+}
+
+.dashboard-summary__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 .dashboard-summary__value {

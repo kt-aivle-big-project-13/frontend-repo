@@ -17,7 +17,9 @@ function MetricHelpTooltip({ label, description, tip }: MetricHelpTooltipProps) 
         aria-label={`${label} 도움말`}
         aria-describedby={tooltipId}
       >
-        ?
+        <span className="metric-help-tooltip__trigger-mark" aria-hidden="true">
+          ?
+        </span>
       </button>
 
       <span id={tooltipId} className="metric-help-tooltip__content" role="tooltip">
