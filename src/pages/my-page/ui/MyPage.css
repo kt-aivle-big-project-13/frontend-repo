@@ -368,6 +368,10 @@
   text-decoration: underline;
 }
 
+.my-page__withdraw-modal-cancel + .my-page__withdraw-modal-confirm {
+  margin-left: 10px;
+}
+
 .my-page__withdraw-modal-warning {
   margin: 0 0 14px;
   color: #4d5765;
