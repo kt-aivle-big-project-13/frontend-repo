@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tooltip } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { Modal, Tooltip } from 'antd';
 
 import {
   cancelAudit,
@@ -235,8 +236,25 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
 
   // 건너뛰기는 응답 자체를 지우지 않는다 — 잘못 눌렀다가 다시 해제했을 때 이미 고른 답변이
   // 그대로 남아있어야 하기 때문이다(체크된 동안은 버튼이 disabled라 편집만 막힌다).
+  // 체크할 때만(해제할 때는 굳이 필요 없음) 판정서를 못 받는다는 걸 모달로 한 번 더
+  // 확인시켜서, 실수로 체크하고 그대로 넘어가는 걸 막는다.
   const handleSkipSelfCheckChange = (checked: boolean) => {
-    setSkipSelfCheck(checked);
+    if (!checked) {
+      setSkipSelfCheck(false);
+      return;
+    }
+
+    Modal.confirm({
+      icon: <ExclamationCircleFilled style={{ color: '#f2b21a' }} />,
+      title: '자가점검을 건너뛰시겠어요?',
+      content: '건너뛰면 이 감사에 대한 규제준수 판정서를 생성할 수 없습니다.',
+      okText: '건너뛰기',
+      cancelText: '취소',
+      centered: true,
+      okButtonProps: { danger: true },
+      cancelButtonProps: { type: 'default' },
+      onOk: () => setSkipSelfCheck(true),
+    });
   };
 
   // 매핑 생성이 제한 시간 내에 안 끝나면(RegulationMappingTimeoutError) 실제로 매핑이
