@@ -22,6 +22,7 @@ import {
   REVERSE_LEGACY_ITEM_CODE_MAP,
 } from '../../../../features/audit/model/selfCheckLegacyMapping';
 import { getSelfCheckDraft, saveSelfCheckDraft } from '../../../../features/audit/model/selfCheckDraft';
+import { pregenerateChecklistReports } from '../../../../features/audit/api/reportApi';
 import { extractApiErrorMessage } from '../../../../shared/api/client';
 import {
   CATEGORY_META,
@@ -90,6 +91,12 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const isFailed = isDone && status === 'FAILED';
   const isCancelled = isDone && status === 'CANCELLED';
 
+  // 규제준수 판정서·개선 권고 가이드·최종 보고서 사전 생성을 감사당 한 번만 걸기 위한 가드.
+  // 모델 분석 완료(isAnalyzed)와 자가점검 제출(isSelfCheckSubmitted)은 순서가 뒤바뀔 수 있어
+  // (분석이 먼저 끝날 수도, 자가점검을 먼저 제출할 수도 있음) 아래 useEffect에서 두 조건이
+  // 모두 갖춰지는 시점을 기다렸다가 한 번만 트리거한다.
+  const hasTriggeredChecklistPregenRef = useRef(false);
+
   // auditId가 바뀌면(다른 감사의 체크리스트 페이지로 바로 이동) 이전 감사의 진행/자가점검
   // 상태가 잠시 남아있지 않도록 렌더링 중에 바로 리셋한다.
   const [prevAuditId, setPrevAuditId] = useState(auditId);
@@ -117,6 +124,9 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const auditIdRef = useRef(auditId);
   useEffect(() => {
     auditIdRef.current = auditId;
+    // ref는 렌더링 중에 수정할 수 없으므로, 위 렌더 중 리셋 블록 대신 여기서 감사가
+    // 바뀔 때 사전 생성 트리거 가드도 함께 초기화한다.
+    hasTriggeredChecklistPregenRef.current = false;
   }, [auditId]);
 
   // 모델 분석(SHAP → Fairlearn)은 백그라운드에서 진행되므로, 완료될 때까지 짧은 간격으로
@@ -325,6 +335,19 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
       if (auditIdRef.current === submittedAuditId) setIsSelfCheckSubmitting(false);
     }
   };
+
+  // 규제준수 판정서·개선 권고 가이드·최종 보고서는 모델 분석과 자가점검 제출이 둘 다
+  // 끝나야 만들 수 있다. 두 조건이 어느 순서로 갖춰지든(분석이 먼저 끝나든, 자가점검을
+  // 먼저 제출하든) 마지막 조건이 채워지는 순간 한 번만 사전 생성을 건다. 자가점검을
+  // 건너뛴 경우 규제준수 판정 근거가 없으므로 아예 걸지 않는다.
+  useEffect(() => {
+    if (skipSelfCheck) return;
+    if (!isAnalyzed || !isSelfCheckSubmitted) return;
+    if (hasTriggeredChecklistPregenRef.current) return;
+
+    hasTriggeredChecklistPregenRef.current = true;
+    void pregenerateChecklistReports(auditId);
+  }, [auditId, isAnalyzed, isSelfCheckSubmitted, skipSelfCheck]);
 
   const handleRetryMatches = () => {
     if (isLoadingMatches) return;

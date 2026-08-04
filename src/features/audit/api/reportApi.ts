@@ -250,3 +250,164 @@ export async function generateAndDownloadHighImpactReport(
     },
   });
 }
+
+// ---- 사전 생성(pregenerate) ----
+// 사용자가 결과 페이지에서 다운로드 버튼을 누르기 전에, 감사 흐름의 특정 시점(감사 시작·
+// 체크리스트 제출 완료)에 미리 만들어 둬서 대개는 다운로드 시점에 생성 없이 바로 받을 수
+// 있게 한다. 실패해도 조용히 넘어간다 — 다운로드 시점에 generateAndDownload*가 없으면
+// 그때 다시 만들기 때문에(재사용 로직), 사전 생성은 "미리 해두면 좋은" 최적화일 뿐이라
+// 실패가 감사 진행 자체를 막으면 안 된다.
+
+async function pregenerateReport(options: {
+  generate: () => Promise<void>;
+  getLatest: (format: ReportFormat) => Promise<ReportMetadataResponse>;
+}): Promise<void> {
+  // PDF 존재 여부만 대표로 확인한다 — 아래 5종은 생성 엔드포인트 한 번 호출로 PDF·WORD·HTML이
+  // 함께 만들어지므로(설명가능성/편향진단 주석 참고) 하나만 확인해도 충분하다.
+  const existing = await findLatestReport(options.getLatest, 'PDF');
+  if (existing?.status === 'COMPLETED') return;
+  await options.generate();
+}
+
+export async function pregenerateExplainabilityReport(auditId: number): Promise<void> {
+  await pregenerateReport({
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/reports/explainability`);
+    },
+    getLatest: async (format) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/reports/explainability`,
+        { params: { format } },
+      );
+      return data;
+    },
+  });
+}
+
+export async function pregenerateBiasReport(auditId: number): Promise<void> {
+  await pregenerateReport({
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/reports/bias`);
+    },
+    getLatest: async (format) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/reports/bias`,
+        { params: { format } },
+      );
+      return data;
+    },
+  });
+}
+
+export async function pregenerateHighImpactReport(auditId: number): Promise<void> {
+  await pregenerateReport({
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/reports/high-impact-assessment`);
+    },
+    getLatest: async (format) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/reports/high-impact-assessment`,
+        { params: { format } },
+      );
+      return data;
+    },
+  });
+}
+
+export async function pregenerateComplianceReport(auditId: number): Promise<void> {
+  await pregenerateReport({
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/reports/compliance`);
+    },
+    getLatest: async (format) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/reports/compliance`,
+        { params: { format } },
+      );
+      return data;
+    },
+  });
+}
+
+export async function pregenerateImprovementGuide(auditId: number): Promise<void> {
+  await pregenerateReport({
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/reports/improvement`);
+    },
+    getLatest: async (format) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/reports/improvement`,
+        { params: { format } },
+      );
+      return data;
+    },
+  });
+}
+
+// 최종 보고서는 다른 5종과 달리 생성 요청이 형식을 직접 받으므로(다른 5종은 호출 한 번에
+// PDF·WORD가 함께 만들어짐), PDF·WORD 각각 존재 여부를 확인해 아직 없는 형식만 모아 한 번에
+// 요청한다.
+const FINAL_REPORT_PREGEN_FORMATS: ReportFormat[] = ['PDF', 'WORD'];
+
+export async function pregenerateFinalReport(auditId: number): Promise<void> {
+  const getLatest = async (format: ReportFormat) => {
+    const { data } = await apiClient.get<ReportMetadataResponse>(
+      `/audits/${auditId}/deliverables/latest`,
+      { params: { format } },
+    );
+    return data;
+  };
+
+  const missingFormats = (
+    await Promise.all(
+      FINAL_REPORT_PREGEN_FORMATS.map(async (format) => {
+        const existing = await findLatestReport(getLatest, format);
+        return existing?.status === 'COMPLETED' ? null : format;
+      }),
+    )
+  ).filter((format): format is ReportFormat => format !== null);
+
+  if (missingFormats.length === 0) return;
+
+  await apiClient.post(`/audits/${auditId}/deliverables`, { formats: missingFormats });
+}
+
+// 하나가 실패해도 나머지는 계속 진행하고, 실패는 콘솔에만 남긴다 — 사전 생성 실패로
+// 감사 시작·체크리스트 제출 같은 사용자 플로우를 막으면 안 된다.
+async function runPregenBatch(tasks: Array<() => Promise<void>>): Promise<void> {
+  const results = await Promise.allSettled(tasks.map((task) => task()));
+  results.forEach((result) => {
+    if (result.status === 'rejected') {
+      console.error('보고서 사전 생성 실패', result.reason);
+    }
+  });
+}
+
+// 감사 시작 시점에 만들 수 있는 보고서(체크리스트 불필요): 설명가능성·편향진단은 항상,
+// 고영향 AI 사전진단은 사전진단을 건너뛰지 않고 진행한 경우에만 대상에 포함한다.
+export async function pregenerateAuditStartReports(
+  auditId: number,
+  options: { hasPreDiagnosis: boolean },
+): Promise<void> {
+  const tasks: Array<() => Promise<void>> = [
+    () => pregenerateExplainabilityReport(auditId),
+    () => pregenerateBiasReport(auditId),
+  ];
+
+  if (options.hasPreDiagnosis) {
+    tasks.push(() => pregenerateHighImpactReport(auditId));
+  }
+
+  await runPregenBatch(tasks);
+}
+
+// 체크리스트(자가점검) 제출 완료 + 모델 분석 완료 시점에 만들 수 있는 보고서. 자가점검을
+// 건너뛴 경우 규제준수 판정 근거가 없으므로 호출부에서 아예 이 함수를 부르지 않는다
+// (개선 권고 가이드·최종 보고서도 규제준수 판정에 기반해 함께 막는다).
+export async function pregenerateChecklistReports(auditId: number): Promise<void> {
+  await runPregenBatch([
+    () => pregenerateComplianceReport(auditId),
+    () => pregenerateImprovementGuide(auditId),
+    () => pregenerateFinalReport(auditId),
+  ]);
+}
