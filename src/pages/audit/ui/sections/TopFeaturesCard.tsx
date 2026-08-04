@@ -1,7 +1,7 @@
 import { Tooltip } from 'antd';
 
 import type { FeatureImportanceItem } from '../../../../features/audit/api/auditApi';
-import { FEATURE_LABEL } from './featureData';
+import { getFeatureLabel } from './featureData';
 import './TopFeaturesCard.css';
 
 interface TopFeaturesCardProps {
@@ -26,7 +26,7 @@ function TopFeaturesCard({ features, isLoading, error }: TopFeaturesCardProps) {
       ) : (
         <ul className="top-features-card__list">
           {features.map((item) => {
-            const koreanLabel = FEATURE_LABEL[item.feature];
+            const koreanLabel = getFeatureLabel(item.feature);
 
             return (
               <li key={item.feature} className="top-features-card__row">

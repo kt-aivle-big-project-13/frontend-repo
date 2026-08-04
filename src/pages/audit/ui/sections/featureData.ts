@@ -42,3 +42,13 @@ export const FEATURE_LABEL: Record<string, string> = {
   EXT_SOURCE_3: '외부 신용평가 점수 3',
   AGE_GROUP: '연령대',
 };
+
+// 컬럼명은 사용자가 올린 CSV 헤더 그대로라 "constructor"/"__proto__"/"toString" 같은 값이
+// 올 수 있다. FEATURE_LABEL[feature]로 바로 조회하면 그런 이름에서 Object.prototype의
+// 값을 잘못 돌려줄 수 있어(예: FEATURE_LABEL['constructor'] → Function), hasOwnProperty로
+// 실제 매핑된 항목인지 먼저 확인한다.
+export function getFeatureLabel(feature: string): string | undefined {
+  return Object.prototype.hasOwnProperty.call(FEATURE_LABEL, feature)
+    ? FEATURE_LABEL[feature]
+    : undefined;
+}
