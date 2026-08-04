@@ -546,6 +546,12 @@
     box-shadow 0.15s ease;
 }
 
+.metric-help-tooltip__trigger-mark {
+  display: block;
+  line-height: 1;
+  transform: translateY(0.7px);
+}
+
 .metric-help-tooltip__trigger:hover,
 .metric-help-tooltip__trigger:focus-visible {
   border-color: #2563eb;
