@@ -2,6 +2,7 @@ import type {
   AuditResultDistribution,
   ReviewRequiredModel,
 } from '../../../../features/dashboard/api/dashboardApi';
+import { formatModelVersion } from '../../../../features/dashboard/lib/formatModelVersion';
 
 import './DashboardOverviewSection.css';
 
@@ -35,7 +36,7 @@ function DashboardOverviewSection({ distribution, models }: DashboardOverviewSec
             className="dashboard-overview__donut"
             style={{ background: donutBackground }}
             role="img"
-            aria-label={`전체 ${distribution.totalCount}건 중 정상 ${distribution.normalCount}건, 검토 필요 ${distribution.reviewRequiredCount}건, 기준 초과 ${distribution.thresholdExceededCount}건`}
+            aria-label={`전체 ${distribution.totalCount}건 중 충족 ${distribution.normalCount}건, 주의 ${distribution.reviewRequiredCount}건, 추가 검토 ${distribution.thresholdExceededCount}건`}
           >
             <div className="dashboard-overview__donut-center">
               <span>총</span>
@@ -46,23 +47,23 @@ function DashboardOverviewSection({ distribution, models }: DashboardOverviewSec
           <ul className="dashboard-overview__legend">
             <li>
               <span className="dashboard-overview__legend-dot dashboard-overview__legend-dot--normal" />
-              <span>정상</span>
+              <span>충족</span>
               <strong>
-                {distribution.normalCount} ({normalRate.toFixed(1)}%)
+                {distribution.normalCount}건 ({normalRate.toFixed(1)}%)
               </strong>
             </li>
             <li>
               <span className="dashboard-overview__legend-dot dashboard-overview__legend-dot--review" />
-              <span>검토 필요</span>
+              <span>주의</span>
               <strong>
-                {distribution.reviewRequiredCount} ({reviewRate.toFixed(1)}%)
+                {distribution.reviewRequiredCount}건 ({reviewRate.toFixed(1)}%)
               </strong>
             </li>
             <li>
               <span className="dashboard-overview__legend-dot dashboard-overview__legend-dot--exceeded" />
-              <span>기준 초과</span>
+              <span>추가 검토</span>
               <strong>
-                {distribution.thresholdExceededCount} (
+                {distribution.thresholdExceededCount}건 (
                 {percentage(distribution.thresholdExceededCount, distribution.totalCount).toFixed(
                   1,
                 )}
@@ -74,7 +75,7 @@ function DashboardOverviewSection({ distribution, models }: DashboardOverviewSec
       </article>
 
       <article className="dashboard-overview__panel dashboard-overview__panel--ranking">
-        <h2 className="dashboard-overview__title">검토 필요 모델 TOP 5</h2>
+        <h2 className="dashboard-overview__title">주의·추가 검토 모델 TOP 5</h2>
 
         {models.length > 0 ? (
           <ol className="dashboard-overview__ranking-list">
@@ -85,7 +86,14 @@ function DashboardOverviewSection({ distribution, models }: DashboardOverviewSec
               return (
                 <li key={model.modelId} className="dashboard-overview__ranking-item">
                   <span className="dashboard-overview__rank">{index + 1}</span>
-                  <span className="dashboard-overview__model-name">{model.modelName}</span>
+                  <span className="dashboard-overview__model-name">
+                    {model.modelName}
+                    {model.version && (
+                      <span className="dashboard-overview__model-version">
+                        {formatModelVersion(model.version)}
+                      </span>
+                    )}
+                  </span>
                   <span className="dashboard-overview__bar-track">
                     <span
                       className={`dashboard-overview__bar dashboard-overview__bar--${model.status.toLowerCase()}`}
@@ -98,7 +106,7 @@ function DashboardOverviewSection({ distribution, models }: DashboardOverviewSec
             })}
           </ol>
         ) : (
-          <div className="dashboard-overview__empty">검토가 필요한 모델이 없습니다.</div>
+          <div className="dashboard-overview__empty">주의·추가 검토 모델이 없습니다.</div>
         )}
       </article>
     </section>

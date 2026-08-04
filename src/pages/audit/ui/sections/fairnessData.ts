@@ -60,7 +60,7 @@ export const COLUMN_TOOLTIP: Record<
     tip: '값이 0에 가까울수록 실제 긍정 대상을 발견할 기회가 집단 간 유사합니다.',
   },
   EQUALIZED_ODDS: {
-    title: 'Equalized Odds',
+    title: 'Equalized Odds (균등화 승산)',
     description:
       'TPR 격차(실제 정상 고객을 승인한 비율의 차이)와 FPR 격차(실제 연체 고객을 잘못 승인한 비율의 차이) 중 더 나쁜 쪽을 보여주는 참고 지표입니다. 금융 가이드라인이 요구하는 6종에는 포함되지 않지만, 두 오류 유형을 한 번에 확인하기 위해 같이 봅니다.',
     criteria: '충족은 0.20 이하, 주의는 0.20 초과 0.40 이하, 추가검토는 0.40 초과예요.',

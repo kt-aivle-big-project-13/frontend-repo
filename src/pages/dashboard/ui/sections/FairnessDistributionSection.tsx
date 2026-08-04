@@ -10,19 +10,19 @@ interface FairnessDistributionSectionProps {
 }
 
 const METRIC_LABELS: Record<FairnessMetricCode, string> = {
-  DEMOGRAPHIC_PARITY: 'Demographic Parity · 인구통계학적 동등성',
-  EQUAL_OPPORTUNITY: 'Equal Opportunity · 기회균등',
+  DEMOGRAPHIC_PARITY: 'Demographic Parity · 인구통계학적 평등성',
+  EQUAL_OPPORTUNITY: 'Equal Opportunity · 기회의 균등',
   EQUALIZED_ODDS: 'Equalized Odds · 균등화 승산',
-  PROPORTIONAL_PARITY: 'Proportional Parity · 비례적 동등성',
-  FPR_PARITY: 'FPR Parity · 거짓 양성률 동등성',
-  FDR_PARITY: 'FDR Parity · 거짓 발견률 동등성',
-  FOR_PARITY: 'FOR Parity · 거짓 누락률 동등성',
+  PROPORTIONAL_PARITY: 'Proportional Parity · 비례성 패리티 (80% Rule)',
+  FPR_PARITY: 'FPR Parity · 거짓 양성률 패리티',
+  FDR_PARITY: 'FDR Parity · 거짓 발견율 패리티',
+  FOR_PARITY: 'FOR Parity · 거짓 누락률 패리티',
 };
 
 const SEGMENTS = [
-  { key: 'passRate', label: '정상', tone: 'pass' },
-  { key: 'reviewRate', label: '검토', tone: 'review' },
-  { key: 'failRate', label: '실패', tone: 'fail' },
+  { key: 'passRate', label: '충족', tone: 'pass' },
+  { key: 'reviewRate', label: '주의', tone: 'review' },
+  { key: 'failRate', label: '추가 검토', tone: 'fail' },
   { key: 'unavailableRate', label: '결과 없음', tone: 'unavailable' },
 ] as const;
 
@@ -52,7 +52,7 @@ function FairnessDistributionSection({ metrics }: FairnessDistributionSectionPro
               </div>
               <div
                 className="fairness-distribution__bar"
-                aria-label={`${METRIC_LABELS[metric.metricCode]}: 정상 ${metric.passRate}%, 검토 ${metric.reviewRate}%, 실패 ${metric.failRate}%, 결과 없음 ${metric.unavailableRate}%`}
+                aria-label={`${METRIC_LABELS[metric.metricCode]}: 충족 ${metric.passRate}%, 주의 ${metric.reviewRate}%, 추가 검토 ${metric.failRate}%, 결과 없음 ${metric.unavailableRate}%`}
               >
                 {SEGMENTS.map((segment) => {
                   const rate = metric[segment.key];
