@@ -22,7 +22,10 @@ import {
   REVERSE_LEGACY_ITEM_CODE_MAP,
 } from '../../../../features/audit/model/selfCheckLegacyMapping';
 import { getSelfCheckDraft, saveSelfCheckDraft } from '../../../../features/audit/model/selfCheckDraft';
-import { pregenerateChecklistReports } from '../../../../features/audit/api/reportApi';
+import {
+  pregenerateChecklistReports,
+  pregenerateSkippedChecklistReports,
+} from '../../../../features/audit/api/reportApi';
 import { extractApiErrorMessage } from '../../../../shared/api/client';
 import {
   CATEGORY_META,
@@ -348,6 +351,17 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     hasTriggeredChecklistPregenRef.current = true;
     void pregenerateChecklistReports(auditId);
   }, [auditId, isAnalyzed, isSelfCheckSubmitted, skipSelfCheck]);
+
+  // 자가점검을 제출한 경우엔 위 이펙트가 이미 3종 사전 생성을 걸어뒀으므로 여기서는 아무것도
+  // 하지 않는다. 건너뛴 경우엔 그 이펙트가 아예 안 도므로, "결과 확인"을 누르는 이 시점에
+  // (버튼이 disabled가 풀려 있다는 건 isAnalyzed가 이미 true라는 뜻) 규제준수 판정서를 뺀
+  // 나머지 두 종만 사전 생성을 건다.
+  const handleProceedToResults = () => {
+    if (skipSelfCheck) {
+      void pregenerateSkippedChecklistReports(auditId);
+    }
+    navigate(`/audit/${auditId}/results`);
+  };
 
   const handleRetryMatches = () => {
     if (isLoadingMatches) return;
@@ -781,7 +795,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
           type="button"
           className="audit-execution-section__run-button"
           disabled={!isAnalyzed || (!skipSelfCheck && !isSelfCheckSubmitted)}
-          onClick={() => navigate(`/audit/${auditId}/results`)}
+          onClick={handleProceedToResults}
         >
           결과 확인
         </button>
