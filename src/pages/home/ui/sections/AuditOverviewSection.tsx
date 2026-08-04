@@ -119,9 +119,15 @@ function formatDateTime(value: string | null): string {
 const RECENT_AUDITS_LIMIT = 10;
 
 // 같은 모델 계열은 최신 버전 하나만(버전 이력 개념을 합침), 실제로 최근에 완료된
-// 감사만 보여준다 — "결과 확인"을 눌러봤는지는 더 이상 조건으로 보지 않는다.
-function toRecentAudits(audits: AuditSummary[]): RecentAudit[] {
-  return selectRecentAudits(audits, RECENT_AUDITS_LIMIT).map((audit) => ({
+// 감사만 보여준다. 다만 분석이 끝났어도 자가점검(체크리스트)을 아직 거치지 않은
+// 감사(!viewedIds.has)는 여기 먼저 보이면 결과 페이지로 바로 연결돼 체크리스트를
+// 건너뛰게 되므로 제외한다 — 그 감사는 "진행중 감사" 카드에 남아 있다가, 사용자가
+// 체크리스트 페이지의 "결과 확인"으로 STEP4에 실제로 들어간 뒤에만(markAuditResultsViewed)
+// 이 목록으로 넘어온다.
+function toRecentAudits(audits: AuditSummary[], viewedIds: Set<number>): RecentAudit[] {
+  const viewedAudits = audits.filter((audit) => viewedIds.has(audit.auditId));
+
+  return selectRecentAudits(viewedAudits, RECENT_AUDITS_LIMIT).map((audit) => ({
     auditId: audit.auditId,
     name: audit.modelName,
     version: audit.version,
@@ -134,9 +140,7 @@ function toRecentAudits(audits: AuditSummary[]): RecentAudit[] {
 // 아직 안 한 감사를 전부 모아 최근 시작 순으로 보여준다 — 하나만이 아니라 진행중인 만큼 다 노출.
 // 홈 화면에서 계속 추적해야 할 "내가 시작한 감사의 진행 상황"만 다루는 카드이지, 전체
 // 감사 이력을 다시 보여주는 게 아니다(그건 왼쪽 "최근 감사 이력" 카드의 몫).
-function toInProgressAudits(audits: AuditSummary[]): InProgressAudit[] {
-  const viewedIds = getViewedAuditResultIds();
-
+function toInProgressAudits(audits: AuditSummary[], viewedIds: Set<number>): InProgressAudit[] {
   return audits
     .filter(
       (audit) =>
@@ -195,12 +199,15 @@ function AuditOverviewSection() {
   // 비로그인일 때는 아래 recentAudits/inProgressAudits 계산이 audits를 쓰지 않고
   // 데모 데이터로 대체하므로 조회할 필요가 없다.
   const audits = useAuditsPolling(isAuthenticated);
+  // "결과 확인함" 여부는 두 목록(최근 이력/진행중)이 같은 기준으로 나뉘어야 하므로
+  // 한 번만 읽어 둘 다에 넘긴다.
+  const viewedIds = getViewedAuditResultIds();
 
   const recentAudits = isAuthenticated
-    ? toRecentAudits(audits ?? [])
+    ? toRecentAudits(audits ?? [], viewedIds)
     : DEMO_RECENT_AUDITS;
   const inProgressAudits = isAuthenticated
-    ? toInProgressAudits(audits ?? [])
+    ? toInProgressAudits(audits ?? [], viewedIds)
     : DEMO_IN_PROGRESS_AUDITS;
 
   const bodyClassName = (extra?: string) =>
