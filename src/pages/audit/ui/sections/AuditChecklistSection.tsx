@@ -449,36 +449,24 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                 <div className="audit-execution-section__progress-fill" />
               </div>
 
+              {/* SHAP·Fairlearn 분석은 백엔드에서 동시에 실행되어 어느 쪽이 먼저 끝날지
+                  보장되지 않는다("SHAP 먼저 활성화 → Fairlearn 나중에 활성화"처럼 순서를
+                  전제로 표시하면 실제 완료 순서와 어긋날 수 있음). 그래서 두 항목을 항상
+                  함께 진행 중으로 보여주고, 완료 개수만 별도 문구로 안내한다. */}
               <ul className="audit-execution-section__progress-steps">
-                <li
-                  className={`audit-execution-section__progress-step${
-                    runningStep > 3
-                      ? ' audit-execution-section__progress-step--done'
-                      : runningStep === 3
-                        ? ' audit-execution-section__progress-step--active'
-                        : ''
-                  }`}
-                >
-                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true">
-                    {runningStep > 3 ? '✓' : ''}
-                  </span>
+                <li className="audit-execution-section__progress-step audit-execution-section__progress-step--active">
+                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true" />
                   설명가능성(SHAP) 분석
                 </li>
-                <li
-                  className={`audit-execution-section__progress-step${
-                    runningStep > 4
-                      ? ' audit-execution-section__progress-step--done'
-                      : runningStep === 4
-                        ? ' audit-execution-section__progress-step--active'
-                        : ''
-                  }`}
-                >
-                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true">
-                    {runningStep > 4 ? '✓' : ''}
-                  </span>
+                <li className="audit-execution-section__progress-step audit-execution-section__progress-step--active">
+                  <span className="audit-execution-section__progress-step-dot" aria-hidden="true" />
                   Fairlearn 공정성 분석
                 </li>
               </ul>
+
+              <p className="audit-execution-section__status-note">
+                {runningStep >= 3 ? 1 : 0}/2개 분석 완료 · 두 분석을 동시에 진행합니다
+              </p>
 
               <button
                 type="button"
