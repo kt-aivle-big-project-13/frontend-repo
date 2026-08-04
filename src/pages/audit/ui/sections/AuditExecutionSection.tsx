@@ -19,6 +19,7 @@ import {
   type DatasetSummaryResponse,
 } from '../../../../features/audit/api/modelApi';
 import { startAudit } from '../../../../features/audit/api/auditApi';
+import { pregenerateAuditStartReports } from '../../../../features/audit/api/reportApi';
 import { extractApiErrorMessage } from '../../../../shared/api/client';
 import { useSubmissionLockStore } from '../../../../shared/model/submissionLockStore';
 import StepIndicator from '../StepIndicator';
@@ -501,6 +502,14 @@ function AuditExecutionSection() {
           manualThreshold: 0.5,
         });
       }
+
+      // 설명가능성(SHAP)·편향진단(Fairlearn) 리포트는 체크리스트 없이도 만들 수 있으므로,
+      // 이 시점에 미리 생성을 걸어둔다(사전진단을 건너뛰지 않았으면 고영향 AI 사전진단
+      // 보고서도 함께). 결과를 기다리지 않고 흘려보낸다 — 실패해도 다운로드 시점에
+      // generateAndDownload*가 다시 만들기 때문에 이 화면의 진행(이동)을 막을 이유가 없다.
+      void pregenerateAuditStartReports(started.auditId, {
+        hasPreDiagnosis: assessmentId !== undefined,
+      });
 
       // 실제 SHAP/Fairlearn 분석은 오래 걸릴 수 있어, 여기서 기다리는 대신
       // STEP3(체크리스트 작성) 페이지로 바로 이동해 분석 진행 상황을 보여주면서
