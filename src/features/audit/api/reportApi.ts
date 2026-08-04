@@ -401,12 +401,20 @@ export async function pregenerateAuditStartReports(
   await runPregenBatch(tasks);
 }
 
-// 체크리스트(자가점검) 제출 완료 + 모델 분석 완료 시점에 만들 수 있는 보고서. 자가점검을
-// 건너뛴 경우 규제준수 판정 근거가 없으므로 호출부에서 아예 이 함수를 부르지 않는다
-// (개선 권고 가이드·최종 보고서도 규제준수 판정에 기반해 함께 막는다).
+// 체크리스트(자가점검) 제출 완료 + 모델 분석 완료 시점에 만들 수 있는 보고서 3종.
 export async function pregenerateChecklistReports(auditId: number): Promise<void> {
   await runPregenBatch([
     () => pregenerateComplianceReport(auditId),
+    () => pregenerateImprovementGuide(auditId),
+    () => pregenerateFinalReport(auditId),
+  ]);
+}
+
+// 자가점검을 건너뛴 채 "결과 확인"으로 넘어가는 경우. 규제준수 판정서는 백엔드가 판정
+// 근거 부재로 생성을 거부하므로(ComplianceReportRequestAssembler, ReportsSection 참고)
+// 제외하고, 개선 권고 가이드·최종 보고서는 그대로 시도한다.
+export async function pregenerateSkippedChecklistReports(auditId: number): Promise<void> {
+  await runPregenBatch([
     () => pregenerateImprovementGuide(auditId),
     () => pregenerateFinalReport(auditId),
   ]);
