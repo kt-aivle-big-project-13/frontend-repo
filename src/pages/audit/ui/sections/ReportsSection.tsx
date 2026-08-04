@@ -56,6 +56,10 @@ const REPORTS: ReportItem[] = [
   },
 ];
 
+// 최종 보고서는 카드 목록과 달리 백엔드가 PDF·WORD만 만들어준다.
+const FINAL_REPORT_FORMATS: ReportFormat[] = ['PDF', 'WORD'];
+const FINAL_REPORT_KEY = 'final-report';
+
 function DocumentIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
@@ -125,7 +129,7 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
   };
 
   const handleFinalDownload = async (format: ReportFormat) => {
-    setPendingKey('final-report');
+    setPendingKey(FINAL_REPORT_KEY);
     // 5종과 마찬가지로 이미 만들어 둔 산출물이면 생성 없이 바로 내려받으므로 "생성"으로 단정하지 않는다.
     const hide = message.loading(`최종 보고서 (${format}) 준비 중…`, 0);
 
@@ -140,24 +144,22 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
     }
   };
 
+  // 진행 중에는 열려 있는 메뉴의 두 형식 모두 막는다. 조회에서 아직 산출물을 찾지 못한
+  // 사이에 다시 누르면 생성 요청이 겹쳐 S3 객체와 DB 행이 중복으로 쌓인다.
   const finalDownloadMenu = (
     <div className="reports-section__download-menu">
-      <button
-        type="button"
-        className="reports-section__download-item"
-        onClick={() => handleFinalDownload('PDF')}
-      >
-        <FileTile format="PDF" />
-        <span className="reports-section__download-label">다운로드</span>
-      </button>
-      <button
-        type="button"
-        className="reports-section__download-item"
-        onClick={() => handleFinalDownload('WORD')}
-      >
-        <FileTile format="WORD" />
-        <span className="reports-section__download-label">다운로드</span>
-      </button>
+      {FINAL_REPORT_FORMATS.map((format) => (
+        <button
+          key={format}
+          type="button"
+          className="reports-section__download-item"
+          disabled={pendingKey === FINAL_REPORT_KEY}
+          onClick={() => handleFinalDownload(format)}
+        >
+          <FileTile format={format} />
+          <span className="reports-section__download-label">다운로드</span>
+        </button>
+      ))}
     </div>
   );
 
@@ -205,7 +207,7 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
           <button
             type="button"
             className="reports-section__final-button"
-            disabled={pendingKey === 'final-report'}
+            disabled={pendingKey === FINAL_REPORT_KEY}
           >
             <span>최종 보고서 다운로드</span>
 
