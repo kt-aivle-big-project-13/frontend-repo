@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, useWatch, type SubmitHandler } from 'react-hook-form';
+import { Controller, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
+import PasswordField from '../../../shared/ui/PasswordField';
 import '../../../shared/ui/authForm.css';
 import {
   confirmVerificationCode,
@@ -462,14 +463,24 @@ function SignupForm() {
         <div className="auth-form__field">
           <label htmlFor="signup-password">비밀번호</label>
 
-          <input
-            id="signup-password"
-            type="password"
-            autoComplete="new-password"
-            disabled={isSubmitting}
-            aria-invalid={Boolean(errors.password)}
-            aria-describedby={errors.password ? 'signup-password-error' : undefined}
-            {...register('password')}
+          <Controller
+            name="password"
+            control={control}
+            render={({ field }) => (
+              <PasswordField
+                id="signup-password"
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                autoComplete="new-password"
+                disabled={isSubmitting}
+                ariaInvalid={Boolean(errors.password)}
+                ariaDescribedBy={
+                  errors.password ? 'signup-password-error' : undefined
+                }
+              />
+            )}
           />
 
           {errors.password?.message && (
@@ -482,16 +493,26 @@ function SignupForm() {
         <div className="auth-form__field">
           <label htmlFor="signup-password-confirm">비밀번호 확인</label>
 
-          <input
-            id="signup-password-confirm"
-            type="password"
-            autoComplete="new-password"
-            disabled={isSubmitting}
-            aria-invalid={Boolean(errors.passwordConfirm)}
-            aria-describedby={
-              errors.passwordConfirm ? 'signup-password-confirm-error' : undefined
-            }
-            {...register('passwordConfirm')}
+          <Controller
+            name="passwordConfirm"
+            control={control}
+            render={({ field }) => (
+              <PasswordField
+                id="signup-password-confirm"
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                autoComplete="new-password"
+                disabled={isSubmitting}
+                ariaInvalid={Boolean(errors.passwordConfirm)}
+                ariaDescribedBy={
+                  errors.passwordConfirm
+                    ? 'signup-password-confirm-error'
+                    : undefined
+                }
+              />
+            )}
           />
 
           {errors.passwordConfirm?.message && (

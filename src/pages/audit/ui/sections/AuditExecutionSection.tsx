@@ -913,7 +913,7 @@ function AuditExecutionSection() {
           disabled={isStartDisabled}
           onClick={handleStartAudit}
         >
-          {isUpdateMode ? '버전업 감사' : '감사 시작'}
+          감사 시작
         </button>
       </div>
         </>

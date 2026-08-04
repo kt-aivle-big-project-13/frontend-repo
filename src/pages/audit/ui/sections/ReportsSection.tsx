@@ -16,6 +16,10 @@ interface ReportsSectionProps {
   auditId: number;
   // 사전진단을 건너뛰고 시작한 감사에는 연결된 사전진단이 없어 해당 보고서를 만들 수 없다.
   hasPreDiagnosis: boolean;
+  // 자가점검(체크리스트)을 아직 제출하지 않은 감사는 백엔드가 판정 근거가 없어 규제준수
+  // 판정서 생성을 거부한다(ComplianceReportRequestAssembler). 실패를 보여주는 대신
+  // 카드 자체를 내보내지 않는다.
+  hasSelfCheck: boolean;
 }
 
 type ReportKind = 'high-impact' | 'shap' | 'bias' | 'compliance' | 'improvement';
@@ -107,12 +111,15 @@ function FileTile({ format }: { format: ReportFormat }) {
   );
 }
 
-function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
+function ReportsSection({ auditId, hasPreDiagnosis, hasSelfCheck }: ReportsSectionProps) {
   // 사전진단을 건너뛴 감사에서 카드를 눌러도 서버가 연결된 사전진단을 찾지 못해 실패하므로,
-  // 실패를 보여주는 대신 카드 자체를 내보내지 않는다.
-  const visibleReports = hasPreDiagnosis
-    ? REPORTS
-    : REPORTS.filter((report) => report.kind !== 'high-impact');
+  // 실패를 보여주는 대신 카드 자체를 내보내지 않는다. 규제준수 판정서도 마찬가지로
+  // 자가점검 미제출 시 생성이 실패하므로 같은 방식으로 숨긴다.
+  const visibleReports = REPORTS.filter((report) => {
+    if (report.kind === 'high-impact' && !hasPreDiagnosis) return false;
+    if (report.kind === 'compliance' && !hasSelfCheck) return false;
+    return true;
+  });
 
   // 카드/버튼별로 독립적으로 로딩 표시하기 위해 "리포트id:포맷"을 키로 관리한다.
   const [pendingKey, setPendingKey] = useState<string | null>(null);
