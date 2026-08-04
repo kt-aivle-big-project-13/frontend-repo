@@ -23,39 +23,6 @@ const FORMAT_EXTENSION: Record<ReportFormat, string> = {
   HTML: 'html',
 };
 
-interface GeneratedReportItem {
-  reportId: number;
-  reportType: string;
-  format: ReportFormat;
-  status: ReportStatus;
-}
-
-interface ReportGenerationResponse {
-  auditId: number;
-  reports: GeneratedReportItem[];
-}
-
-// 최종 종합 보고서(4종 통합)
-export async function generateFinalReport(
-  auditId: number,
-  formats: ReportFormat[],
-): Promise<ReportGenerationResponse> {
-  const { data } = await apiClient.post<ReportGenerationResponse>(
-    `/audits/${auditId}/deliverables`,
-    { formats },
-  );
-
-  return data;
-}
-
-export async function downloadDeliverable(reportId: number, filename: string): Promise<void> {
-  const response = await apiClient.get(`/deliverables/${reportId}/download`, {
-    responseType: 'blob',
-  });
-
-  saveBlob(response.data as Blob, filename);
-}
-
 // 설명가능성(SHAP)·편향진단(Fairlearn) 리포트 생성 응답은 HTML 리포트 id 하나만 돌려준다
 // (호출 한 번으로 HTML·PDF·WORD가 서버에 다 같이 저장됨). 원하는 포맷의 reportId는 별도
 // 조회(getLatest?format=)로 받아와야 한다.
@@ -223,6 +190,33 @@ export async function generateAndDownloadImprovementGuide(
         { responseType: 'blob' },
       );
       saveBlob(response.data as Blob, `개선_권고_가이드_${auditId}.${FORMAT_EXTENSION[format]}`);
+    },
+  });
+}
+
+// 최종 종합 보고서(리포트 5종 통합). 자율점검이 끝나면 백엔드가 미리 만들어 두므로
+// 대개 생성 없이 조회 → 다운로드로 끝난다.
+export async function generateAndDownloadFinalReport(
+  auditId: number,
+  format: ReportFormat,
+): Promise<void> {
+  await generateAndDownloadReport({
+    format,
+    generate: async () => {
+      await apiClient.post(`/audits/${auditId}/deliverables`, { formats: [format] });
+    },
+    getLatest: async (fmt) => {
+      const { data } = await apiClient.get<ReportMetadataResponse>(
+        `/audits/${auditId}/deliverables/latest`,
+        { params: { format: fmt } },
+      );
+      return data;
+    },
+    download: async (reportId) => {
+      const response = await apiClient.get(`/deliverables/${reportId}/download`, {
+        responseType: 'blob',
+      });
+      saveBlob(response.data as Blob, `최종_보고서_${auditId}.${FORMAT_EXTENSION[format]}`);
     },
   });
 }
