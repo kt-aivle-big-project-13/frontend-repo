@@ -1,14 +1,14 @@
 import { Popover, message } from 'antd';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 
 import {
+  downloadDeliverable,
   generateAndDownloadBiasReport,
   generateAndDownloadComplianceReport,
   generateAndDownloadExplainabilityReport,
   generateAndDownloadHighImpactReport,
   generateAndDownloadImprovementGuide,
   generateFinalReport,
-  downloadDeliverable,
   type ReportFormat,
 } from '../../../../features/audit/api/reportApi';
 import './ReportsSection.css';
@@ -25,7 +25,8 @@ interface ReportItem {
   id: string;
   label: string;
   kind: ReportKind;
-  // 백엔드가 실제로 만들어주는 형식만 나열 (AI 서버가 만들지 않는 형식은 선택지에 안 보이게)
+  // 백엔드가 실제로 만들어주는 형식만 나열
+  // AI 서버가 만들지 않는 형식은 선택지에 보이지 않게 한다.
   formats: ReportFormat[];
 }
 
@@ -36,7 +37,12 @@ const REPORTS: ReportItem[] = [
     kind: 'high-impact',
     formats: ['PDF', 'WORD'],
   },
-  { id: 'shap-report', label: '설명가능성 리포트 (SHAP)', kind: 'shap', formats: ['PDF', 'WORD'] },
+  {
+    id: 'shap-report',
+    label: '설명가능성 리포트 (SHAP)',
+    kind: 'shap',
+    formats: ['PDF', 'WORD'],
+  },
   {
     id: 'fairness-report',
     label: '편향 진단 보고서 (Fairlearn)',
@@ -66,7 +72,12 @@ function DocumentIcon() {
         strokeWidth="1.6"
         strokeLinejoin="round"
       />
-      <path d="M14 2.5V7h4" stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
+      <path
+        d="M14 2.5V7h4"
+        stroke="#ffffff"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
       <path
         d="M8 12h8M8 15.5h8M8 18.5h5"
         stroke="#ffffff"
@@ -80,11 +91,17 @@ function DocumentIcon() {
 function FileTile({ format }: { format: ReportFormat }) {
   if (format === 'WORD') {
     return (
-      <span className="reports-section__file-tile reports-section__file-tile--word">Word</span>
+      <span className="reports-section__file-tile reports-section__file-tile--word">
+        Word
+      </span>
     );
   }
 
-  return <span className="reports-section__file-tile reports-section__file-tile--pdf">PDF</span>;
+  return (
+    <span className="reports-section__file-tile reports-section__file-tile--pdf">
+      PDF
+    </span>
+  );
 }
 
 function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
@@ -94,14 +111,22 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
     ? REPORTS
     : REPORTS.filter((report) => report.kind !== 'high-impact');
 
-  // 카드/버튼별로 독립적으로 로딩 표시하기 위해 "리포트id:포맷"을 키로 관리
+  // 카드/버튼별로 독립적으로 로딩 표시하기 위해 "리포트id:포맷"을 키로 관리한다.
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
-  const handleReportDownload = async (report: ReportItem, format: ReportFormat) => {
+  const handleReportDownload = async (
+    report: ReportItem,
+    format: ReportFormat,
+  ) => {
     const key = `${report.id}:${format}`;
     setPendingKey(key);
-    // 이미 만들어 둔 산출물이면 생성 없이 바로 내려받으므로 "생성"으로 단정하지 않는다.
-    const hide = message.loading(`${report.label} (${format}) 준비 중…`, 0);
+
+    // 이미 만들어 둔 산출물이면 생성 없이 바로 내려받으므로
+    // 안내 문구에서 "생성"으로 단정하지 않는다.
+    const hide = message.loading(
+      `${report.label} (${format}) 준비 중…`,
+      0,
+    );
 
     try {
       if (report.kind === 'high-impact') {
@@ -116,9 +141,13 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
         await generateAndDownloadImprovementGuide(auditId, format);
       }
 
-      message.success(`${report.label} (${format}) 다운로드가 완료됐습니다.`);
+      message.success(
+        `${report.label} (${format}) 다운로드가 완료됐습니다.`,
+      );
     } catch {
-      message.error(`${report.label} 생성 또는 다운로드에 실패했습니다.`);
+      message.error(
+        `${report.label} 생성 또는 다운로드에 실패했습니다.`,
+      );
     } finally {
       hide();
       setPendingKey(null);
@@ -141,6 +170,7 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
         target.reportId,
         `최종_보고서_${auditId}.${format === 'PDF' ? 'pdf' : 'docx'}`,
       );
+
       message.success('최종 보고서 다운로드가 완료됐습니다.');
     } catch {
       message.error('최종 보고서 생성에 실패했습니다.');
@@ -158,24 +188,38 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
         onClick={() => handleFinalDownload('PDF')}
       >
         <FileTile format="PDF" />
-        <span className="reports-section__download-label">다운로드</span>
+        <span className="reports-section__download-label">
+          다운로드
+        </span>
       </button>
+
       <button
         type="button"
         className="reports-section__download-item"
         onClick={() => handleFinalDownload('WORD')}
       >
         <FileTile format="WORD" />
-        <span className="reports-section__download-label">다운로드</span>
+        <span className="reports-section__download-label">
+          다운로드
+        </span>
       </button>
     </div>
   );
 
   return (
     <section className="reports-section">
-      <h2 className="reports-section__title">자동 생성 보고서 {visibleReports.length}종</h2>
+      <h2 className="reports-section__title">
+        자동 생성 보고서 {visibleReports.length}종
+      </h2>
 
-      <div className="reports-section__grid">
+      <div
+        className="reports-section__grid"
+        style={
+          {
+            '--report-count': visibleReports.length,
+          } as CSSProperties
+        }
+      >
         {visibleReports.map((report) => {
           const downloadMenu = (
             <div className="reports-section__download-menu">
@@ -185,22 +229,42 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
                   type="button"
                   className="reports-section__download-item"
                   disabled={pendingKey === `${report.id}:${format}`}
-                  onClick={() => handleReportDownload(report, format)}
+                  onClick={() =>
+                    handleReportDownload(report, format)
+                  }
                 >
                   <FileTile format={format} />
-                  <span className="reports-section__download-label">다운로드</span>
+
+                  <span className="reports-section__download-label">
+                    다운로드
+                  </span>
                 </button>
               ))}
             </div>
           );
 
           return (
-            <Popover key={report.id} content={downloadMenu} trigger="click" placement="bottom">
-              <button type="button" className="reports-section__card">
-                <span className="reports-section__card-icon" aria-hidden="true">
+            <Popover
+              key={report.id}
+              content={downloadMenu}
+              trigger="click"
+              placement="bottom"
+            >
+              <button
+                type="button"
+                className="reports-section__card"
+              >
+                <span
+                  className="reports-section__card-icon"
+                  aria-hidden="true"
+                >
                   <DocumentIcon />
                 </span>
-                <span className="reports-section__card-label">{report.label}</span>
+
+                <span className="reports-section__card-label">
+                  {report.label}
+                </span>
+
                 <span className="reports-section__card-note">
                   {report.formats.join(' · ')} 중 선택
                 </span>
@@ -211,7 +275,11 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
       </div>
 
       <div className="reports-section__action-bar">
-        <Popover content={finalDownloadMenu} trigger="click" placement="bottomRight">
+        <Popover
+          content={finalDownloadMenu}
+          trigger="click"
+          placement="bottomRight"
+        >
           <button
             type="button"
             className="reports-section__final-button"
