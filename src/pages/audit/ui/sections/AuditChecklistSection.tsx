@@ -14,63 +14,43 @@ import {
   TERMINAL_STATUSES,
   type AuditStatus,
   type RegulationMappingItem,
-  type SelfCheckItemCode,
 } from '../../../../features/audit/api/auditApi';
+import {
+  LEGACY_ITEM_CODE_MAP,
+  LEGACY_SUPPORTED_CODES,
+  REVERSE_LEGACY_ITEM_CODE_MAP,
+} from '../../../../features/audit/model/selfCheckLegacyMapping';
+import { getSelfCheckDraft, saveSelfCheckDraft } from '../../../../features/audit/model/selfCheckDraft';
 import { extractApiErrorMessage } from '../../../../shared/api/client';
+import {
+  CATEGORY_META,
+  CATEGORY_ORDER,
+  OBLIGATION_LABEL,
+  SELF_CHECK_ITEMS,
+  TOTAL_SELF_CHECK_ITEM_COUNT,
+  type SelfCheckAnswer,
+  type SelfCheckCategory,
+} from '../../../../entities/self-check/model';
 import StepIndicator from '../StepIndicator';
 
 import './AuditFlow.css';
 
-type SelfCheckAnswer = 'yes' | 'no' | null;
+// 34조①2호는 이 화면(TR-02, 학습용데이터 개요 문서화 여부)과 설명가능성(SHAP) 리포트 양쪽에
+// 걸쳐 있다 — 최종결과·주요 기준은 SHAP이 정량 판정하고, 학습용데이터 개요만 여기서 자가 응답한다
+// (문서 6장⑥). 헷갈리지 않도록 이 항목에만 안내 배지를 붙인다.
+const EXPLAINABILITY_OVERLAP_CODE = 'TR-02';
 
-interface SelfCheckItem {
-  id: SelfCheckItemCode;
-  question: string;
-  location: string;
-}
-
-const SELF_CHECK_ITEMS: SelfCheckItem[] = [
-  {
-    id: 'NOTICE',
-    question: 'AI 심사 사실을 고객에게 사전에 알리고 있나요?',
-    location: '확인 위치: 대출 신청 화면, 약관, 상품 설명서',
-  },
-  {
-    id: 'OBJECTION',
-    question: '고객이 심사 결과에 이의를 제기할 절차가 있나요?',
-    location: '확인 위치: 이의제기 및 재심사 절차서, 고객센터 지침',
-  },
-  {
-    id: 'OVERSIGHT',
-    question: 'AI 결정을 사람이 관리 및 감독하는 체계가 있나요?',
-    location: '확인 위치: 승인권자 지정 문서, 심사 개입 프로세스',
-  },
-  {
-    id: 'RISK_MANAGEMENT',
-    question: '위험관리 규정이 수립 및 운영되고 있나요?',
-    location: '확인 위치: 위험관리 내규, 운영 회의록',
-  },
-  {
-    id: 'DOCUMENTATION',
-    question: '조치 내용을 문서로 작성 및 보관하고 있나요?',
-    location: '확인 위치: 위험관리 내규, 운영 회의록',
-  },
-];
-
-// 매칭 조항 배지에 "1번" 식으로 표시할 문항 번호. 백엔드는 itemCode만 내려주므로
-// SELF_CHECK_ITEMS 배열 순서를 그대로 번호로 쓴다.
-const CHECKLIST_ITEM_NUMBERS: Record<SelfCheckItemCode, number> = SELF_CHECK_ITEMS.reduce(
-  (numbers, item, index) => ({ ...numbers, [item.id]: index + 1 }),
-  {} as Record<SelfCheckItemCode, number>,
+const EMPTY_SELF_CHECK_ANSWERS: Record<string, SelfCheckAnswer> = SELF_CHECK_ITEMS.reduce(
+  (answers, item) => ({ ...answers, [item.code]: null }),
+  {} as Record<string, SelfCheckAnswer>,
 );
 
-const DEFAULT_SELF_CHECK: Record<SelfCheckItemCode, SelfCheckAnswer> = {
-  NOTICE: null,
-  OBJECTION: null,
-  OVERSIGHT: null,
-  RISK_MANAGEMENT: null,
-  DOCUMENTATION: null,
-};
+// 매칭 조항 우측 패널에서 항목을 문항 순서(TR→RM→UP→HO→DC→IA→SC, 각 그룹 내 문서 순서)로
+// 정렬하기 위한 인덱스.
+const ITEM_ORDER_INDEX: Record<string, number> = SELF_CHECK_ITEMS.reduce(
+  (indexes, item, index) => ({ ...indexes, [item.code]: index }),
+  {} as Record<string, number>,
+);
 
 interface AuditChecklistSectionProps {
   auditId: number;
@@ -89,7 +69,10 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const [retryError, setRetryError] = useState<string | null>(null);
 
   const [selfCheckAnswers, setSelfCheckAnswers] =
-    useState<Record<SelfCheckItemCode, SelfCheckAnswer>>(DEFAULT_SELF_CHECK);
+    useState<Record<string, SelfCheckAnswer>>(EMPTY_SELF_CHECK_ANSWERS);
+  const [openCategories, setOpenCategories] = useState<Set<SelfCheckCategory>>(
+    () => new Set<SelfCheckCategory>(['TRANSPARENCY']),
+  );
   const [isSelfCheckSubmitting, setIsSelfCheckSubmitting] = useState(false);
   const [isSelfCheckSubmitted, setIsSelfCheckSubmitted] = useState(false);
   const [selfCheckError, setSelfCheckError] = useState<string | null>(null);
@@ -119,7 +102,8 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     setCancelError(null);
     setIsRetrying(false);
     setRetryError(null);
-    setSelfCheckAnswers(DEFAULT_SELF_CHECK);
+    setSelfCheckAnswers(EMPTY_SELF_CHECK_ANSWERS);
+    setOpenCategories(new Set<SelfCheckCategory>(['TRANSPARENCY']));
     setIsSelfCheckSubmitted(false);
     setSelfCheckError(null);
     setMatchedArticles([]);
@@ -168,28 +152,35 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     };
   }, [auditId, isDone]);
 
-  // 이 감사에 이미 저장된 자가점검 응답·매칭 조항이 있으면(알림/최근 이력에서 다시 들어온
-  // 경우) 재작성하지 않도록 그대로 채워서 보여준다. 아직 없으면 조용히 빈 상태로 둔다.
+  // 자가점검 21문항 응답 하이드레이션: 백엔드는 아직 5문항만 안다(selfCheckLegacyMapping
+  // 참고). 로컬에 임시 저장해둔 21문항 초안을 기본값으로 깔고, 그 중 백엔드가 아는 5문항은
+  // 서버에 실제로 저장된 값으로 덮어써 서버를 최종 근거로 삼는다.
   useEffect(() => {
     let cancelled = false;
+    const draft = getSelfCheckDraft(auditId);
+    const draftHydrated = { ...EMPTY_SELF_CHECK_ANSWERS, ...draft };
 
     Promise.all([getSelfCheckAnswers(auditId), getRegulationMappings(auditId)])
       .then(([selfCheck, regulationMappings]) => {
         if (cancelled || auditIdRef.current !== auditId) return;
 
         if (selfCheck.answers.length > 0) {
-          const hydratedAnswers = { ...DEFAULT_SELF_CHECK };
           selfCheck.answers.forEach((item) => {
-            hydratedAnswers[item.itemCode] = item.answer ? 'yes' : 'no';
+            const newCode = REVERSE_LEGACY_ITEM_CODE_MAP[item.itemCode];
+            if (newCode) draftHydrated[newCode] = item.answer ? 'YES' : 'NO';
           });
-          setSelfCheckAnswers(hydratedAnswers);
           setIsSelfCheckSubmitted(true);
         }
 
+        setSelfCheckAnswers(draftHydrated);
         setMatchedArticles(regulationMappings.mappings);
       })
       .catch(() => {
-        // 아직 제출 전이라 저장된 응답이 없는 정상적인 경우일 수 있으므로 조용히 무시한다.
+        // 아직 제출 전이라 저장된 응답이 없는 정상적인 경우일 수 있으므로 조용히 무시하고
+        // 로컬 초안만 반영한다.
+        if (!cancelled && auditIdRef.current === auditId) {
+          setSelfCheckAnswers(draftHydrated);
+        }
       });
 
     return () => {
@@ -198,26 +189,54 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   }, [auditId]);
 
   const answeredCount = Object.values(selfCheckAnswers).filter((answer) => answer !== null).length;
-  const unansweredCount = SELF_CHECK_ITEMS.length - answeredCount;
-  const isSelfCheckComplete = unansweredCount === 0;
+  const unansweredCount = TOTAL_SELF_CHECK_ITEM_COUNT - answeredCount;
 
-  const handleSelfCheckAnswer = (id: SelfCheckItemCode, answer: SelfCheckAnswer) => {
-    setIsSelfCheckSubmitted(false);
-    // 이미 선택된 답변을 다시 누르면 선택을 해제한다(토글).
-    setSelfCheckAnswers((prev) => ({ ...prev, [id]: prev[id] === answer ? null : answer }));
-    // 답변을 바꾸면 이전 제출 기준으로 나온 매칭 조항은 더 이상 유효하지 않으므로 같이 지운다.
-    setMatchedArticles([]);
+  const toggleCategory = (category: SelfCheckCategory) => {
+    setOpenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
   };
 
-  // 자가점검 건너뛰기를 체크하면 더 이상 응답을 사용하지 않으므로, 이미 선택해둔 예/아니오
-  // 버튼의 강조 표시도 함께 해제한다(체크 후에도 이전 선택이 눌린 채로 보이던 버그 수정).
+  const handleSelfCheckAnswer = (code: string, answer: SelfCheckAnswer) => {
+    setIsSelfCheckSubmitted(false);
+
+    // 이미 선택된 답변을 다시 누르면 선택을 해제한다(토글) — 해제하면 미응답으로 돌아간다.
+    const nextAnswer = selfCheckAnswers[code] === answer ? null : answer;
+    const nextAnswers = { ...selfCheckAnswers, [code]: nextAnswer };
+    setSelfCheckAnswers(nextAnswers);
+    // 답변을 바꾸면 이전 제출 기준으로 나온 매칭 조항은 더 이상 유효하지 않으므로 같이 지운다.
+    setMatchedArticles([]);
+
+    // 그룹의 모든 문항에 응답하면 그 그룹은 접고 다음 그룹을 자동으로 펼쳐서, 21문항을
+    // 순서대로 이어서 응답하기 쉽게 한다.
+    const item = SELF_CHECK_ITEMS.find((selfCheckItem) => selfCheckItem.code === code);
+    if (!item) return;
+
+    const groupItems = SELF_CHECK_ITEMS.filter(
+      (selfCheckItem) => selfCheckItem.category === item.category,
+    );
+    const isGroupComplete = groupItems.every(
+      (selfCheckItem) => nextAnswers[selfCheckItem.code] !== null,
+    );
+
+    if (isGroupComplete) {
+      const nextCategory = CATEGORY_ORDER[CATEGORY_ORDER.indexOf(item.category) + 1];
+      setOpenCategories((prev) => {
+        const next = new Set(prev);
+        next.delete(item.category);
+        if (nextCategory) next.add(nextCategory);
+        return next;
+      });
+    }
+  };
+
+  // 건너뛰기는 응답 자체를 지우지 않는다 — 잘못 눌렀다가 다시 해제했을 때 이미 고른 답변이
+  // 그대로 남아있어야 하기 때문이다(체크된 동안은 버튼이 disabled라 편집만 막힌다).
   const handleSkipSelfCheckChange = (checked: boolean) => {
     setSkipSelfCheck(checked);
-    if (checked) {
-      setSelfCheckAnswers(DEFAULT_SELF_CHECK);
-      setIsSelfCheckSubmitted(false);
-      setMatchedArticles([]);
-    }
   };
 
   // 매핑 생성이 제한 시간 내에 안 끝나면(RegulationMappingTimeoutError) 실제로 매핑이
@@ -243,8 +262,12 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     }
   };
 
+  // 미응답 상태로도 제출을 막지 않는다(건너뛰기 기능이 이미 있어 제출 자체를 차단할 필요는
+  // 없고, 미응답 개수는 경고 문구로만 안내한다). 다만 백엔드는 아직 21문항 중 5문항만 저장할
+  // 수 있어(selfCheckLegacyMapping), 그 5문항이 전부 예/아니오로 채워졌을 때만 실제 저장 +
+  // 법조문 매칭 재계산을 시도한다 — 나머지 16문항은 이 브랜치가 끝나기 전까지 로컬에만 남는다.
   const handleSelfCheckSubmit = async () => {
-    if (!isSelfCheckComplete || isSelfCheckSubmitting) return;
+    if (isSelfCheckSubmitting) return;
 
     const submittedAuditId = auditId;
 
@@ -252,16 +275,30 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     setSelfCheckError(null);
 
     try {
-      const answers = SELF_CHECK_ITEMS.map((item) => ({
-        itemCode: item.id,
-        answer: selfCheckAnswers[item.id] === 'yes',
-      }));
+      saveSelfCheckDraft(submittedAuditId, selfCheckAnswers);
 
-      await saveSelfCheckAnswers(submittedAuditId, answers);
-      if (auditIdRef.current !== submittedAuditId) return;
+      const legacyReady = LEGACY_SUPPORTED_CODES.every((code) => {
+        const answer = selfCheckAnswers[code];
+        return answer === 'YES' || answer === 'NO';
+      });
 
-      setIsSelfCheckSubmitted(true);
-      await loadMatchedArticles(submittedAuditId);
+      if (legacyReady) {
+        const answers = LEGACY_SUPPORTED_CODES.map((code) => ({
+          itemCode: LEGACY_ITEM_CODE_MAP[code]!,
+          answer: selfCheckAnswers[code] === 'YES',
+        }));
+
+        await saveSelfCheckAnswers(submittedAuditId, answers);
+        if (auditIdRef.current !== submittedAuditId) return;
+
+        await loadMatchedArticles(submittedAuditId);
+      } else {
+        setMatchedArticles([]);
+      }
+
+      if (auditIdRef.current === submittedAuditId) {
+        setIsSelfCheckSubmitted(true);
+      }
     } catch (error) {
       if (auditIdRef.current === submittedAuditId) {
         setSelfCheckError(extractApiErrorMessage(error, '규제 자가 점검 제출 중 오류가 발생했습니다.'));
@@ -447,45 +484,142 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
         <div className="audit-execution-section__step4-grid">
           <div className="audit-execution-section__self-check">
             <div className="audit-execution-section__self-check-header">
-              <h3 className="audit-execution-section__self-check-title">규제 자가점검 (5항목)</h3>
+              <h3 className="audit-execution-section__self-check-title">규제 자가점검 (21항목)</h3>
               <span className="audit-execution-section__self-check-count">
-                {answeredCount}/{SELF_CHECK_ITEMS.length} 응답
+                {answeredCount}/{TOTAL_SELF_CHECK_ITEM_COUNT} 응답
               </span>
             </div>
 
+            <div className="audit-execution-section__self-check-progress-track">
+              <div
+                className="audit-execution-section__self-check-progress-fill"
+                style={{ width: `${(answeredCount / TOTAL_SELF_CHECK_ITEM_COUNT) * 100}%` }}
+              />
+            </div>
+
             <p className="audit-execution-section__self-check-desc">
-              응답 내용은 감사 보고서에 &apos;담당자 확인&apos; 근거로 반영됩니다.
-              &apos;아니오&apos;로 답한 항목은 개선 권고와 함께 정리됩니다.
+              응답 내용은 감사 보고서에 &apos;담당자 확인&apos; 근거로 반영됩니다. 시스템이
+              준수·미준수를 자동 판정하지 않으며, &apos;아니오&apos;로 답한 항목은 개선 권고와
+              함께 정리됩니다.
             </p>
 
-            <ul className="audit-execution-section__self-check-list">
-              {SELF_CHECK_ITEMS.map((item) => (
-                <li key={item.id} className="audit-execution-section__self-check-item">
-                  <div className="audit-execution-section__self-check-item-text">
-                    <p className="audit-execution-section__self-check-question">{item.question}</p>
-                    <p className="audit-execution-section__self-check-location">{item.location}</p>
-                  </div>
-                  <div className="audit-execution-section__answer-group">
+            <div className="audit-execution-section__self-check-groups">
+              {CATEGORY_ORDER.map((category) => {
+                const items = SELF_CHECK_ITEMS.filter((item) => item.category === category);
+                const groupAnsweredCount = items.filter(
+                  (item) => selfCheckAnswers[item.code] !== null,
+                ).length;
+                const meta = CATEGORY_META[category];
+                const isOpen = openCategories.has(category);
+
+                return (
+                  <div key={category} className="audit-execution-section__self-check-group">
                     <button
                       type="button"
-                      className={`audit-execution-section__answer audit-execution-section__answer--yes${selfCheckAnswers[item.id] === 'yes' ? ' audit-execution-section__answer--selected-yes' : ''}`}
-                      disabled={skipSelfCheck}
-                      onClick={() => handleSelfCheckAnswer(item.id, 'yes')}
+                      className="audit-execution-section__self-check-group-header"
+                      aria-expanded={isOpen}
+                      onClick={() => toggleCategory(category)}
                     >
-                      예
+                      <span
+                        className="audit-execution-section__self-check-group-chevron"
+                        aria-hidden="true"
+                      >
+                        {isOpen ? '▾' : '▸'}
+                      </span>
+                      <span className="audit-execution-section__self-check-group-title">
+                        {meta.shortCode} · {meta.label}
+                      </span>
+                      <span className="audit-execution-section__self-check-group-hint">
+                        {meta.articleHint}
+                      </span>
+                      <span className="audit-execution-section__self-check-group-count">
+                        {groupAnsweredCount}/{items.length}
+                      </span>
                     </button>
-                    <button
-                      type="button"
-                      className={`audit-execution-section__answer audit-execution-section__answer--no${selfCheckAnswers[item.id] === 'no' ? ' audit-execution-section__answer--selected-no' : ''}`}
-                      disabled={skipSelfCheck}
-                      onClick={() => handleSelfCheckAnswer(item.id, 'no')}
+
+                    <div
+                      className={`audit-execution-section__self-check-group-body${isOpen ? ' audit-execution-section__self-check-group-body--open' : ''}`}
                     >
-                      아니오
-                    </button>
+                      <ul className="audit-execution-section__self-check-list">
+                        {items.map((item) => {
+                          const answer = selfCheckAnswers[item.code];
+
+                          return (
+                            <li key={item.code} className="audit-execution-section__self-check-item">
+                              <div className="audit-execution-section__self-check-item-text">
+                                <div className="audit-execution-section__self-check-item-head">
+                                  <span className="audit-execution-section__self-check-item-code">
+                                    {item.code}
+                                  </span>
+                                  <span
+                                    className={`audit-execution-section__obligation-badge audit-execution-section__obligation-badge--${item.obligation.toLowerCase()}`}
+                                  >
+                                    {OBLIGATION_LABEL[item.obligation]}
+                                  </span>
+                                  {item.code === EXPLAINABILITY_OVERLAP_CODE && (
+                                    <span className="audit-execution-section__explainability-badge">
+                                      최종결과·주요 기준은 설명가능성 리포트에서 판정
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="audit-execution-section__self-check-question">
+                                  {item.question}
+                                </p>
+                                <p className="audit-execution-section__self-check-location">
+                                  {item.evidenceHint}
+                                </p>
+                                {item.obligation === 'EFFORT' && answer === 'NO' && (
+                                  <p className="audit-execution-section__effort-note">
+                                    노력의무 항목이라 위반이 아닙니다. {item.recommendation}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="audit-execution-section__answer-group">
+                                <div className="audit-execution-section__answer-na-slot">
+                                  {item.answerType === 'YES_NO_NA' ? (
+                                    <button
+                                      type="button"
+                                      className={`audit-execution-section__answer audit-execution-section__answer--na${answer === 'NA' ? ' audit-execution-section__answer--selected-na' : ''}`}
+                                      disabled={skipSelfCheck}
+                                      onClick={() => handleSelfCheckAnswer(item.code, 'NA')}
+                                    >
+                                      해당없음
+                                    </button>
+                                  ) : (
+                                    <span
+                                      className="audit-execution-section__answer-na-placeholder"
+                                      aria-hidden="true"
+                                    />
+                                  )}
+                                </div>
+                                <div className="audit-execution-section__answer-pair">
+                                  <button
+                                    type="button"
+                                    className={`audit-execution-section__answer audit-execution-section__answer--yes${answer === 'YES' ? ' audit-execution-section__answer--selected-yes' : ''}`}
+                                    disabled={skipSelfCheck}
+                                    onClick={() => handleSelfCheckAnswer(item.code, 'YES')}
+                                  >
+                                    예
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={`audit-execution-section__answer audit-execution-section__answer--no${answer === 'NO' ? ' audit-execution-section__answer--selected-no' : ''}`}
+                                    disabled={skipSelfCheck}
+                                    onClick={() => handleSelfCheckAnswer(item.code, 'NO')}
+                                  >
+                                    아니오
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   </div>
-                </li>
-              ))}
-            </ul>
+                );
+              })}
+            </div>
 
             <div className="audit-execution-section__self-check-footer">
               {isSelfCheckSubmitted ? (
@@ -500,12 +634,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               <button
                 type="button"
                 className="audit-execution-section__submit-button"
-                disabled={
-                  skipSelfCheck ||
-                  !isSelfCheckComplete ||
-                  isSelfCheckSubmitted ||
-                  isSelfCheckSubmitting
-                }
+                disabled={skipSelfCheck || isSelfCheckSubmitting}
                 onClick={handleSelfCheckSubmit}
               >
                 {isSelfCheckSubmitting ? '제출 중…' : '제출'}
@@ -546,17 +675,17 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
               <ul className="audit-execution-section__matched-list">
                 {/* 조항 하나가 여러 문항에, 문항마다 다른 항으로 걸릴 수 있어(예: 제34조는
                     위험관리 문항엔 ①1호, 관리감독 문항엔 ①4호) 문항당 한 줄로 펼쳐서 보여준다.
-                    제목엔 그 줄에 해당하는 항 번호까지 정확히 표시하고, 배지엔 문항 번호만 표시한다.
-                    배지 번호(체크리스트 문항 순서) 기준으로 정렬해 1번→5번 순으로 묶여 보이게 한다. */}
+                    제목엔 그 줄에 해당하는 항 번호까지 정확히 표시하고, 배지엔 문항 코드를 표시한다.
+                    문항 코드(문서 순서) 기준으로 정렬해 TR→SC 순으로 묶여 보이게 한다. */}
                 {matchedArticles
                   .flatMap((article) =>
                     article.matchedItems.map((matched) => ({ article, matched })),
                   )
-                  .sort(
-                    (a, b) =>
-                      CHECKLIST_ITEM_NUMBERS[a.matched.itemCode] -
-                      CHECKLIST_ITEM_NUMBERS[b.matched.itemCode],
-                  )
+                  .sort((a, b) => {
+                    const aCode = REVERSE_LEGACY_ITEM_CODE_MAP[a.matched.itemCode] ?? '';
+                    const bCode = REVERSE_LEGACY_ITEM_CODE_MAP[b.matched.itemCode] ?? '';
+                    return (ITEM_ORDER_INDEX[aCode] ?? 0) - (ITEM_ORDER_INDEX[bCode] ?? 0);
+                  })
                   .map(({ article, matched }) => (
                     <li
                       key={`${article.mappingId}-${matched.itemCode}`}
@@ -582,7 +711,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                           </Tooltip>
                         </p>
                         <span className="audit-execution-section__matched-badge">
-                          {CHECKLIST_ITEM_NUMBERS[matched.itemCode]}번
+                          {REVERSE_LEGACY_ITEM_CODE_MAP[matched.itemCode] ?? matched.itemCode}
                         </span>
                       </div>
                       <p className="audit-execution-section__matched-quote">{matched.note}</p>
@@ -602,6 +731,9 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
             onChange={(event) => handleSkipSelfCheckChange(event.target.checked)}
           />
           자가점검을 건너뛰실 거면 체크해주세요
+          <span className="audit-execution-section__checkbox-hint">
+            (건너뛰면 규제준수 판정서를 생성할 수 없습니다)
+          </span>
         </label>
 
         <button
