@@ -5,10 +5,9 @@ import {
   generateAndDownloadBiasReport,
   generateAndDownloadComplianceReport,
   generateAndDownloadExplainabilityReport,
+  generateAndDownloadFinalReport,
   generateAndDownloadHighImpactReport,
   generateAndDownloadImprovementGuide,
-  generateFinalReport,
-  downloadDeliverable,
   type ReportFormat,
 } from '../../../../features/audit/api/reportApi';
 import './ReportsSection.css';
@@ -127,23 +126,14 @@ function ReportsSection({ auditId, hasPreDiagnosis }: ReportsSectionProps) {
 
   const handleFinalDownload = async (format: ReportFormat) => {
     setPendingKey('final-report');
-    const hide = message.loading('최종 보고서 생성 중…', 0);
+    // 5종과 마찬가지로 이미 만들어 둔 산출물이면 생성 없이 바로 내려받으므로 "생성"으로 단정하지 않는다.
+    const hide = message.loading(`최종 보고서 (${format}) 준비 중…`, 0);
 
     try {
-      const { reports } = await generateFinalReport(auditId, [format]);
-      const target = reports[0];
-
-      if (!target) {
-        throw new Error('생성된 보고서가 없습니다.');
-      }
-
-      await downloadDeliverable(
-        target.reportId,
-        `최종_보고서_${auditId}.${format === 'PDF' ? 'pdf' : 'docx'}`,
-      );
-      message.success('최종 보고서 다운로드가 완료됐습니다.');
+      await generateAndDownloadFinalReport(auditId, format);
+      message.success(`최종 보고서 (${format}) 다운로드가 완료됐습니다.`);
     } catch {
-      message.error('최종 보고서 생성에 실패했습니다.');
+      message.error('최종 보고서 생성 또는 다운로드에 실패했습니다.');
     } finally {
       hide();
       setPendingKey(null);
