@@ -4,7 +4,7 @@
   justify-content: space-between;
   height: 72px;
   padding: 0 10%;
-  background-color: #F6F9FF;
+  background-color: #f6f9ff;
   border-bottom: 1px solid #eef0f3;
 }
 
@@ -17,7 +17,7 @@
 .layout-header__logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: #202938;
   font-size: 18px;
   font-weight: 800;
@@ -25,10 +25,12 @@
 }
 
 .layout-header__logo-dot {
-  width: 9px;
-  height: 9px;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
   border-radius: 50%;
   background-color: #2d67e8;
+  transform: translateY(2px);
 }
 
 .layout-header__user {
