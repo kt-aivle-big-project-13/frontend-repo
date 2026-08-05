@@ -3,7 +3,8 @@ import { apiClient } from '../../../shared/api/client';
 export type NotificationType =
   | 'LAW_REVISION'
   | 'REAUDIT_RECOMMEND'
-  | 'AUDIT_COMPLETE';
+  | 'AUDIT_COMPLETE'
+  | 'AUDIT_FAILED';
 
 export interface NotificationItem {
   id: number;
