@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { AuditSummary } from '../../../../features/audit/api/auditApi';
@@ -21,6 +21,14 @@ function VersionHistorySection({ audits, currentAuditId, isLoading }: VersionHis
   const handleCompareClick = (event: MouseEvent, targetAuditId: number) => {
     event.stopPropagation();
     navigate(`/audit/${currentAuditId}/compare?with=${targetAuditId}`);
+  };
+
+  // 마우스 클릭은 위에서 stopPropagation으로 막지만, 키보드로 이 버튼을 조작할 때(Enter/Space)
+  // 발생하는 keydown은 별개 이벤트라 여기서 따로 막아야 한다 — 안 막으면 keydown이 li까지
+  // 버블링돼 li의 onKeyDown이 결과 페이지로 이동시켜버려서, 키보드 사용자는 비교 화면을
+  // 열지 못하고 결과 페이지로 튕겨나간다.
+  const stopKeyDownPropagation = (event: KeyboardEvent) => {
+    event.stopPropagation();
   };
 
   return (
@@ -75,6 +83,7 @@ function VersionHistorySection({ audits, currentAuditId, isLoading }: VersionHis
                     type="button"
                     className="version-history-section__link"
                     onClick={(event) => handleCompareClick(event, audit.auditId)}
+                    onKeyDown={stopKeyDownPropagation}
                   >
                     비교 보기
                   </button>

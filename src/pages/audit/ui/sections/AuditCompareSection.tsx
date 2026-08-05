@@ -164,13 +164,19 @@ function DistributionRow({
   label,
   previous,
   latest,
+  positiveIsGood,
 }: {
   label: string;
   previous: number;
   latest: number;
+  // "충족" 개수가 늘면 개선이지만, "주의"·"추가검토"·"계산불가" 개수가 늘면 악화다 —
+  // 판정마다 늘어나는 방향의 좋고 나쁨이 반대라 행별로 넘겨받는다.
+  positiveIsGood: boolean;
 }) {
   const delta = latest - previous;
-  const deltaColor = delta > 0 ? '#1b9851' : delta < 0 ? '#d93e44' : '#6b7684';
+  const isImproved = delta !== 0 && (positiveIsGood ? delta > 0 : delta < 0);
+  const isWorsened = delta !== 0 && (positiveIsGood ? delta < 0 : delta > 0);
+  const deltaColor = isImproved ? '#1b9851' : isWorsened ? '#d93e44' : '#6b7684';
 
   return (
     <tr>
@@ -296,14 +302,30 @@ function AuditCompareSection({
             </tr>
           </thead>
           <tbody>
-            <DistributionRow label="충족" previous={previousDistribution.pass} latest={latestDistribution.pass} />
-            <DistributionRow label="주의" previous={previousDistribution.warning} latest={latestDistribution.warning} />
+            <DistributionRow
+              label="충족"
+              previous={previousDistribution.pass}
+              latest={latestDistribution.pass}
+              positiveIsGood
+            />
+            <DistributionRow
+              label="주의"
+              previous={previousDistribution.warning}
+              latest={latestDistribution.warning}
+              positiveIsGood={false}
+            />
             <DistributionRow
               label="추가검토"
               previous={previousDistribution.review}
               latest={latestDistribution.review}
+              positiveIsGood={false}
             />
-            <DistributionRow label="계산불가" previous={previousDistribution.na} latest={latestDistribution.na} />
+            <DistributionRow
+              label="계산불가"
+              previous={previousDistribution.na}
+              latest={latestDistribution.na}
+              positiveIsGood={false}
+            />
           </tbody>
         </table>
       </div>

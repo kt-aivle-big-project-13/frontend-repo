@@ -58,15 +58,26 @@ function AuditComparePage() {
 
   const otherSummary = auditsQuery.data?.find((audit) => audit.auditId === otherAuditId) ?? null;
 
+  // otherAuditId가 자동으로 고른 값이면 이미 같은 모델 계열·비교 가능 상태만 걸러진 값이지만,
+  // "with"가 URL에서 직접 온 값이면 검증된 적이 없다 — 존재하지 않는 auditId, 다른 모델
+  // 계열, 자기 자신, 아직 분석이 안 끝난 감사를 그대로 비교 대상으로 삼지 않도록 여기서
+  // 한 번 더 확인한다.
+  const isOtherValid =
+    baseSummary != null &&
+    otherSummary != null &&
+    otherSummary.auditId !== baseSummary.auditId &&
+    otherSummary.modelGroupId === baseSummary.modelGroupId &&
+    isComparable(otherSummary);
+
   // 먼저 완료된 쪽을 "이전", 나중에 완료된 쪽을 "최신"으로 고정한다 — URL 파라미터 순서와
   // 무관하게 항상 "이전 → 최신" 방향으로 읽히게 하기 위함이다.
   const [previousSummary, latestSummary] = useMemo(() => {
-    if (!baseSummary || !otherSummary) return [null, null] as const;
+    if (!baseSummary || !otherSummary || !isOtherValid) return [null, null] as const;
 
     return completedAtMillis(baseSummary) <= completedAtMillis(otherSummary)
       ? ([baseSummary, otherSummary] as const)
       : ([otherSummary, baseSummary] as const);
-  }, [baseSummary, otherSummary]);
+  }, [baseSummary, otherSummary, isOtherValid]);
 
   const [previousExplainability, latestExplainability, previousFairness, latestFairness] =
     useQueries({
@@ -132,25 +143,34 @@ function AuditComparePage() {
             </p>
           )}
 
+          {/* 감사 목록 자체가 아직 로딩 중이면(baseSummary가 있든 없든) 우선 로딩부터 보여준다. */}
+          {!auditsQuery.isError && isResolvingPair && (
+            <p className="audit-compare-page__status" role="status">
+              비교 데이터를 불러오는 중입니다…
+            </p>
+          )}
+
           {!auditsQuery.isError && !isResolvingPair && !baseSummary && (
             <p className="audit-compare-page__empty" role="alert">
               비교할 감사를 찾을 수 없습니다.
             </p>
           )}
 
-          {!isResolvingPair && baseSummary && !otherAuditId && (
+          {!isResolvingPair && baseSummary && (!otherAuditId || !isOtherValid) && (
             <p className="audit-compare-page__empty">
-              비교할 이전 버전이 없습니다. 같은 모델로 완료된 다른 감사가 있어야 비교할 수 있습니다.
+              {explicitOtherId != null
+                ? '지정한 감사와는 비교할 수 없습니다. 같은 모델 계열의 완료된 다른 버전만 비교할 수 있습니다.'
+                : '비교할 이전 버전이 없습니다. 같은 모델로 완료된 다른 감사가 있어야 비교할 수 있습니다.'}
             </p>
           )}
 
-          {(isResolvingPair || isLoadingMetrics) && baseSummary !== null && otherAuditId != null && (
+          {!isResolvingPair && isOtherValid && isLoadingMetrics && (
             <p className="audit-compare-page__status" role="status">
               비교 데이터를 불러오는 중입니다…
             </p>
           )}
 
-          {!isResolvingPair && !isLoadingMetrics && previousSummary && latestSummary && (
+          {!isResolvingPair && !isLoadingMetrics && isOtherValid && previousSummary && latestSummary && (
             <AuditCompareSection
               previousSummary={previousSummary}
               latestSummary={latestSummary}
