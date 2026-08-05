@@ -371,16 +371,16 @@ function AuditCompareSection({
                     )}
                     <td className="audit-compare-section__cell-label">{COLUMN_LABEL[code]}</td>
                     <td
-                      className="audit-compare-section__cell-value"
+                      className="audit-compare-section__cell-value audit-compare-section__cell-value--bar"
                       style={{ backgroundColor: statusColor(previousLabel).bg }}
                     >
-                      {previousCell ? `${previousCell.value} (${previousLabel})` : '계산불가'}
+                      <ValueBar value={previousCell?.value ?? null} label={previousLabel} />
                     </td>
                     <td
-                      className="audit-compare-section__cell-value"
+                      className="audit-compare-section__cell-value audit-compare-section__cell-value--bar"
                       style={{ backgroundColor: statusColor(latestLabel).bg }}
                     >
-                      {latestCell ? `${latestCell.value} (${latestLabel})` : '계산불가'}
+                      <ValueBar value={latestCell?.value ?? null} label={latestLabel} />
                     </td>
                     <td>
                       <TrendBadge trend={trend} />
