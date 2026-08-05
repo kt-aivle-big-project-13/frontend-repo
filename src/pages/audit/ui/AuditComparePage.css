@@ -1,0 +1,57 @@
+.audit-compare-page {
+  min-height: 100%;
+  padding: 36px 10% 72px;
+  background-color: #ffffff;
+}
+
+.audit-compare-page__inner {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.audit-compare-page__header {
+  margin-bottom: 24px;
+}
+
+.audit-compare-page__back {
+  padding: 0;
+  margin-bottom: 12px;
+  border: none;
+  background: none;
+  color: #6b7684;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.audit-compare-page__back:hover {
+  color: #2d67e8;
+}
+
+.audit-compare-page__title {
+  margin: 0;
+  color: #202938;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.audit-compare-page__description {
+  margin: 6px 0 0;
+  color: #7a8493;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.audit-compare-page__empty,
+.audit-compare-page__status {
+  margin: 0;
+  padding: 32px;
+  border: 1px dashed #d9dee6;
+  border-radius: 12px;
+  background-color: #f7f8fa;
+  color: #6b7684;
+  font-size: 14px;
+  text-align: center;
+}
