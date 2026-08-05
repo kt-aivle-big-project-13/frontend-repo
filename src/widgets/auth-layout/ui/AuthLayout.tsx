@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 import PolicyModal, {
   type PolicyType,
@@ -18,13 +19,13 @@ function AuthLayout({ children }: AuthLayoutProps) {
       <main className="auth-layout__main">
         {/* 왼쪽 공통 브랜드 영역 */}
         <section className="auth-layout__brand">
-          <div className="auth-layout__logo-area">
+          <Link to="/" className="auth-layout__logo-area">
             <img
               className="auth-layout__logo"
               src="/finaudit-logo.png"
               alt="FinAuditAI"
             />
-          </div>
+          </Link>
 
           <div className="auth-layout__brand-text">
             <h1>
