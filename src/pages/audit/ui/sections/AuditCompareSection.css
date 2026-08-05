@@ -128,6 +128,179 @@
   font-weight: 800;
 }
 
+.audit-compare-section__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+/* 지표 판정 분포 도넛 — 모델 상세(결과) 페이지의 게이지와 같은 스타일 */
+.audit-compare-section__donut-row {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin-bottom: 24px;
+}
+
+.audit-compare-section__donut-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.audit-compare-section__donut {
+  width: 120px;
+  height: 120px;
+}
+
+.audit-compare-section__donut-value {
+  fill: #202938;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.audit-compare-section__donut-caption {
+  fill: #9099a8;
+  font-size: 9px;
+}
+
+.audit-compare-section__donut-label {
+  color: #6b7684;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* SHAP 지표 — 값 막대 카드 */
+.audit-compare-section__shap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.audit-compare-section__shap-row {
+  padding: 14px 16px;
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
+  background-color: #fafbfc;
+}
+
+.audit-compare-section__shap-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.audit-compare-section__bar-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.audit-compare-section__bar-caption {
+  flex-shrink: 0;
+  width: 30px;
+  color: #9099a8;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.audit-compare-section__value-bar {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+}
+
+.audit-compare-section__value-bar-track {
+  flex: 1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background-color: #eef0f3;
+}
+
+.audit-compare-section__value-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.audit-compare-section__value-bar-text {
+  flex-shrink: 0;
+  width: 110px;
+  color: #4b5563;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* TOP5 영향 변수 변동 — TopFeaturesCard와 같은 막대 스타일 재사용 */
+.audit-compare-section__feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.audit-compare-section__feature-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audit-compare-section__feature-rank {
+  flex-shrink: 0;
+  width: 26px;
+  color: #9099a8;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.audit-compare-section__feature-name {
+  flex-shrink: 0;
+  width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-compare-section__bar-track {
+  flex: 1;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background-color: #eef0f3;
+}
+
+.audit-compare-section__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background-color: #2d67e8;
+  transition: width 0.2s ease;
+}
+
+.audit-compare-section__feature-value {
+  flex-shrink: 0;
+  width: 50px;
+  text-align: right;
+}
+
+.audit-compare-section__feature-prev {
+  flex-shrink: 0;
+  width: 72px;
+  color: #9099a8;
+  font-size: 11.5px;
+}
+
 .audit-compare-section__dropped {
   margin: 14px 0 0;
   padding: 10px 12px;
@@ -160,5 +333,17 @@
   .audit-compare-section__table {
     display: block;
     overflow-x: auto;
+  }
+
+  .audit-compare-section__donut-row {
+    gap: 24px;
+  }
+
+  .audit-compare-section__feature-name {
+    width: 90px;
+  }
+
+  .audit-compare-section__feature-prev {
+    display: none;
   }
 }

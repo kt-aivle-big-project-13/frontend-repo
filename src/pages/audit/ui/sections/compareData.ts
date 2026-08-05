@@ -81,3 +81,15 @@ export function formatDelta(previous: number, latest: number): string {
   if (delta === 0) return '±0';
   return delta > 0 ? `+${delta}` : `${delta}`;
 }
+
+// FairnessTable.css의 배지 색(pass/review/fail/na)과 동일한 팔레트를 통일 라벨 기준으로 다시
+// 매핑한다 — SHAP·Fairlearn 표·막대·도넛 전부 이 색으로 통일해서, 표만 읽지 않고도 색만 보고
+// 판정을 훑을 수 있게 한다.
+export const STATUS_COLOR: Record<string, { text: string; bg: string }> = {
+  충족: { text: '#1b9851', bg: '#e7f6ec' },
+  주의: { text: '#e09c14', bg: '#fef2d8' },
+  추가검토: { text: '#d93e44', bg: '#feecea' },
+  계산불가: { text: '#9099a8', bg: '#f7f8fa' },
+};
+
+export const DEFAULT_STATUS_COLOR = { text: '#c1c7d0', bg: '#f7f8fa' };
