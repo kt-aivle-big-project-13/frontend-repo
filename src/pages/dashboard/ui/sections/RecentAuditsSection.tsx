@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type {
@@ -11,6 +12,8 @@ import './RecentAuditsSection.css';
 interface RecentAuditsSectionProps {
   audits: RecentAudit[];
 }
+
+const AUDITS_PER_PAGE = 5;
 
 const STATUS_LABELS: Record<DashboardAuditStatus, string> = {
   COMPLIANT: '충족',
@@ -56,7 +59,20 @@ function formatCompletedAt(completedAt: string) {
     .replaceAll(' ', '');
 }
 
-function RecentAuditsSection({ audits }: RecentAuditsSectionProps) {
+function RecentAuditsContent({ audits }: RecentAuditsSectionProps) {
+  const [visibleCount, setVisibleCount] = useState(AUDITS_PER_PAGE);
+  const visibleAudits = audits.slice(0, visibleCount);
+  const hasMore = visibleCount < audits.length;
+  const canCollapse = visibleCount > AUDITS_PER_PAGE;
+
+  const handleLoadMore = () => {
+    setVisibleCount((currentCount) => Math.min(currentCount + AUDITS_PER_PAGE, audits.length));
+  };
+
+  const handleCollapse = () => {
+    setVisibleCount(AUDITS_PER_PAGE);
+  };
+
   return (
     <section className="recent-audits">
       <h2 className="recent-audits__title">감사 내역</h2>
@@ -75,7 +91,7 @@ function RecentAuditsSection({ audits }: RecentAuditsSectionProps) {
                 </tr>
               </thead>
               <tbody>
-                {audits.map((audit) => {
+                {visibleAudits.map((audit) => {
                   const keyRiskLabel = formatKeyRisk(audit.keyRisk);
 
                   return (
@@ -118,9 +134,51 @@ function RecentAuditsSection({ audits }: RecentAuditsSectionProps) {
         ) : (
           <div className="recent-audits__empty">완료된 감사 내역이 없습니다.</div>
         )}
+
+        {(canCollapse || hasMore) && (
+          <div className="recent-audits__load-more-area">
+            {canCollapse && (
+              <button
+                type="button"
+                className="recent-audits__load-more-button"
+                onClick={handleCollapse}
+              >
+                <span>접기</span>
+                <span
+                  className="recent-audits__load-more-icon recent-audits__load-more-icon--up"
+                  aria-hidden="true"
+                >
+                  ↑
+                </span>
+              </button>
+            )}
+
+            {hasMore && (
+              <button
+                type="button"
+                className="recent-audits__load-more-button"
+                onClick={handleLoadMore}
+              >
+                <span>더 보기</span>
+                <span
+                  className="recent-audits__load-more-icon recent-audits__load-more-icon--down"
+                  aria-hidden="true"
+                >
+                  ↓
+                </span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
+}
+
+function RecentAuditsSection({ audits }: RecentAuditsSectionProps) {
+  const auditListKey = audits.map((audit) => audit.auditId).join(',');
+
+  return <RecentAuditsContent key={auditListKey} audits={audits} />;
 }
 
 export default RecentAuditsSection;
