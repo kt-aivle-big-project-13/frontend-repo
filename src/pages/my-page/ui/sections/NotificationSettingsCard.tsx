@@ -48,7 +48,8 @@ interface NotificationSettingsCardProps {
 type PreferenceKey =
   | 'lawEmailEnabled'
   | 'reauditAlertEnabled'
-  | 'auditCompleteAlertEnabled';
+  | 'auditCompleteAlertEnabled'
+  | 'auditFailAlertEnabled';
 
 // MyPage가 profile 로딩 완료 시 key를 바꿔 이 컴포넌트를 다시 마운트시키므로,
 // 초기 state는 그 시점의 profile 값을 그대로 반영한다(useEffect로 동기화할 필요 없음).
@@ -60,6 +61,9 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
   const [isAuditCompleteAlertOn, setIsAuditCompleteAlertOn] = useState(
     profile?.auditCompleteAlertEnabled ?? true,
   );
+  const [isAuditFailAlertOn, setIsAuditFailAlertOn] = useState(
+    profile?.auditFailAlertEnabled ?? true,
+  );
   const [savingKey, setSavingKey] = useState<PreferenceKey | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +72,7 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
       lawEmailEnabled: isLawAlertOn,
       reauditAlertEnabled: isReauditAlertOn,
       auditCompleteAlertEnabled: isAuditCompleteAlertOn,
+      auditFailAlertEnabled: isAuditFailAlertOn,
     };
     const next = { ...previous, [key]: nextValue };
 
@@ -77,6 +82,7 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
     if (key === 'lawEmailEnabled') setIsLawAlertOn(nextValue);
     if (key === 'reauditAlertEnabled') setIsReauditAlertOn(nextValue);
     if (key === 'auditCompleteAlertEnabled') setIsAuditCompleteAlertOn(nextValue);
+    if (key === 'auditFailAlertEnabled') setIsAuditFailAlertOn(nextValue);
 
     try {
       await updateNotificationPreferences(next);
@@ -86,6 +92,9 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
       if (key === 'reauditAlertEnabled') setIsReauditAlertOn(previous.reauditAlertEnabled);
       if (key === 'auditCompleteAlertEnabled') {
         setIsAuditCompleteAlertOn(previous.auditCompleteAlertEnabled);
+      }
+      if (key === 'auditFailAlertEnabled') {
+        setIsAuditFailAlertOn(previous.auditFailAlertEnabled);
       }
 
       setError('알림 설정 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
@@ -120,6 +129,13 @@ function NotificationSettingsCard({ profile }: NotificationSettingsCardProps) {
         checked={isAuditCompleteAlertOn}
         disabled={isDisabled}
         onChange={(value) => save('auditCompleteAlertEnabled', value)}
+      />
+      <NotificationToggle
+        label="감사 실패 알림"
+        description="진행 중인 감사가 실패하면 안내"
+        checked={isAuditFailAlertOn}
+        disabled={isDisabled}
+        onChange={(value) => save('auditFailAlertEnabled', value)}
       />
 
       {error && (

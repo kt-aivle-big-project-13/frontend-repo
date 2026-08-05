@@ -12,6 +12,7 @@ export interface MyProfileResponse {
   lawEmailEnabled: boolean;
   reauditAlertEnabled: boolean;
   auditCompleteAlertEnabled: boolean;
+  auditFailAlertEnabled: boolean;
 }
 
 export interface UpdateProfileRequest {
@@ -54,6 +55,7 @@ export interface UpdateNotificationPreferencesRequest {
   lawEmailEnabled: boolean;
   reauditAlertEnabled: boolean;
   auditCompleteAlertEnabled: boolean;
+  auditFailAlertEnabled: boolean;
 }
 
 export async function updateNotificationPreferences(
