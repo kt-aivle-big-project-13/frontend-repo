@@ -148,6 +148,53 @@
   font-size: 14px;
 }
 
+.recent-audits__load-more-area {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f2f5;
+}
+
+.recent-audits__load-more-button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 4px;
+  border: 0;
+  background: transparent;
+  color: #667085;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.recent-audits__load-more-button:hover {
+  color: #2563eb;
+}
+
+.recent-audits__load-more-button:focus-visible {
+  outline: 3px solid rgb(45 103 232 / 25%);
+  outline-offset: 2px;
+}
+
+.recent-audits__load-more-icon {
+  display: inline-block;
+  font-size: 13px;
+  transition: transform 150ms ease;
+}
+
+.recent-audits__load-more-button:hover .recent-audits__load-more-icon--up {
+  transform: translateY(-2px);
+}
+
+.recent-audits__load-more-button:hover .recent-audits__load-more-icon--down {
+  transform: translateY(2px);
+}
+
 @media (max-width: 700px) {
   .recent-audits__title {
     font-size: 20px;
