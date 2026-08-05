@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import AuthInitializer from '../features/auth/model/AuthInitializer';
 
+import AuditComparePage from '../pages/audit/ui/AuditComparePage';
 import AuditPage from '../pages/audit/ui/AuditPage';
 import BoardDetailPage from '../pages/board/ui/BoardDetailPage';
 import BoardFormPage from '../pages/board/ui/BoardFormPage';
@@ -41,6 +42,8 @@ function App() {
             <Route path="/audit/:auditId" element={<AuditPage mode="checklist" />} />
             {/* STEP4 결과물 및 보고서 다운로드 */}
             <Route path="/audit/:auditId/results" element={<AuditPage mode="results" />} />
+            {/* 같은 모델 계열의 최신 버전과 직전 버전 비교 (기본: with 없으면 직전 버전 자동 선택) */}
+            <Route path="/audit/:auditId/compare" element={<AuditComparePage />} />
 
             {/* AI 운영 모니터링 대시보드 */}
             <Route path="/dashboard" element={<DashboardPage />} />

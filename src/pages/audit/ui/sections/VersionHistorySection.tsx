@@ -1,4 +1,3 @@
-import { message } from 'antd';
 import type { MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,15 +12,16 @@ interface VersionHistorySectionProps {
   isLoading: boolean;
 }
 
-function handleCompareClick(event: MouseEvent) {
-  // 행 자체의 클릭(감사 결과 이동)으로 이벤트가 전파되지 않도록 막는다.
-  event.stopPropagation();
-  // TODO: 버전 비교 기능 개발 후 실제 동작으로 교체 필요
-  message.info('비교 기능은 추후에 개발 예정입니다.');
-}
-
 function VersionHistorySection({ audits, currentAuditId, isLoading }: VersionHistorySectionProps) {
   const navigate = useNavigate();
+
+  // 행 자체의 클릭(감사 결과 이동)으로 이벤트가 전파되지 않도록 막고, 지금 보고 있는 감사와
+  // 클릭한 행의 감사를 비교 화면으로 넘긴다. 어느 쪽이 더 최신인지는 비교 화면에서
+  // completedAt 기준으로 다시 정렬하므로 여기서는 순서를 신경 쓰지 않아도 된다.
+  const handleCompareClick = (event: MouseEvent, targetAuditId: number) => {
+    event.stopPropagation();
+    navigate(`/audit/${currentAuditId}/compare?with=${targetAuditId}`);
+  };
 
   return (
     <section className="version-history-section">
@@ -74,7 +74,7 @@ function VersionHistorySection({ audits, currentAuditId, isLoading }: VersionHis
                   <button
                     type="button"
                     className="version-history-section__link"
-                    onClick={handleCompareClick}
+                    onClick={(event) => handleCompareClick(event, audit.auditId)}
                   >
                     비교 보기
                   </button>
