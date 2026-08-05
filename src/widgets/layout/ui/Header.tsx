@@ -88,7 +88,12 @@ function Header() {
     <header className="layout-header">
       <div className="layout-header__brand">
         <Link to="/" className="layout-header__logo">
-          <span className="layout-header__logo-dot" aria-hidden="true" />
+          <img
+            src="/logo.png"
+            alt=""
+            aria-hidden="true"
+            className="layout-header__logo-icon"
+          />
           <span>FinAuditAI</span>
         </Link>
 
