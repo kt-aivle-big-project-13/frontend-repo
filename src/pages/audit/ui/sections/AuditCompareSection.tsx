@@ -19,10 +19,10 @@ import {
 import { formatAuditDate, STATUS_BG_COLOR, STATUS_LABEL, STATUS_TEXT_COLOR } from './auditStatusMeta';
 import { getFeatureLabel } from './featureData';
 import {
-  ATTRIBUTE_LABEL,
   COLUMN_LABEL,
   COLUMN_ORDER,
   FAIRNESS_STATUS_LABEL,
+  getAttributeLabel,
   getFairnessStatusCounts,
   groupByAttribute,
   listAttributes,
@@ -252,23 +252,24 @@ function AuditCompareSection({
   const previousFairnessResults = previousFairness?.results ?? [];
   const latestFairnessResults = latestFairness?.results ?? [];
 
+  // 두 버전에서 실제로 계산된 민감변수의 합집합. 감사마다 선택한 민감변수가 다를 수 있어
+  // 한쪽에만 있는 변수도 남겨야 "신규 계산 / 계산불가 전환"이 표에 드러난다. 아래 표와 분포
+  // 집계가 같은 목록을 봐야 "표에는 계산불가로 보이는데 도넛에는 안 세는" 어긋남이 없다.
+  const comparedAttributes = listAttributes(previousFairnessResults, latestFairnessResults);
+
   const previousDistribution = buildStatusDistribution(
     getShapStatusCounts(previousShap),
-    getFairnessStatusCounts(previousFairnessResults),
+    getFairnessStatusCounts(previousFairnessResults, comparedAttributes),
   );
   const latestDistribution = buildStatusDistribution(
     getShapStatusCounts(latestShap),
-    getFairnessStatusCounts(latestFairnessResults),
+    getFairnessStatusCounts(latestFairnessResults, comparedAttributes),
   );
 
   const shapMetricCodes = ['GLOBAL_STABILITY', 'FIDELITY'] as const;
 
   const previousFairnessGrouped = groupByAttribute(previousFairnessResults);
   const latestFairnessGrouped = groupByAttribute(latestFairnessResults);
-
-  // 두 버전에서 실제로 계산된 민감변수의 합집합. 감사마다 선택한 민감변수가 다를 수 있어
-  // 한쪽에만 있는 변수도 남겨야 "신규 계산 / 계산불가 전환"이 표에 드러난다.
-  const comparedAttributes = listAttributes(previousFairnessResults, latestFairnessResults);
 
   const previousTopFeatures = previousExplainability?.topFeatures ?? [];
   const latestTopFeatures = latestExplainability?.topFeatures ?? [];
@@ -402,7 +403,7 @@ function AuditCompareSection({
                           className="audit-compare-section__cell-label"
                           rowSpan={COLUMN_ORDER.length}
                         >
-                          {ATTRIBUTE_LABEL[attribute] ?? attribute}
+                          {getAttributeLabel(attribute)}
                         </td>
                       )}
                       <td className="audit-compare-section__cell-label">{COLUMN_LABEL[code]}</td>

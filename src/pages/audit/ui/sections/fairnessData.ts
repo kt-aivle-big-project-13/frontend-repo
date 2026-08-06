@@ -111,6 +111,18 @@ export function groupByAttribute(results: FairlearnResultItem[]) {
   return map;
 }
 
+// 민감변수는 데이터셋 컬럼명 그대로라 "toString"·"constructor"처럼 Object.prototype에 이미 있는
+// 이름도 올 수 있다. `attribute in ATTRIBUTE_LABEL`이나 대괄호 접근을 그냥 쓰면 상속된 속성이
+// 등록된 라벨처럼 잡혀, 목록에서 빠지거나 라벨 자리에 함수가 들어간다 — 자체 키만 본다.
+function hasLabel(attribute: string): boolean {
+  return Object.prototype.hasOwnProperty.call(ATTRIBUTE_LABEL, attribute);
+}
+
+// 라벨 맵에 없는 민감변수는 컬럼명을 그대로 보여준다.
+export function getAttributeLabel(attribute: string): string {
+  return hasLabel(attribute) ? ATTRIBUTE_LABEL[attribute] : attribute;
+}
+
 // 화면에 그릴 민감변수 목록. 감사마다 선택하는 민감변수가 달라 ATTRIBUTE_LABEL에 없는 컬럼도
 // 오므로 목록은 반드시 응답 데이터에서 뽑는다 — 라벨 맵을 순회하면 성별·연령 외 변수가 통째로
 // 빠진다. 여러 버전을 함께 넘기면 합집합을 만든다(한쪽에만 있는 변수도 비교표에 남겨야 하기
@@ -126,21 +138,28 @@ export function listAttributes(...resultGroups: FairlearnResultItem[][]): string
 
   const known = Object.keys(ATTRIBUTE_LABEL).filter((attribute) => found.includes(attribute));
 
-  return [...known, ...found.filter((attribute) => !(attribute in ATTRIBUTE_LABEL))];
+  return [...known, ...found.filter((attribute) => !hasLabel(attribute))];
 }
 
 // 테이블 렌더링과 동일한 기준(빈 셀=계산불가)으로 집계 — 로직 중복 방지 위해 같은 groupByAttribute
 // 재사용. 반환값은 화면 라벨이 아니라 원래 상태 코드(PASS/REVIEW/FAIL) 기준이므로, 호출하는
 // 쪽에서 "지표 판정 분포"처럼 SHAP과 합산할 때는 FAIRNESS_STATUS_LABEL 매핑(REVIEW→주의,
 // FAIL→추가검토)에 맞춰 review는 "주의" 합계에, fail은 "추가검토" 합계에 더해야 한다.
-export function getFairnessStatusCounts(results: FairlearnResultItem[]) {
+//
+// `attributes`는 집계 대상 민감변수를 호출하는 쪽에서 고정하고 싶을 때 쓴다. 비교보기처럼 두
+// 버전의 합집합으로 표를 그리는 화면은 그 목록을 그대로 넘겨야, 한쪽에만 있는 변수의 계산불가
+// 셀이 표에는 보이는데 분포에서는 빠지는 어긋남이 생기지 않는다.
+export function getFairnessStatusCounts(
+  results: FairlearnResultItem[],
+  attributes: string[] = listAttributes(results),
+) {
   const grouped = groupByAttribute(results);
   let pass = 0;
   let review = 0;
   let fail = 0;
   let na = 0;
 
-  listAttributes(results).forEach((attribute) => {
+  attributes.forEach((attribute) => {
     const row = grouped.get(attribute);
 
     COLUMN_ORDER.forEach((code) => {
