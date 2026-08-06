@@ -264,6 +264,11 @@ function AuditCompareSection({
 
   const previousFairnessGrouped = groupByAttribute(previousFairnessResults);
   const latestFairnessGrouped = groupByAttribute(latestFairnessResults);
+  // 두 버전 중 한쪽에만 있는 민감변수(버전마다 고른 게 다를 수 있음)도 표에 빠짐없이
+  // 나오도록, 한글 라벨이 있는 속성만이 아니라 실제 결과에 등장한 속성을 전부 모은다.
+  const fairnessAttributes = Array.from(
+    new Set([...previousFairnessGrouped.keys(), ...latestFairnessGrouped.keys()]),
+  );
 
   const previousTopFeatures = previousExplainability?.topFeatures ?? [];
   const latestTopFeatures = latestExplainability?.topFeatures ?? [];
@@ -373,7 +378,7 @@ function AuditCompareSection({
             </tr>
           </thead>
           <tbody>
-            {Object.keys(ATTRIBUTE_LABEL).map((attribute) =>
+            {fairnessAttributes.map((attribute) =>
               COLUMN_ORDER.map((code, index) => {
                 const previousCell = previousFairnessGrouped.get(attribute)?.get(code);
                 const latestCell = latestFairnessGrouped.get(attribute)?.get(code);

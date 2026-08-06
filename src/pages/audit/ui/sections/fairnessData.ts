@@ -3,9 +3,14 @@ import type {
   FairlearnResultItem,
 } from '../../../../features/audit/api/auditApi';
 
+// 여기 없는 속성(새 모델에 맞춰 감사 시작 시 고른 민감변수)도 계산·집계·비교 화면에는
+// 전부 나온다 — 여기 목록은 한글 라벨 표시용일 뿐이고, 없으면 원래 코드를 그대로 보여준다
+// (사용처의 `ATTRIBUTE_LABEL[attribute] ?? attribute` 참고).
 export const ATTRIBUTE_LABEL: Record<string, string> = {
   AGE_GROUP: '연령대 (AGE_GROUP)',
   CODE_GENDER: '성별 (CODE_GENDER)',
+  derived_race: '인종 (derived_race)',
+  derived_ethnicity: '출신민족 (derived_ethnicity)',
 };
 
 export const COLUMN_ORDER: FairlearnMetricCode[] = [
@@ -122,9 +127,9 @@ export function getFairnessStatusCounts(results: FairlearnResultItem[]) {
   let fail = 0;
   let na = 0;
 
-  Object.keys(ATTRIBUTE_LABEL).forEach((attribute) => {
-    const row = grouped.get(attribute);
-
+  // 감사에서 실제로 고른 민감변수를 그대로 센다 — ATTRIBUTE_LABEL에 없는 속성(예: 인종)도
+  // 결과에 있으면 집계에서 빠지면 안 되므로, 한글 라벨 목록이 아니라 결과 자체를 기준으로 돈다.
+  grouped.forEach((row) => {
     COLUMN_ORDER.forEach((code) => {
       const cell = row?.get(code);
 
