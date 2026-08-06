@@ -708,7 +708,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
                   )
                   .map(({ article, matched }) => (
                     <li
-                      key={`${article.mappingId}-${matched.itemCode}`}
+                      key={`${article.mappingId}-${matched.itemCode}-${matched.clauseNo ?? ''}`}
                       className="audit-execution-section__matched-item"
                     >
                       <div className="audit-execution-section__matched-header">
