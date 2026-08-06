@@ -19,12 +19,13 @@ import {
 import { formatAuditDate, STATUS_BG_COLOR, STATUS_LABEL, STATUS_TEXT_COLOR } from './auditStatusMeta';
 import { getFeatureLabel } from './featureData';
 import {
-  ATTRIBUTE_LABEL,
   COLUMN_LABEL,
   COLUMN_ORDER,
   FAIRNESS_STATUS_LABEL,
+  getAttributeLabel,
   getFairnessStatusCounts,
   groupByAttribute,
+  listAttributes,
 } from './fairnessData';
 import { getShapStatusCounts, SHAP_METRIC_LABEL, SHAP_STATUS_LABEL } from './shapData';
 import './AuditCompareSection.css';
@@ -251,13 +252,18 @@ function AuditCompareSection({
   const previousFairnessResults = previousFairness?.results ?? [];
   const latestFairnessResults = latestFairness?.results ?? [];
 
+  // 두 버전에서 실제로 계산된 민감변수의 합집합. 감사마다 선택한 민감변수가 다를 수 있어
+  // 한쪽에만 있는 변수도 남겨야 "신규 계산 / 계산불가 전환"이 표에 드러난다. 아래 표와 분포
+  // 집계가 같은 목록을 봐야 "표에는 계산불가로 보이는데 도넛에는 안 세는" 어긋남이 없다.
+  const comparedAttributes = listAttributes(previousFairnessResults, latestFairnessResults);
+
   const previousDistribution = buildStatusDistribution(
     getShapStatusCounts(previousShap),
-    getFairnessStatusCounts(previousFairnessResults),
+    getFairnessStatusCounts(previousFairnessResults, comparedAttributes),
   );
   const latestDistribution = buildStatusDistribution(
     getShapStatusCounts(latestShap),
-    getFairnessStatusCounts(latestFairnessResults),
+    getFairnessStatusCounts(latestFairnessResults, comparedAttributes),
   );
 
   const shapMetricCodes = ['GLOBAL_STABILITY', 'FIDELITY'] as const;
@@ -373,43 +379,53 @@ function AuditCompareSection({
             </tr>
           </thead>
           <tbody>
-            {Object.keys(ATTRIBUTE_LABEL).map((attribute) =>
-              COLUMN_ORDER.map((code, index) => {
-                const previousCell = previousFairnessGrouped.get(attribute)?.get(code);
-                const latestCell = latestFairnessGrouped.get(attribute)?.get(code);
-                const previousLabel = previousCell ? FAIRNESS_STATUS_LABEL[previousCell.status] : null;
-                const latestLabel = latestCell ? FAIRNESS_STATUS_LABEL[latestCell.status] : null;
-                const trend = compareByLabel(previousLabel, latestLabel);
+            {comparedAttributes.length === 0 ? (
+              <tr>
+                <td className="audit-compare-section__empty-cell" colSpan={5}>
+                  두 버전 모두 공정성 지표 결과가 없습니다.
+                </td>
+              </tr>
+            ) : (
+              comparedAttributes.map((attribute) =>
+                COLUMN_ORDER.map((code, index) => {
+                  const previousCell = previousFairnessGrouped.get(attribute)?.get(code);
+                  const latestCell = latestFairnessGrouped.get(attribute)?.get(code);
+                  const previousLabel = previousCell
+                    ? FAIRNESS_STATUS_LABEL[previousCell.status]
+                    : null;
+                  const latestLabel = latestCell ? FAIRNESS_STATUS_LABEL[latestCell.status] : null;
+                  const trend = compareByLabel(previousLabel, latestLabel);
 
-                return (
-                  <tr key={`${attribute}-${code}`}>
-                    {index === 0 && (
+                  return (
+                    <tr key={`${attribute}-${code}`}>
+                      {index === 0 && (
+                        <td
+                          className="audit-compare-section__cell-label"
+                          rowSpan={COLUMN_ORDER.length}
+                        >
+                          {getAttributeLabel(attribute)}
+                        </td>
+                      )}
+                      <td className="audit-compare-section__cell-label">{COLUMN_LABEL[code]}</td>
                       <td
-                        className="audit-compare-section__cell-label"
-                        rowSpan={COLUMN_ORDER.length}
+                        className="audit-compare-section__cell-value audit-compare-section__cell-value--bar"
+                        style={{ backgroundColor: statusColor(previousLabel).bg }}
                       >
-                        {ATTRIBUTE_LABEL[attribute] ?? attribute}
+                        <ValueBar value={previousCell?.value ?? null} label={previousLabel} />
                       </td>
-                    )}
-                    <td className="audit-compare-section__cell-label">{COLUMN_LABEL[code]}</td>
-                    <td
-                      className="audit-compare-section__cell-value audit-compare-section__cell-value--bar"
-                      style={{ backgroundColor: statusColor(previousLabel).bg }}
-                    >
-                      <ValueBar value={previousCell?.value ?? null} label={previousLabel} />
-                    </td>
-                    <td
-                      className="audit-compare-section__cell-value audit-compare-section__cell-value--bar"
-                      style={{ backgroundColor: statusColor(latestLabel).bg }}
-                    >
-                      <ValueBar value={latestCell?.value ?? null} label={latestLabel} />
-                    </td>
-                    <td>
-                      <TrendBadge trend={trend} />
-                    </td>
-                  </tr>
-                );
-              }),
+                      <td
+                        className="audit-compare-section__cell-value audit-compare-section__cell-value--bar"
+                        style={{ backgroundColor: statusColor(latestLabel).bg }}
+                      >
+                        <ValueBar value={latestCell?.value ?? null} label={latestLabel} />
+                      </td>
+                      <td>
+                        <TrendBadge trend={trend} />
+                      </td>
+                    </tr>
+                  );
+                }),
+              )
             )}
           </tbody>
         </table>

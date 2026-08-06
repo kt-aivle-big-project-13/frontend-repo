@@ -3,11 +3,11 @@ import { Popover } from 'antd';
 import type { FairlearnResultItem } from '../../../../features/audit/api/auditApi';
 
 import {
-  ATTRIBUTE_LABEL,
   COLUMN_LABEL,
   COLUMN_ORDER,
   COLUMN_TOOLTIP,
   FAIRNESS_STATUS_LABEL,
+  getAttributeLabel,
   groupByAttribute,
 } from './fairnessData';
 import './FairnessTable.css';
@@ -97,7 +97,7 @@ function FairnessTable({ results, isLoading, error }: FairnessTableProps) {
               {Array.from(grouped.entries()).map(([attribute, row]) => (
                 <tr key={attribute}>
                   <td className="fairness-table__row-header-cell">
-                    {ATTRIBUTE_LABEL[attribute] ?? attribute}
+                    {getAttributeLabel(attribute)}
                   </td>
                   {COLUMN_ORDER.map((code) => {
                     const cell = row.get(code);
