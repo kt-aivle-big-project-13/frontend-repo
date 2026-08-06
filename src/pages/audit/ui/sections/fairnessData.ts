@@ -6,6 +6,8 @@ import type {
 export const ATTRIBUTE_LABEL: Record<string, string> = {
   AGE_GROUP: '연령대 (AGE_GROUP)',
   CODE_GENDER: '성별 (CODE_GENDER)',
+  derived_race: '인종 (derived_race)',
+  derived_ethnicity: '출신민족 (derived_ethnicity)',
 };
 
 export const COLUMN_ORDER: FairlearnMetricCode[] = [
