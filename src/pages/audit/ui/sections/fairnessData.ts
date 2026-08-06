@@ -111,6 +111,24 @@ export function groupByAttribute(results: FairlearnResultItem[]) {
   return map;
 }
 
+// 화면에 그릴 민감변수 목록. 감사마다 선택하는 민감변수가 달라 ATTRIBUTE_LABEL에 없는 컬럼도
+// 오므로 목록은 반드시 응답 데이터에서 뽑는다 — 라벨 맵을 순회하면 성별·연령 외 변수가 통째로
+// 빠진다. 여러 버전을 함께 넘기면 합집합을 만든다(한쪽에만 있는 변수도 비교표에 남겨야 하기
+// 때문). 순서는 익숙한 성별·연령을 먼저 두고, 나머지는 응답에 나온 순서를 그대로 따른다.
+export function listAttributes(...resultGroups: FairlearnResultItem[][]): string[] {
+  const found: string[] = [];
+
+  resultGroups.forEach((results) =>
+    results.forEach((item) => {
+      if (!found.includes(item.attribute)) found.push(item.attribute);
+    }),
+  );
+
+  const known = Object.keys(ATTRIBUTE_LABEL).filter((attribute) => found.includes(attribute));
+
+  return [...known, ...found.filter((attribute) => !(attribute in ATTRIBUTE_LABEL))];
+}
+
 // 테이블 렌더링과 동일한 기준(빈 셀=계산불가)으로 집계 — 로직 중복 방지 위해 같은 groupByAttribute
 // 재사용. 반환값은 화면 라벨이 아니라 원래 상태 코드(PASS/REVIEW/FAIL) 기준이므로, 호출하는
 // 쪽에서 "지표 판정 분포"처럼 SHAP과 합산할 때는 FAIRNESS_STATUS_LABEL 매핑(REVIEW→주의,
@@ -122,7 +140,7 @@ export function getFairnessStatusCounts(results: FairlearnResultItem[]) {
   let fail = 0;
   let na = 0;
 
-  Object.keys(ATTRIBUTE_LABEL).forEach((attribute) => {
+  listAttributes(results).forEach((attribute) => {
     const row = grouped.get(attribute);
 
     COLUMN_ORDER.forEach((code) => {

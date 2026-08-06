@@ -326,6 +326,14 @@
   text-align: center;
 }
 
+/* 표 안에서 쓰는 빈 상태. 테두리는 표가 이미 그리므로 여백·색만 맞춘다. */
+.audit-compare-section__empty-cell {
+  padding: 28px 16px;
+  color: #9099a8;
+  font-size: 13px;
+  text-align: center;
+}
+
 @media (max-width: 720px) {
   .audit-compare-section__header-versions {
     flex-direction: column;
