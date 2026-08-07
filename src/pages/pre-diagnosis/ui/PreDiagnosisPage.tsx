@@ -21,8 +21,8 @@ import {
 } from '../../../features/pre-diagnosis/model/assessmentModel';
 import { extractApiErrorMessage } from '../../../shared/api/client';
 import MainLayout from '../../../widgets/layout/ui/MainLayout';
+import StepIndicator from '../../audit/ui/StepIndicator';
 
-import AuditStepper from './sections/AuditStepper';
 import QualitativeSection from './sections/QualitativeSection';
 import QuantitativeSection from './sections/QuantitativeSection';
 import ResultSection from './sections/ResultSection';
@@ -182,9 +182,8 @@ function PreDiagnosisPage() {
     <MainLayout>
       <section className="pre-diagnosis-page">
         <div className="pre-diagnosis-page__inner">
-          <p className="pre-diagnosis-page__eyebrow">Pre-Diagnosis</p>
           <h1 className="pre-diagnosis-page__title">고영향 AI 사전진단</h1>
-          <AuditStepper />
+          <StepIndicator activeSteps={[1]} />
           <p className="pre-diagnosis-page__description">
             정성 게이트와 정량 배점 문항을 단계별로 확인해 고영향 AI 여부를
             판정합니다.
