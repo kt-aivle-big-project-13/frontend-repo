@@ -24,8 +24,6 @@ function DashboardOverviewSection({ distribution, models }: DashboardOverviewSec
     distribution.totalCount > 0
       ? `conic-gradient(#2fac68 0% ${normalEnd}%, #f4b43d ${normalEnd}% ${reviewEnd}%, #e84d52 ${reviewEnd}% 100%)`
       : '#e8ecf1';
-  const maximumIssueCount = Math.max(...models.map((model) => model.issueCount), 0);
-
   return (
     <section className="dashboard-overview" aria-label="감사 결과 개요">
       <article className="dashboard-overview__panel">
@@ -78,12 +76,9 @@ function DashboardOverviewSection({ distribution, models }: DashboardOverviewSec
         <h2 className="dashboard-overview__title">주의·추가 검토 모델 TOP 5</h2>
 
         {models.length > 0 ? (
-          <ol className="dashboard-overview__ranking-list">
-            {models.map((model, index) => {
-              const barWidth =
-                maximumIssueCount > 0 ? (model.issueCount / maximumIssueCount) * 100 : 0;
-
-              return (
+          <div className="dashboard-overview__ranking-table">
+            <ol className="dashboard-overview__ranking-list">
+              {models.map((model, index) => (
                 <li key={model.modelId} className="dashboard-overview__ranking-item">
                   <span className="dashboard-overview__rank">{index + 1}</span>
                   <span className="dashboard-overview__model-name">
@@ -94,17 +89,21 @@ function DashboardOverviewSection({ distribution, models }: DashboardOverviewSec
                       </span>
                     )}
                   </span>
-                  <span className="dashboard-overview__bar-track">
-                    <span
-                      className={`dashboard-overview__bar dashboard-overview__bar--${model.status.toLowerCase()}`}
-                      style={{ width: `${barWidth}%` }}
-                    />
-                  </span>
-                  <strong className="dashboard-overview__issue-count">{model.issueCount}건</strong>
+                  <div className="dashboard-overview__status-summary">
+                    <span className="dashboard-overview__status-count dashboard-overview__status-count--warning">
+                      주의 <strong>{model.warningCount}건</strong>
+                    </span>
+                    <span className="dashboard-overview__status-count dashboard-overview__status-count--exceeded">
+                      추가 검토 <strong>{model.thresholdExceededCount}건</strong>
+                    </span>
+                    <span className="dashboard-overview__issue-count">
+                      합계 <strong>{model.issueCount}건</strong>
+                    </span>
+                  </div>
                 </li>
-              );
-            })}
-          </ol>
+              ))}
+            </ol>
+          </div>
         ) : (
           <div className="dashboard-overview__empty">주의·추가 검토 모델이 없습니다.</div>
         )}
