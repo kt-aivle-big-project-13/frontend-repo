@@ -31,6 +31,8 @@ export interface ReviewRequiredModel {
   modelName: string;
   version: string;
   issueCount: number;
+  warningCount: number;
+  thresholdExceededCount: number;
   status: DashboardAuditStatus;
 }
 
