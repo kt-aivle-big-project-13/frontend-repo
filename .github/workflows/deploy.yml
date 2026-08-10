@@ -24,7 +24,7 @@ jobs:
 
       - name: Create .env.production
         run: |
-          echo "VITE_API_BASE_URL=http://localhost:8080/api/v1" >> .env.production
+          echo "VITE_API_BASE_URL=https://api.finaiaudit.com/api/v1" >> .env.production
           echo "VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}" >> .env.production
 
       - name: Build
