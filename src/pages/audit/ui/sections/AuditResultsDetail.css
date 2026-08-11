@@ -6,20 +6,27 @@
 
 .audit-results-detail__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  padding: 24px;
+  gap: 20px clamp(16px, 3vw, 24px);
+  padding: clamp(16px, 2.6vw, 24px);
   border: 1.5px solid #eef0f3;
   border-radius: 14px;
   background-color: #ffffff;
 }
 
+.audit-results-detail__title-area {
+  min-width: 0;
+  flex: 1 1 100px;
+}
+
 .audit-results-detail__model-title {
-  margin: 0 0 20px;
+  margin: 0 0 16px;
   color: #202938;
-  font-size: 22px;
+  font-size: clamp(18px, 2.4vw, 22px);
   font-weight: 800;
+  text-wrap: balance;
 }
 
 .audit-results-detail__model-version {
@@ -30,13 +37,21 @@
 
 .audit-results-detail__meta {
   display: flex;
-  gap: 56px;
+  flex-wrap: wrap;
+  gap: 16px clamp(20px, 4vw, 56px);
+}
+
+.audit-results-detail__completed-date {
+  margin: 12px 0 0;
+  color: #9099a8;
+  font-size: 12px;
 }
 
 .audit-results-detail__meta-label {
   margin: 0 0 4px;
   color: #9099a8;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .audit-results-detail__meta-value {
@@ -48,9 +63,10 @@
 
 .audit-results-detail__risk-area {
   display: flex;
+  flex-wrap: wrap;
   flex-shrink: 0;
   align-items: center;
-  gap: 24px;
+  gap: 16px clamp(16px, 2.4vw, 24px);
 }
 
 .audit-results-detail__risk-gauge-wrap {
@@ -118,7 +134,7 @@
 }
 
 .audit-results-detail__risk-status {
-  max-width: 200px;
+  max-width: min(200px, 100%);
   padding-left: 20px;
   border-left: 1px solid #eef0f3;
 }
@@ -145,8 +161,6 @@
 
   .audit-results-detail__risk-area {
     align-self: stretch;
-    flex-wrap: wrap;
-    row-gap: 16px;
     justify-content: space-between;
   }
 
