@@ -9,8 +9,8 @@ function HomePage() {
   return (
     <MainLayout>
       <HeroSection />
-      <FeaturesSection />
       <AuditOverviewSection />
+      <FeaturesSection />
       <ImpactSection />
     </MainLayout>
   );
