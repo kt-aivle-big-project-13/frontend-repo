@@ -104,6 +104,9 @@ function ObjectionsPage() {
   // true: 최신순, false: 오래된순
   const [sortDescending, setSortDescending] = useState(true);
 
+  // 답변 상태 필터: 'ALL' | 'WAITING' | 'COMPLETED'
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'COMPLETED'>('ALL');
+
   // 현재 페이지 번호
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -159,11 +162,11 @@ function ObjectionsPage() {
     };
   }, []);
 
-  // 검색 및 정렬된 이의제기 목록
+  // 검색, 상태 필터, 정렬이 적용된 이의제기 목록
   const filteredObjections = useMemo(() => {
     const normalizedKeyword = searchKeyword.trim().toLowerCase();
 
-    const filtered = normalizedKeyword
+    const keywordFiltered = normalizedKeyword
       ? objections.filter(
           (item) =>
             item.customerName.toLowerCase().includes(normalizedKeyword) ||
@@ -171,13 +174,18 @@ function ObjectionsPage() {
         )
       : objections;
 
+    const filtered =
+      statusFilter === 'ALL'
+        ? keywordFiltered
+        : keywordFiltered.filter((item) => item.status === statusFilter);
+
     return [...filtered].sort((first, second) => {
       const firstTime = new Date(first.createdAt).getTime();
       const secondTime = new Date(second.createdAt).getTime();
 
       return sortDescending ? secondTime - firstTime : firstTime - secondTime;
     });
-  }, [objections, searchKeyword, sortDescending]);
+  }, [objections, searchKeyword, sortDescending, statusFilter]);
 
   // 전체 페이지 수
   const totalPages = Math.max(1, Math.ceil(filteredObjections.length / ITEMS_PER_PAGE));
@@ -200,6 +208,12 @@ function ObjectionsPage() {
   // 정렬 방식 변경
   const handleSortChange = (nextSortDescending: boolean) => {
     setSortDescending(nextSortDescending);
+    setCurrentPage(1);
+  };
+
+  // 답변 상태 필터 변경
+  const handleStatusFilterChange = (nextStatusFilter: 'ALL' | 'WAITING' | 'COMPLETED') => {
+    setStatusFilter(nextStatusFilter);
     setCurrentPage(1);
   };
 
@@ -400,10 +414,12 @@ function ObjectionsPage() {
                 compact={isDetailVisible}
                 searchKeyword={searchKeyword}
                 sortDescending={sortDescending}
+                statusFilter={statusFilter}
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onSearchKeywordChange={handleSearchKeywordChange}
                 onSortChange={handleSortChange}
+                onStatusFilterChange={handleStatusFilterChange}
                 onSelect={handleSelect}
                 onPageChange={setCurrentPage}
               />
