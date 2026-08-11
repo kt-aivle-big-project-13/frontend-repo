@@ -18,10 +18,12 @@ interface ObjectionListProps {
   compact: boolean;
   searchKeyword: string;
   sortDescending: boolean;
+  statusFilter: 'ALL' | ObjectionStatus;
   currentPage: number;
   totalPages: number;
   onSearchKeywordChange: (value: string) => void;
   onSortChange: (sortDescending: boolean) => void;
+  onStatusFilterChange: (statusFilter: 'ALL' | ObjectionStatus) => void;
   onSelect: (objectionId: number) => void;
   onPageChange: (page: number) => void;
 }
@@ -49,10 +51,12 @@ function ObjectionList({
   compact,
   searchKeyword,
   sortDescending,
+  statusFilter,
   currentPage,
   totalPages,
   onSearchKeywordChange,
   onSortChange,
+  onStatusFilterChange,
   onSelect,
   onPageChange,
 }: ObjectionListProps) {
@@ -90,6 +94,29 @@ function ObjectionList({
               {totalCount}건
             </strong>
           )}
+
+          {/* 답변대기 및 답변완료 상태 필터 */}
+          <div className="objection-list__sort-wrapper">
+            <select
+              className="objection-list__sort-select objection-list__sort-select--filter"
+              aria-label="이의제기 답변 상태 필터"
+              value={statusFilter}
+              onChange={(event) =>
+                onStatusFilterChange(
+                  event.target.value as 'ALL' | ObjectionStatus,
+                )
+              }
+            >
+              <option value="ALL">전체</option>
+              <option value="WAITING">답변대기</option>
+              <option value="COMPLETED">답변완료</option>
+            </select>
+
+            <DownOutlined
+              className="objection-list__sort-arrow objection-list__sort-arrow--filter"
+              aria-hidden="true"
+            />
+          </div>
 
           {/* 최신순 및 오래된순 정렬 */}
           <div className="objection-list__sort-wrapper">
