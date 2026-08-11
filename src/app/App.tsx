@@ -61,8 +61,8 @@ function App() {
                 <ObjectionDocumentPage />
               }
             />
-            
-            {/* 게시판 */}
+
+            {/* 공지사항 */}
             <Route path="/board" element={<BoardListPage />} />
             <Route path="/board/write" element={<BoardFormPage />} />
             <Route path="/board/:postId" element={<BoardDetailPage />} />

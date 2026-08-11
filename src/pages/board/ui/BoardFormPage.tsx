@@ -25,17 +25,14 @@ function BoardFormPage() {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.role === 'ADMIN';
   const isEditMode = Boolean(postId);
   const numericPostId = Number(postId);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [existingAttachments, setExistingAttachments] = useState<
-    Attachment[]
-  >([]);
-  const [deleteAttachmentIds, setDeleteAttachmentIds] = useState<number[]>(
-    [],
-  );
+  const [existingAttachments, setExistingAttachments] = useState<Attachment[]>([]);
+  const [deleteAttachmentIds, setDeleteAttachmentIds] = useState<number[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
 
   const [isLoading, setIsLoading] = useState(isEditMode);
@@ -43,46 +40,34 @@ function BoardFormPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isEditMode || !user) {
+    if (!isEditMode || !isAdmin) {
       return;
     }
 
     fetchPost(numericPostId)
       .then((post) => {
-        const canEdit = post.authorId === user.id || user.role === 'ADMIN';
-
-        if (!canEdit) {
-          message.error('수정 권한이 없습니다.');
-          navigate(`/board/${numericPostId}`);
-          return;
-        }
-
         setTitle(post.title);
         setContent(post.content);
         setExistingAttachments(post.attachments);
       })
       .catch(() => {
-        message.error('게시글을 불러오지 못했습니다.');
+        message.error('공지사항을 불러오지 못했습니다.');
         navigate('/board');
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, [isEditMode, numericPostId, user, navigate]);
+  }, [isEditMode, numericPostId, isAdmin, navigate]);
 
   const remainingSlots =
-    MAX_ATTACHMENTS -
-    (existingAttachments.length - deleteAttachmentIds.length) -
-    newFiles.length;
+    MAX_ATTACHMENTS - (existingAttachments.length - deleteAttachmentIds.length) - newFiles.length;
 
   const handleFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? []);
     if (selected.length === 0) return;
 
     if (selected.length > remainingSlots) {
-      message.error(
-        `첨부파일은 최대 ${MAX_ATTACHMENTS}개까지 등록할 수 있습니다.`,
-      );
+      message.error(`첨부파일은 최대 ${MAX_ATTACHMENTS}개까지 등록할 수 있습니다.`);
       event.target.value = '';
       return;
     }
@@ -122,7 +107,7 @@ function BoardFormPage() {
           files: newFiles,
           deleteAttachmentIds,
         });
-        message.success('게시글이 수정되었습니다.');
+        message.success('공지사항이 수정되었습니다.');
         navigate(`/board/${updated.id}`);
       } else {
         const created = await createPost({
@@ -130,11 +115,11 @@ function BoardFormPage() {
           content: content.trim(),
           files: newFiles,
         });
-        message.success('게시글이 등록되었습니다.');
+        message.success('공지사항이 등록되었습니다.');
         navigate(`/board/${created.id}`);
       }
     } catch {
-      setError('게시글 저장에 실패했습니다.');
+      setError('공지사항 저장에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -147,12 +132,16 @@ function BoardFormPage() {
           <p className="board-form-page__denied" role="alert">
             로그인이 필요합니다.
           </p>
+        ) : !isAdmin ? (
+          <p className="board-form-page__denied" role="alert">
+            공지사항은 관리자만 작성하거나 수정할 수 있습니다.
+          </p>
         ) : isLoading ? (
           <p className="board-form-page__loading">불러오는 중...</p>
         ) : (
           <>
             <h1 className="board-form-page__title">
-              {isEditMode ? '게시글 수정' : '게시글 작성'}
+              {isEditMode ? '공지사항 수정' : '공지사항 작성'}
             </h1>
 
             <form className="board-form-page__form" onSubmit={handleSubmit}>
@@ -182,36 +171,23 @@ function BoardFormPage() {
               </div>
 
               <div className="board-form-page__field">
-                <label htmlFor="board-form-files">
-                  첨부파일 (최대 {MAX_ATTACHMENTS}개)
-                </label>
+                <label htmlFor="board-form-files">첨부파일 (최대 {MAX_ATTACHMENTS}개)</label>
 
                 {existingAttachments.length > 0 && (
                   <ul className="board-form-page__file-list">
                     {existingAttachments.map((attachment) => {
-                      const markedForDelete = deleteAttachmentIds.includes(
-                        attachment.id,
-                      );
+                      const markedForDelete = deleteAttachmentIds.includes(attachment.id);
 
                       return (
                         <li
                           key={attachment.id}
-                          className={
-                            markedForDelete
-                              ? 'board-form-page__file--removed'
-                              : undefined
-                          }
+                          className={markedForDelete ? 'board-form-page__file--removed' : undefined}
                         >
                           <span>{attachment.originalName}</span>
                           <span className="board-form-page__file-size">
                             {formatFileSize(attachment.size)}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              toggleDeleteExisting(attachment.id)
-                            }
-                          >
+                          <button type="button" onClick={() => toggleDeleteExisting(attachment.id)}>
                             {markedForDelete ? '삭제 취소' : '삭제'}
                           </button>
                         </li>
@@ -228,10 +204,7 @@ function BoardFormPage() {
                         <span className="board-form-page__file-size">
                           {formatFileSize(file.size)}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => removeNewFile(index)}
-                        >
+                        <button type="button" onClick={() => removeNewFile(index)}>
                           삭제
                         </button>
                       </li>
@@ -258,25 +231,13 @@ function BoardFormPage() {
                 <button
                   type="button"
                   className="board-form-page__cancel"
-                  onClick={() =>
-                    navigate(
-                      isEditMode ? `/board/${numericPostId}` : '/board',
-                    )
-                  }
+                  onClick={() => navigate(isEditMode ? `/board/${numericPostId}` : '/board')}
                   disabled={isSubmitting}
                 >
                   취소
                 </button>
-                <button
-                  type="submit"
-                  className="board-form-page__submit"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting
-                    ? '저장 중...'
-                    : isEditMode
-                      ? '수정하기'
-                      : '등록하기'}
+                <button type="submit" className="board-form-page__submit" disabled={isSubmitting}>
+                  {isSubmitting ? '저장 중...' : isEditMode ? '수정하기' : '등록하기'}
                 </button>
               </div>
             </form>
