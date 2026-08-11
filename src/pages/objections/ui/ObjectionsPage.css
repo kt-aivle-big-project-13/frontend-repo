@@ -677,7 +677,7 @@
 }
 
 /* 현재 페이지 버튼 마우스 오버 (파란 배경 유지, 흰 글자 유지) */
-.objection-list__pagination .objection-list__page--active:hover {
+.objection-list__pagination button.objection-list__page--active:hover {
   border-color: #2d67e8;
   background-color: #2d67e8;
   color: #ffffff;
