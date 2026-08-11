@@ -11,10 +11,10 @@
 }
 
 .step-indicator__pill {
-  padding: 10px 18px;
+  padding: clamp(7px, 1.1vw, 10px) clamp(12px, 2vw, 18px);
   border-radius: 999px;
   color: #9099a8;
-  font-size: 13px;
+  font-size: clamp(11.5px, 1.3vw, 13px);
   font-weight: 700;
   white-space: nowrap;
   background-color: #f2f4f7;

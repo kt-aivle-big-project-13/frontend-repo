@@ -274,13 +274,11 @@ function AuditResultsSection({ auditId }: AuditResultsSectionProps) {
                     {auditSummary?.datasetFileName ?? '—'}
                   </p>
                 </div>
-                <div>
-                  <p className="audit-results-detail__meta-label">감사일자</p>
-                  <p className="audit-results-detail__meta-value">
-                    {formatAuditDate(auditSummary?.completedAt ?? null)}
-                  </p>
-                </div>
               </div>
+
+              <p className="audit-results-detail__completed-date">
+                감사일자 · {formatAuditDate(auditSummary?.completedAt ?? null)}
+              </p>
             </div>
 
             <div className="audit-results-detail__risk-area">

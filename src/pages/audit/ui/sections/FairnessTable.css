@@ -96,12 +96,10 @@
   cursor: pointer;
   white-space: normal;
   line-height: 1.4;
-  border-bottom: 1px dotted #9099a8;
 }
 
 .fairness-table__col-header-button:hover {
   color: #2d67e8;
-  border-bottom-color: #2d67e8;
 }
 
 .fairness-table__cell {
@@ -116,7 +114,7 @@
   margin-bottom: 6px;
   color: #202938;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .fairness-table__cell-note {
