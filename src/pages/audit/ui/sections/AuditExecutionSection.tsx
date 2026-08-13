@@ -19,7 +19,6 @@ import {
   type DatasetSummaryResponse,
 } from '../../../../features/audit/api/modelApi';
 import { startAudit } from '../../../../features/audit/api/auditApi';
-import { pregenerateAuditStartReports } from '../../../../features/audit/api/reportApi';
 import { extractApiErrorMessage } from '../../../../shared/api/client';
 import { useSubmissionLockStore } from '../../../../shared/model/submissionLockStore';
 import StepIndicator from '../StepIndicator';
@@ -503,13 +502,14 @@ function AuditExecutionSection() {
         });
       }
 
-      // 설명가능성(SHAP)·편향진단(Fairlearn) 리포트는 체크리스트 없이도 만들 수 있으므로,
-      // 이 시점에 미리 생성을 걸어둔다(사전진단을 건너뛰지 않았으면 고영향 AI 사전진단
-      // 보고서도 함께). 결과를 기다리지 않고 흘려보낸다 — 실패해도 다운로드 시점에
-      // generateAndDownload*가 다시 만들기 때문에 이 화면의 진행(이동)을 막을 이유가 없다.
-      void pregenerateAuditStartReports(started.auditId, {
-        hasPreDiagnosis: assessmentId !== undefined,
-      });
+      // 설명가능성·편향진단·고영향 리포트는 여기서 걸지 않는다. 백엔드가 분석이 끝나는
+      // 시점에 같은 3종을 사전 생성하므로(ReportPreGenerationService.preGenerateAfterAnalysis),
+      // 여기서 또 걸면 같은 보고서를 두 번 만든다.
+      //
+      // 이 시점은 분석이 막 시작한 때라 리포트가 참조할 분석 산출물이 아직 없고, 그래서
+      // 리포트 쪽이 같은 계산을 처음부터 다시 하면서 분석과 CPU를 두고 경합한다. 실측에서
+      // 이 경로의 설명가능성 리포트는 112초가 걸린 반면, 분석이 끝난 뒤 백엔드가 건 같은
+      // 리포트는 산출물을 재사용해 13초에 끝났다.
 
       // 실제 SHAP/Fairlearn 분석은 오래 걸릴 수 있어, 여기서 기다리는 대신
       // STEP3(체크리스트 작성) 페이지로 바로 이동해 분석 진행 상황을 보여주면서
