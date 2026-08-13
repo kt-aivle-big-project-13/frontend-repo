@@ -636,7 +636,7 @@ function SignupForm() {
         )}
 
         <p className="signup-form__security-note">
-          🔒 입력하신 비밀번호는 SHA-256 일방향 암호화되어 안전하게
+          🔒 입력하신 비밀번호는 BCrypt 일방향 암호화되어 안전하게
           저장됩니다.
         </p>
 
