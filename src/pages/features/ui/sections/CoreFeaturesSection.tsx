@@ -13,8 +13,9 @@ function CoreFeaturesSection() {
         </h3>
 
         <p className="core-features-section__intro-description">
-          ① 사전진단으로 고영향 AI 여부를 판정하고 ② SHAP·Fairlearn 신뢰성
-          검증 ③ 규제 체크리스트 점검 ④ 이의제기 대응문서 생성 ⑤ 운영
+          ① 사전진단으로 고영향 AI 여부를 판정하고 ② SHAP·Fairlearn 신뢰성검증 ③ 규제 체크리스트 점검
+          <br />
+          ④ 이의제기 대응문서 생성 ⑤ 운영
           모니터링까지 — 감사 업무 전 과정을 한 곳에서 처리합니다.
         </p>
       </div>
@@ -25,7 +26,9 @@ function CoreFeaturesSection() {
             <div
               className="core-features-section__card-icon"
               aria-hidden="true"
-            />
+            >
+              <feature.icon size={18} color="#2d67e8" stroke={2} />
+            </div>
 
             <h4 className="core-features-section__card-title">
               {feature.title}
