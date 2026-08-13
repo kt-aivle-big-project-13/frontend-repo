@@ -269,65 +269,9 @@ async function pregenerateReport(options: {
   await options.generate();
 }
 
-export async function pregenerateExplainabilityReport(auditId: number): Promise<void> {
-  await pregenerateReport({
-    generate: async () => {
-      await apiClient.post(`/audits/${auditId}/reports/explainability`);
-    },
-    getLatest: async (format) => {
-      const { data } = await apiClient.get<ReportMetadataResponse>(
-        `/audits/${auditId}/reports/explainability`,
-        { params: { format } },
-      );
-      return data;
-    },
-  });
-}
 
-export async function pregenerateBiasReport(auditId: number): Promise<void> {
-  await pregenerateReport({
-    generate: async () => {
-      await apiClient.post(`/audits/${auditId}/reports/bias`);
-    },
-    getLatest: async (format) => {
-      const { data } = await apiClient.get<ReportMetadataResponse>(
-        `/audits/${auditId}/reports/bias`,
-        { params: { format } },
-      );
-      return data;
-    },
-  });
-}
 
-export async function pregenerateHighImpactReport(auditId: number): Promise<void> {
-  await pregenerateReport({
-    generate: async () => {
-      await apiClient.post(`/audits/${auditId}/reports/high-impact-assessment`);
-    },
-    getLatest: async (format) => {
-      const { data } = await apiClient.get<ReportMetadataResponse>(
-        `/audits/${auditId}/reports/high-impact-assessment`,
-        { params: { format } },
-      );
-      return data;
-    },
-  });
-}
 
-export async function pregenerateComplianceReport(auditId: number): Promise<void> {
-  await pregenerateReport({
-    generate: async () => {
-      await apiClient.post(`/audits/${auditId}/reports/compliance`);
-    },
-    getLatest: async (format) => {
-      const { data } = await apiClient.get<ReportMetadataResponse>(
-        `/audits/${auditId}/reports/compliance`,
-        { params: { format } },
-      );
-      return data;
-    },
-  });
-}
 
 export async function pregenerateImprovementGuide(auditId: number): Promise<void> {
   await pregenerateReport({
@@ -383,32 +327,7 @@ async function runPregenBatch(tasks: Array<() => Promise<void>>): Promise<void> 
   });
 }
 
-// 감사 시작 시점에 만들 수 있는 보고서(체크리스트 불필요): 설명가능성·편향진단은 항상,
-// 고영향 AI 사전진단은 사전진단을 건너뛰지 않고 진행한 경우에만 대상에 포함한다.
-export async function pregenerateAuditStartReports(
-  auditId: number,
-  options: { hasPreDiagnosis: boolean },
-): Promise<void> {
-  const tasks: Array<() => Promise<void>> = [
-    () => pregenerateExplainabilityReport(auditId),
-    () => pregenerateBiasReport(auditId),
-  ];
 
-  if (options.hasPreDiagnosis) {
-    tasks.push(() => pregenerateHighImpactReport(auditId));
-  }
-
-  await runPregenBatch(tasks);
-}
-
-// 체크리스트(자가점검) 제출 완료 + 모델 분석 완료 시점에 만들 수 있는 보고서 3종.
-export async function pregenerateChecklistReports(auditId: number): Promise<void> {
-  await runPregenBatch([
-    () => pregenerateComplianceReport(auditId),
-    () => pregenerateImprovementGuide(auditId),
-    () => pregenerateFinalReport(auditId),
-  ]);
-}
 
 // 자가점검을 건너뛴 채 "결과 확인"으로 넘어가는 경우. 규제준수 판정서는 백엔드가 판정
 // 근거 부재로 생성을 거부하므로(ComplianceReportRequestAssembler, ReportsSection 참고)

@@ -18,10 +18,11 @@ import {
   type SelfCheckAnswerValue as ApiSelfCheckAnswerValue,
   type SelfCheckItemCode as ApiSelfCheckItemCode,
 } from '../../../../features/audit/api/auditApi';
+import { pregenerateSkippedChecklistReports } from '../../../../features/audit/api/reportApi';
 import {
-  pregenerateChecklistReports,
-  pregenerateSkippedChecklistReports,
-} from '../../../../features/audit/api/reportApi';
+  isSkipSelfCheckDisabled,
+  shouldPregenerateSkippedReports,
+} from './checklistPregeneration';
 import { extractApiErrorMessage } from '../../../../shared/api/client';
 import {
   CATEGORY_META,
@@ -90,12 +91,6 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const isFailed = isDone && status === 'FAILED';
   const isCancelled = isDone && status === 'CANCELLED';
 
-  // 규제준수 판정서·개선 권고 가이드·최종 보고서 사전 생성을 감사당 한 번만 걸기 위한 가드.
-  // 모델 분석 완료(isAnalyzed)와 자가점검 제출(isSelfCheckSubmitted)은 순서가 뒤바뀔 수 있어
-  // (분석이 먼저 끝날 수도, 자가점검을 먼저 제출할 수도 있음) 아래 useEffect에서 두 조건이
-  // 모두 갖춰지는 시점을 기다렸다가 한 번만 트리거한다.
-  const hasTriggeredChecklistPregenRef = useRef(false);
-
   // auditId가 바뀌면(다른 감사의 체크리스트 페이지로 바로 이동) 이전 감사의 진행/자가점검
   // 상태가 잠시 남아있지 않도록 렌더링 중에 바로 리셋한다.
   const [prevAuditId, setPrevAuditId] = useState(auditId);
@@ -123,9 +118,6 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   const auditIdRef = useRef(auditId);
   useEffect(() => {
     auditIdRef.current = auditId;
-    // ref는 렌더링 중에 수정할 수 없으므로, 위 렌더 중 리셋 블록 대신 여기서 감사가
-    // 바뀔 때 사전 생성 트리거 가드도 함께 초기화한다.
-    hasTriggeredChecklistPregenRef.current = false;
   }, [auditId]);
 
   // 모델 분석(SHAP → Fairlearn)은 백그라운드에서 진행되므로, 완료될 때까지 짧은 간격으로
@@ -317,25 +309,18 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
     }
   };
 
-  // 규제준수 판정서·개선 권고 가이드·최종 보고서는 모델 분석과 자가점검 제출이 둘 다
-  // 끝나야 만들 수 있다. 두 조건이 어느 순서로 갖춰지든(분석이 먼저 끝나든, 자가점검을
-  // 먼저 제출하든) 마지막 조건이 채워지는 순간 한 번만 사전 생성을 건다. 자가점검을
-  // 건너뛴 경우 규제준수 판정 근거가 없으므로 아예 걸지 않는다.
-  useEffect(() => {
-    if (skipSelfCheck) return;
-    if (!isAnalyzed || !isSelfCheckSubmitted) return;
-    if (hasTriggeredChecklistPregenRef.current) return;
-
-    hasTriggeredChecklistPregenRef.current = true;
-    void pregenerateChecklistReports(auditId);
-  }, [auditId, isAnalyzed, isSelfCheckSubmitted, skipSelfCheck]);
-
-  // 자가점검을 제출한 경우엔 위 이펙트가 이미 3종 사전 생성을 걸어뒀으므로 여기서는 아무것도
-  // 하지 않는다. 건너뛴 경우엔 그 이펙트가 아예 안 도므로, "결과 확인"을 누르는 이 시점에
-  // (버튼이 disabled가 풀려 있다는 건 isAnalyzed가 이미 true라는 뜻) 규제준수 판정서를 뺀
-  // 나머지 두 종만 사전 생성을 건다.
+  // 자가점검을 제출한 경우의 3종(규제준수 판정서·개선 권고 가이드·최종 보고서)은 여기서
+  // 걸지 않는다. 백엔드가 자가점검 매핑이 끝나는 시점에 같은 3종을 사전 생성하므로
+  // (ReportPreGenerationService.preGenerateAfterSelfCheck) 여기서 또 걸면 두 번 만든다.
+  //
+  // 건너뛴 경우는 다르다. 자가점검 응답이 없어 백엔드 쪽 이벤트가 아예 발생하지 않으므로
+  // 선생성이 하나도 안 걸린다. 그래서 "결과 확인"을 누르는 이 시점에(버튼이 활성화됐다는
+  // 건 isAnalyzed가 true라는 뜻) 규제준수 판정서를 뺀 두 종만 프론트에서 건다.
+  //
+  // 제출과 건너뛰기가 동시에 참인 상태를 가려내는 판단은 shouldPregenerateSkippedReports
+  // 에 두고 테스트로 고정한다.
   const handleProceedToResults = () => {
-    if (skipSelfCheck) {
+    if (shouldPregenerateSkippedReports({ skipSelfCheck, isSelfCheckSubmitted })) {
       void pregenerateSkippedChecklistReports(auditId);
     }
     navigate(`/audit/${auditId}/results`);
@@ -748,6 +733,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
           <input
             type="checkbox"
             checked={skipSelfCheck}
+            disabled={isSkipSelfCheckDisabled({ isSelfCheckSubmitted })}
             onChange={(event) => handleSkipSelfCheckChange(event.target.checked)}
           />
           자가점검을 건너뛰실 거면 체크해주세요
