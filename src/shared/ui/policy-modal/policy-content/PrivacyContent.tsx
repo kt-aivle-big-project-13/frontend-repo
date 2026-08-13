@@ -21,7 +21,7 @@ function PrivacyContent() {
       <p className="policy-content__label">주요 개인정보 처리 흐름</p>
       <ul>
         <li>개인정보 수집: 성명, 이메일(아이디), 소속기관명</li>
-        <li>개인정보 제3자 제공: 원칙적으로 제공하지 않음 (위탁업체 5개사 한정)</li>
+        <li>개인정보 제3자 제공: 원칙적으로 제공하지 않음 (위탁업체 2개사 한정)</li>
         <li>개인정보 보호담당자: KT 에이블스쿨9기 빅프로젝트 13조 대표</li>
       </ul>
 
@@ -53,7 +53,7 @@ function PrivacyContent() {
           </tr>
           <tr>
             <td>법령 개정 알림, 서비스 공지</td>
-            <td>이메일, 휴대폰번호(선택)</td>
+            <td>이메일</td>
             <td>회원 탈퇴 시까지</td>
           </tr>
           <tr>
@@ -137,11 +137,7 @@ function PrivacyContent() {
           </tr>
           <tr>
             <td>Amazon Web Services (AWS)</td>
-            <td>서버 호스팅, 데이터 저장(RDS/S3), 인프라 운영</td>
-          </tr>
-          <tr>
-            <td>SMS API 제공사</td>
-            <td>법령 개정 알림 문자 발송</td>
+            <td>서버 호스팅, 데이터 저장(S3), 인프라 운영</td>
           </tr>
         </tbody>
       </table>
@@ -167,7 +163,7 @@ function PrivacyContent() {
       <p>회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다.</p>
       <ol>
         <li>
-          <strong>암호화</strong>: 비밀번호는 SHA-256 이상 해시로 저장, 주요
+          <strong>암호화</strong>: 비밀번호는 BCrypt 해시로 저장, 주요
           개인정보는 AES-128 이상으로 암호화
         </li>
         <li>
