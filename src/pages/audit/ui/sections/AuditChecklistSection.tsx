@@ -19,6 +19,10 @@ import {
   type SelfCheckItemCode as ApiSelfCheckItemCode,
 } from '../../../../features/audit/api/auditApi';
 import { pregenerateSkippedChecklistReports } from '../../../../features/audit/api/reportApi';
+import {
+  isSkipSelfCheckDisabled,
+  shouldPregenerateSkippedReports,
+} from './checklistPregeneration';
 import { extractApiErrorMessage } from '../../../../shared/api/client';
 import {
   CATEGORY_META,
@@ -312,8 +316,11 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
   // 건너뛴 경우는 다르다. 자가점검 응답이 없어 백엔드 쪽 이벤트가 아예 발생하지 않으므로
   // 선생성이 하나도 안 걸린다. 그래서 "결과 확인"을 누르는 이 시점에(버튼이 활성화됐다는
   // 건 isAnalyzed가 true라는 뜻) 규제준수 판정서를 뺀 두 종만 프론트에서 건다.
+  //
+  // 제출과 건너뛰기가 동시에 참인 상태를 가려내는 판단은 shouldPregenerateSkippedReports
+  // 에 두고 테스트로 고정한다.
   const handleProceedToResults = () => {
-    if (skipSelfCheck) {
+    if (shouldPregenerateSkippedReports({ skipSelfCheck, isSelfCheckSubmitted })) {
       void pregenerateSkippedChecklistReports(auditId);
     }
     navigate(`/audit/${auditId}/results`);
@@ -726,6 +733,7 @@ function AuditChecklistSection({ auditId }: AuditChecklistSectionProps) {
           <input
             type="checkbox"
             checked={skipSelfCheck}
+            disabled={isSkipSelfCheckDisabled({ isSelfCheckSubmitted })}
             onChange={(event) => handleSkipSelfCheckChange(event.target.checked)}
           />
           자가점검을 건너뛰실 거면 체크해주세요
