@@ -70,3 +70,40 @@
   margin-top: 16px;
   text-align: center;
 }
+
+/* =========================
+   테스트 로그인 (시연 전용)
+========================= */
+
+/* 일반 로그인과 구분되도록 외곽선만 쓴다. 시연에서만 보이는 버튼이라
+   기본 동작인 로그인보다 시선을 덜 끌게 한다. */
+.login-form__demo {
+  width: 100%;
+  height: 48px;
+  margin-top: 10px;
+  border: 1px solid #2d67e8;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #2d67e8;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.login-form__demo:hover:not(:disabled) {
+  background-color: #eef3fe;
+}
+
+.login-form__demo:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.login-form__demo:disabled {
+  border-color: #c3cbd9;
+  color: #9aa3b2;
+  cursor: not-allowed;
+}

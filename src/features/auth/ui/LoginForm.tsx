@@ -4,13 +4,11 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 
-import { useAuthStore } from '../../../entities/user/model/authStore';
-import { setApiAccessToken } from '../../../shared/api/client';
 import '../../../shared/ui/authForm.css';
-import { login } from '../api/loginApi';
+import { demoLogin, login } from '../api/loginApi';
+import { useAuthSuccess } from '../model/useAuthSuccess';
 
 import './LoginForm.css';
 import PasswordField from '../../../shared/ui/PasswordField';
@@ -40,9 +38,12 @@ const INITIAL_ERRORS: LoginErrors = {
   submit: '',
 };
 
+// 시연 환경에서만 노출한다. 운영에 버튼이 남으면 누구나 계정 없이 들어올 수 있다.
+const isDemoLoginEnabled =
+  import.meta.env.VITE_DEMO_LOGIN_ENABLED === 'true';
+
 function LoginForm() {
-  const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const handleAuthSuccess = useAuthSuccess();
 
   const recaptchaSiteKey =
     import.meta.env.VITE_RECAPTCHA_SITE_KEY;
@@ -74,6 +75,37 @@ function LoginForm() {
 
   const [isLoading, setIsLoading] =
     useState(false);
+
+  const [isDemoLoading, setIsDemoLoading] =
+    useState(false);
+
+  // 게스트 계정을 새로 만들고 데모 데이터까지 채우는 동안 기다린다.
+  const handleDemoLogin = async () => {
+    try {
+      setIsDemoLoading(true);
+      setSuccessMessage('');
+
+      setErrors((previousErrors) => ({
+        ...previousErrors,
+        submit: '',
+      }));
+
+      const response = await demoLogin();
+
+      // 게스트 계정은 일회용이라 자동 로그인으로 남기지 않는다.
+      handleAuthSuccess(response, false);
+    } catch (error: unknown) {
+      console.error('테스트 로그인 실패:', error);
+
+      setErrors((previousErrors) => ({
+        ...previousErrors,
+        submit:
+          '테스트 로그인을 사용할 수 없습니다.',
+      }));
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
 
   const handlePasswordChange = (value: string) => {
     setForm((previousForm) => ({
@@ -181,41 +213,12 @@ function LoginForm() {
         recaptchaToken,
       });
 
-      const user = {
-        id: response.userId,
-        email: response.email,
-        name: response.name,
-        role: response.role,
-      };
-
-      setAuth(response.accessToken, user);
-      setApiAccessToken(response.accessToken);
-
-      if (isRememberMeChecked) {
-        localStorage.setItem(
-          'refreshToken',
-          response.refreshToken,
-        );
-
-        sessionStorage.removeItem(
-          'refreshToken',
-        );
-      } else {
-        sessionStorage.setItem(
-          'refreshToken',
-          response.refreshToken,
-        );
-
-        localStorage.removeItem(
-          'refreshToken',
-        );
-      }
-
       setSuccessMessage('로그인되었습니다.');
 
-      navigate('/', {
-        replace: true,
-      });
+      handleAuthSuccess(
+        response,
+        isRememberMeChecked,
+      );
     } catch (error: unknown) {
       // 로그인 실패 시 상세 오류는 화면에 노출하지 않음
       console.error('로그인 실패:', error);
@@ -398,10 +401,30 @@ function LoginForm() {
         <button
           className="auth-form__submit"
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || isDemoLoading}
         >
           {isLoading ? '로그인 중...' : '로그인'}
         </button>
+
+        {isDemoLoginEnabled && (
+          <button
+            className="login-form__demo"
+            type="button"
+            onClick={handleDemoLogin}
+            disabled={isLoading || isDemoLoading}
+          >
+            {isDemoLoading
+              ? '준비 중...'
+              : '테스트 로그인'}
+          </button>
+        )}
+
+        {isDemoLoginEnabled && (
+          <p className="auth-form__hint login-form__hint--center">
+            ※ 계정 없이 둘러보기. 샘플 모델·데이터셋과
+            감사 결과가 함께 제공됩니다.
+          </p>
+        )}
 
         <div className="login-form__links">
           <a
