@@ -26,6 +26,8 @@ jobs:
         run: |
           echo "VITE_API_BASE_URL=https://api.finaiaudit.com/api/v1" >> .env.production
           echo "VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}" >> .env.production
+          # 시연 기간 한정. 버튼이 남아 있으면 계정 없이 들어올 수 있으니 시연 종료 후 되돌린다.
+          echo "VITE_DEMO_LOGIN_ENABLED=true" >> .env.production
 
       - name: Build
         run: npm run build
