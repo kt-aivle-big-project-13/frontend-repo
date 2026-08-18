@@ -37,6 +37,20 @@ export async function login({
   return data;
 }
 
+/**
+ * 시연용 게스트 계정을 발급받는다.
+ *
+ * 응답은 일반 로그인과 같은 형식이라 이후 처리를 그대로 공유한다.
+ * 백엔드에서 시연 모드가 꺼져 있으면 404가 온다.
+ */
+export async function demoLogin(): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>(
+    '/auth/demo',
+  );
+
+  return data;
+}
+
 export interface ReissueRequest {
   refreshToken: string;
 }
