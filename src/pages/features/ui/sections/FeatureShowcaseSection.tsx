@@ -1,5 +1,14 @@
 import './FeatureShowcaseSection.css';
 
+// public/ 정적 파일 대신 src/에서 import한다. Vite가 빌드 시 파일명에 콘텐츠 해시를
+// 붙여주므로(예: feature-01-pre-diagnosis-D3f9k2.png), 이미지 내용이 바뀌면 URL도 같이
+// 바뀌어 배포 후 CDN·브라우저 캐시에 이전 이미지가 남는 문제가 생기지 않는다.
+import feature01 from './assets/feature-01-pre-diagnosis.png';
+import feature02 from './assets/feature-02-reliability.png';
+import feature03 from './assets/feature-03-report.png';
+import feature04 from './assets/feature-04-objection.png';
+import feature05 from './assets/feature-05-dashboard.png';
+
 const SHOWCASE_FEATURES = [
   {
     id: 'feature-01',
@@ -8,7 +17,7 @@ const SHOWCASE_FEATURES = [
     description:
       '정성 게이트 2문항과 정량 배점(9점 만점)으로 모델이 고영향 AI인지 판정합니다. 4점 이상이면 고영향 AI로 판정되며, 자가검토 결과서를 PDF로 저장할 수 있습니다.',
     articleTag: '관련 조항 · AI기본법 제33조',
-    image: '/features/feature-01-pre-diagnosis.png',
+    image: feature01,
   },
   {
     id: 'feature-02',
@@ -17,7 +26,7 @@ const SHOWCASE_FEATURES = [
     description:
       'SHAP 설명가능성 3지표와 Fairlearn 공정성 3지표를 자동 산출하고, RAG가 실제 법조문 원문을 찾아 매칭합니다. 편향 결과는 확정 판정이 아닌 \'추가검토 신호\'로 표시됩니다.',
     articleTag: '관련 조항 · 제31조·제34조',
-    image: '/features/feature-02-reliability.png',
+    image: feature02,
   },
   {
     id: 'feature-03',
@@ -26,7 +35,7 @@ const SHOWCASE_FEATURES = [
     description:
       '설명가능성 리포트(SHAP), 편향 진단 보고서(Fairlearn), 규제준수 판정서 등 보고서 5종이 PDF·Word로 자동 생성되고, 위험관리방안·이용자보호방안 등 법적 요건별 충족 여부도 한눈에 확인할 수 있습니다.',
     articleTag: '관련 조항 · 시행령 제27조②',
-    image: '/features/feature-03-report.png',
+    image: feature03,
   },
   {
     id: 'feature-04',
@@ -35,7 +44,7 @@ const SHOWCASE_FEATURES = [
     description:
       'SHAP 판단 근거(If-Then)를 바탕으로 고객 안내문 초안을 LLM이 자동 생성합니다. 담당자 검토·승인을 거쳐 SMS·이메일로 발송되고, 모든 발송 이력이 저장됩니다.',
     articleTag: '관련 조항 · 신용정보법 제36조의2',
-    image: '/features/feature-04-objection.png',
+    image: feature04,
   },
   {
     id: 'feature-05',
@@ -44,7 +53,7 @@ const SHOWCASE_FEATURES = [
     description:
       '법령 개정을 자동 감지해 SMS로 알리고 재감사를 권고합니다. 준수/주의/미충족/미확인 현황과 전체 감사 이력을 한눈에 관리합니다.',
     articleTag: '관련 조항 · 시행령 제27조②',
-    image: '/features/feature-05-dashboard.png',
+    image: feature05,
   },
 ];
 
