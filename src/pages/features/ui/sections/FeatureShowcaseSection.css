@@ -33,10 +33,12 @@
   width: 100%;
   height: clamp(220px, 30vw, 420px);
   border-radius: 16px;
-  object-fit: cover;
   object-fit: contain;
   background-color: #fff;
   border: 1px solid #eef0f3;
+  box-shadow:
+    0 20px 40px -12px rgba(45, 103, 232, 0.22),
+    0 4px 12px rgba(45, 103, 232, 0.1);
 }
 
 .feature-showcase-section__text {
