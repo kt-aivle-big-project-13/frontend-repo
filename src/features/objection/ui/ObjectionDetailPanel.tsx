@@ -1,5 +1,6 @@
 import { CheckOutlined, CloseOutlined, FileTextOutlined } from '@ant-design/icons';
 
+import { maskName } from '../../../shared/lib/maskName';
 import { maskEmail } from '../lib/maskEmail';
 import type { ObjectionDetail, ObjectionReviewResult } from '../model/objectionTypes';
 
@@ -51,7 +52,7 @@ function ObjectionDetailPanel({
       {/* 상세 패널 상단 정보 */}
       <header className="objection-detail__header">
         <div>
-          <h2>{objection.customerName}*</h2>
+          <h2>{maskName(objection.customerName)}</h2>
 
           {/* 이의제기 유형 및 고영향 AI 배지 */}
           <div className="objection-detail__tags">

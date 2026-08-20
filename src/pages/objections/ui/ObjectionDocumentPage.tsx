@@ -23,6 +23,7 @@ import type {
 } from '../../../features/objection/model/objectionTypes';
 
 import ObjectionDocumentForm from '../../../features/objection/ui/ObjectionDocumentForm';
+import { maskName } from '../../../shared/lib/maskName';
 
 import MainLayout from '../../../widgets/layout/ui/MainLayout';
 
@@ -303,7 +304,7 @@ function ObjectionDocumentPage() {
                       key={item.dispatchId}
                     >
                       <strong>
-                        {item.customerName}* (#
+                        {maskName(item.customerName)} (#
                         {item.objectionNo})
                       </strong>
 
