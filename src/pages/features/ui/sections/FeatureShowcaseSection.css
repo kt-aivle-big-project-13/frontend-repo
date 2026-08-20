@@ -31,10 +31,11 @@
   flex: 1;
   min-width: 0;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  height: clamp(220px, 30vw, 420px);
   border-radius: 16px;
   object-fit: cover;
-  background-color: #f1f5fb;
+  object-fit: contain;
+  background-color: #fff;
   border: 1px solid #eef0f3;
 }
 
