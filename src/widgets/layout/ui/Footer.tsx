@@ -26,7 +26,7 @@ function Footer() {
           <span className="layout-footer__divider" aria-hidden="true">
             |
           </span>
-          대표자명: 에이블러
+          대표자명: 머지해조
           <span className="layout-footer__divider" aria-hidden="true">
             |
           </span>
