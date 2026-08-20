@@ -7,6 +7,15 @@ export interface User {
   role: string;
 }
 
+// 시연용 게스트 계정에 붙는 이메일 도메인. 백엔드 DemoAccountService 가 이 도메인으로 발급한다.
+const DEMO_GUEST_EMAIL_DOMAIN = '@demo.invalid';
+
+// 게스트에게는 계정 발급과 함께 데모 모델·데이터셋이 만들어져 있어서, 일반 사용자와 화면을
+// 다르게 열어야 하는 곳이 있다.
+export function isDemoGuest(user: User | null): boolean {
+  return user?.email.endsWith(DEMO_GUEST_EMAIL_DOMAIN) ?? false;
+}
+
 interface AuthState {
   accessToken: string | null;
   user: User | null;

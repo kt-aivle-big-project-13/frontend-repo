@@ -19,6 +19,7 @@ import {
   type DatasetSummaryResponse,
 } from '../../../../features/audit/api/modelApi';
 import { startAudit } from '../../../../features/audit/api/auditApi';
+import { isDemoGuest, useAuthStore } from '../../../../entities/user/model/authStore';
 import { extractApiErrorMessage } from '../../../../shared/api/client';
 import { useSubmissionLockStore } from '../../../../shared/model/submissionLockStore';
 import StepIndicator from '../StepIndicator';
@@ -296,12 +297,9 @@ function AuditExecutionSection() {
       .finally(() => setIsLoadingPreviousModels(false));
   };
 
-  const handleSelectPreviousModel = (event: ChangeEvent<HTMLSelectElement>) => {
-    const modelId = Number(event.target.value);
-    const model = previousModels.find((item) => item.modelId === modelId);
-    if (!model) return;
-
-    setSelectedPreviousModelId(modelId);
+  // 드롭다운 선택과 게스트 자동 선택이 같은 상태를 채워야 해서 한곳에 모았다.
+  const selectPreviousModel = (model: ModelSummaryResponse) => {
+    setSelectedPreviousModelId(model.modelId);
     setModelName(model.modelName);
     setNewVersion(suggestNextVersion(model.currentVersion));
     setUseNewDatasetUpload(false);
@@ -313,18 +311,56 @@ function AuditExecutionSection() {
     setSensitiveColumns(new Set());
 
     setIsLoadingReusedDataset(true);
-    getModelDatasets(modelId, 'AUDIT')
+    getModelDatasets(model.modelId, 'AUDIT')
       .then((datasets) => {
+        if (!isMountedRef.current) return;
         const latest = datasets[0] ?? null;
         setReusedDataset(latest);
         if (!latest) setUseNewDatasetUpload(true);
       })
       .catch(() => {
+        if (!isMountedRef.current) return;
         setReusedDataset(null);
         setUseNewDatasetUpload(true);
       })
-      .finally(() => setIsLoadingReusedDataset(false));
+      .finally(() => {
+        if (isMountedRef.current) setIsLoadingReusedDataset(false);
+      });
   };
+
+  const handleSelectPreviousModel = (event: ChangeEvent<HTMLSelectElement>) => {
+    const modelId = Number(event.target.value);
+    const model = previousModels.find((item) => item.modelId === modelId);
+    if (!model) return;
+
+    selectPreviousModel(model);
+  };
+
+  // 시연용 게스트에게는 계정 발급과 함께 데모 모델·데이터셋이 이미 만들어져 있다. 업로드 화면을
+  // 빈 채로 열면 시연 도중에 파일을 다시 올려야 하므로, 그 모델을 고른 상태로 열어 둔다.
+  // 모델·데이터셋·민감변수가 모두 재사용되어 업로드 없이 바로 감사를 시작할 수 있다.
+  const isGuest = useAuthStore((state) => isDemoGuest(state.user));
+
+  useEffect(() => {
+    if (!isGuest) return;
+
+    getModels()
+      .then((models) => {
+        if (!isMountedRef.current) return;
+
+        // 고를 모델이 없으면 손대지 않고 신규 업로드 화면을 그대로 둔다.
+        const demoModel = models[0];
+        if (!demoModel) return;
+
+        setPreviousModels(models);
+        setModelMode('update');
+        selectPreviousModel(demoModel);
+      })
+      .catch(() => {
+        if (isMountedRef.current) setPreviousModels([]);
+      });
+    // 마운트 시 한 번만 채운다 — 이후 사용자가 신규로 바꾸면 그 선택을 덮어쓰지 않는다.
+  }, [isGuest]);
 
   // AI 서버가 아직 XGBoost(.json) 외 포맷을 로드하지 못해 .pkl/.joblib은 실행 단계에서 막힌다.
   // 여기서도 같은 기준으로 미리 알려준다 (resolveModelType 과 일치시킬 것).
