@@ -5,6 +5,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 
+import { maskName } from '../../../shared/lib/maskName';
 import type {
   ObjectionStatus,
   ObjectionSummary,
@@ -164,7 +165,7 @@ function ObjectionList({
               >
                 {/* 고객명 */}
                 <div className="objection-list__customer">
-                  {item.customerName}*
+                  {maskName(item.customerName)}
                 </div>
 
                 {/* 이의제기 제목 */}
