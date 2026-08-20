@@ -10,8 +10,16 @@ interface TopFeaturesCardProps {
   error: string | null;
 }
 
+// 카드가 약속하는 개수. API(`/audits/{id}/explainability`)는 저장된 순위를 전부 돌려주므로
+// 여기서 잘라야 제목과 목록이 어긋나지 않는다.
+const TOP_FEATURE_COUNT = 5;
+
 function TopFeaturesCard({ features, isLoading, error }: TopFeaturesCardProps) {
-  const maxValue = Math.max(...features.map((item) => item.value ?? 0), 0.0001);
+  const topFeatures = [...features]
+    .sort((first, second) => first.rank - second.rank)
+    .slice(0, TOP_FEATURE_COUNT);
+
+  const maxValue = Math.max(...topFeatures.map((item) => item.value ?? 0), 0.0001);
 
   return (
     <section className="top-features-card">
@@ -21,11 +29,11 @@ function TopFeaturesCard({ features, isLoading, error }: TopFeaturesCardProps) {
         <p className="top-features-card__status">불러오는 중…</p>
       ) : error ? (
         <p className="top-features-card__status top-features-card__status--error">{error}</p>
-      ) : features.length === 0 ? (
+      ) : topFeatures.length === 0 ? (
         <p className="top-features-card__status">피처 중요도 결과가 없습니다.</p>
       ) : (
         <ul className="top-features-card__list">
-          {features.map((item) => {
+          {topFeatures.map((item) => {
             const koreanLabel = getFeatureLabel(item.feature);
 
             return (
